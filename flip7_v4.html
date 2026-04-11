@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Flip 7</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- ════════════════════════════════════════════════════
+  STEP 1 — Replace these values with YOUR Firebase config.
+  Firebase Console → Project Settings → Your Apps → Web
+  ════════════════════════════════════════════════════ -->
+<script>
+const FIREBASE_CONFIG = {
+  apiKey:            "PASTE_YOUR_API_KEY",
+  authDomain:        "PASTE_YOUR_AUTH_DOMAIN",
+  databaseURL:       "PASTE_YOUR_DATABASE_URL",
+  projectId:         "PASTE_YOUR_PROJECT_ID",
+  storageBucket:     "PASTE_YOUR_STORAGE_BUCKET",
+  messagingSenderId: "PASTE_YOUR_MESSAGING_SENDER_ID",
+  appId:             "PASTE_YOUR_APP_ID"
+};
+</script>
+<!-- ════════════════════════════════════════════════════ -->
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
+<style>
+:root{--bg:#0a0f1a;--sf:#111827;--card:#1a2236;--bd:#1f2d45;--green:#22c55e;--gdim:#166534;--gold:#f59e0b;--goldim:#78350f;--red:#ef4444;--rdim:#450a0a;--tx:#e2e8f0;--mt:#64748b}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;min-height:100dvh;overflow-x:hidden}
+header{background:var(--sf);border-bottom:1px solid var(--bd);padding:12px 16px 10px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+header h1{font-family:'Bebas Neue',cursive;font-size:28px;letter-spacing:2px;color:var(--green);line-height:1}
+header h1 span{color:var(--tx)}
+.hr{display:flex;gap:8px;align-items:center}
+.hb{background:var(--card);border:1px solid var(--bd);border-radius:20px;padding:4px 12px;font-family:'DM Mono',monospace;font-size:12px;color:var(--mt)}
+.hb strong{color:var(--tx)}
+.hb.gold strong{color:var(--gold)}
+.hb.live{border-color:var(--green);color:var(--green);font-size:11px}
+.hb.live::before{content:'● ';font-size:8px}
+.screen{display:none;padding:16px}
+.screen.active{display:block}
+
+/* CONFIG WARNING */
+.cwarn{background:#1a0808;border:1px solid var(--red);border-radius:12px;padding:14px;margin-bottom:16px}
+.cwarn h3{font-family:'Bebas Neue',cursive;font-size:17px;color:var(--red);margin-bottom:5px}
+.cwarn p{font-size:12px;color:#fca5a5;line-height:1.5}
+.cwarn code{background:#2a1010;padding:1px 5px;border-radius:3px;font-family:'DM Mono',monospace;font-size:11px}
+
+/* SETUP */
+.stitle{font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:1px;color:var(--mt);margin-bottom:4px}
+.ssub{font-size:12px;color:var(--mt);margin-bottom:16px}
+.crow{display:flex;align-items:center;gap:12px;margin-bottom:16px;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px 14px}
+.crow label{font-size:13px;color:var(--mt);flex:1}
+.crow label strong{color:var(--tx)}
+.cctrl{display:flex;align-items:center;gap:8px}
+.cbtn{width:34px;height:34px;background:var(--bg);border:1px solid var(--bd);border-radius:8px;color:var(--tx);font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.cval{font-family:'DM Mono',monospace;font-size:18px;font-weight:500;min-width:28px;text-align:center;color:var(--green)}
+.pgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.pw{display:flex;flex-direction:column;align-items:center;gap:5px}
+.pn{font-size:10px;color:var(--mt);font-family:'DM Mono',monospace}
+.pi{width:100%;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px 4px;color:var(--tx);font-family:'DM Mono',monospace;font-size:15px;font-weight:500;text-align:center;text-transform:uppercase;outline:none;transition:border-color .2s}
+.pi:focus{border-color:var(--green);background:#152030}
+.wrow{display:flex;align-items:center;gap:10px;margin-bottom:16px;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px 14px}
+.wrow label{font-size:13px;color:var(--mt);flex:1}
+.wrow label strong{color:var(--tx)}
+.wi{background:var(--bg);border:1px solid var(--bd);border-radius:8px;color:var(--gold);font-family:'DM Mono',monospace;font-size:16px;padding:7px 10px;width:70px;text-align:center;outline:none}
+.wi:focus{border-color:var(--gold)}
+.bstart{width:100%;background:var(--green);color:#000;font-family:'Bebas Neue',cursive;font-size:20px;letter-spacing:2px;border:none;border-radius:14px;padding:14px;cursor:pointer;margin-bottom:10px}
+.bstart:active{transform:scale(.97)}
+.divid{text-align:center;color:var(--mt);font-size:12px;margin:12px 0;position:relative}
+.divid::before,.divid::after{content:'';position:absolute;top:50%;width:40%;height:1px;background:var(--bd)}
+.divid::before{left:0}.divid::after{right:0}
+.jrow{display:flex;gap:8px;margin-bottom:4px}
+.jinput{flex:1;background:var(--card);border:1px solid var(--bd);border-radius:10px;color:var(--tx);font-family:'DM Mono',monospace;font-size:16px;padding:12px;text-align:center;text-transform:uppercase;outline:none;letter-spacing:4px}
+.jinput:focus{border-color:var(--green)}
+.bjoin{background:var(--card);border:1px solid var(--bd);color:var(--tx);font-family:'Bebas Neue',cursive;font-size:18px;letter-spacing:1px;border-radius:12px;padding:12px 18px;cursor:pointer;white-space:nowrap}
+
+/* GAME */
+.sharebar{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.gcode{font-family:'DM Mono',monospace;font-size:22px;font-weight:500;color:var(--green);letter-spacing:5px;flex:1}
+.bcopy{background:var(--bg);border:1px solid var(--bd);border-radius:8px;color:var(--mt);font-family:'DM Sans',sans-serif;font-size:12px;padding:7px 12px;cursor:pointer;white-space:nowrap}
+.bcopy.ok{border-color:var(--green);color:var(--green)}
+.vbadge{background:#0d1f0d;border:1px solid var(--gdim);border-radius:10px;padding:8px 14px;font-size:12px;color:var(--green);text-align:center;margin-bottom:12px}
+.wbanner{background:linear-gradient(135deg,#78350f,#1a1200);border:1px solid var(--gold);border-radius:14px;padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:12px}
+.wbanner .tr{font-size:28px}
+.wbanner h3{font-family:'Bebas Neue',cursive;font-size:20px;letter-spacing:1px;color:var(--gold)}
+.wbanner p{font-size:12px;color:#d97706}
+.lb{display:flex;flex-direction:column;gap:8px;margin-bottom:90px}
+.pr{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:10px 12px;display:flex;align-items:center;gap:10px;position:relative;overflow:hidden}
+.pr.ld{border-color:var(--gold)}
+.pr.ld::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gold)}
+.rnk{font-family:'DM Mono',monospace;font-size:14px;color:var(--mt);min-width:22px;text-align:center}
+.av{width:38px;height:38px;border-radius:10px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',cursive;font-size:16px;letter-spacing:1px;flex-shrink:0;border:1px solid var(--bd)}
+.pr.ld .av{color:var(--gold);border-color:var(--goldim);background:#1a1200}
+.pi2{flex:1;min-width:0}
+.pnm{font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.pw2{margin-top:4px;background:var(--bg);border-radius:4px;height:4px;overflow:hidden}
+.pb{height:100%;border-radius:4px;background:var(--green);transition:width .4s ease}
+.pb.near{background:var(--gold)}
+.pb.done{background:var(--gold)}
+.rs{display:flex;gap:4px;margin-top:5px;flex-wrap:wrap}
+.rc{font-family:'DM Mono',monospace;font-size:10px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:1px 5px;color:var(--mt)}
+.rc.sc{color:var(--green);border-color:var(--gdim)}
+.rc.f7{color:var(--gold);border-color:var(--goldim)}
+.sr{display:flex;flex-direction:column;align-items:flex-end;gap:1px}
+.ts{font-family:'Bebas Neue',cursive;font-size:26px;letter-spacing:1px;color:var(--tx)}
+.pr.ld .ts{color:var(--gold)}
+.pl{font-family:'DM Mono',monospace;font-size:10px;color:var(--mt)}
+
+/* FAB */
+.fab{position:fixed;bottom:0;left:0;right:0;padding:12px 16px 24px;background:linear-gradient(to top,var(--bg) 60%,transparent);display:flex;gap:10px;z-index:50}
+.fadd{flex:1;background:var(--green);color:#000;font-family:'Bebas Neue',cursive;font-size:18px;letter-spacing:2px;border:none;border-radius:14px;padding:14px;cursor:pointer}
+.fadd:active{transform:scale(.97)}
+.fadd.ov{background:var(--gold)}
+.frst{background:var(--card);border:1px solid var(--bd);color:var(--mt);font-family:'Bebas Neue',cursive;font-size:18px;border-radius:14px;padding:14px 18px;cursor:pointer}
+
+/* MODAL */
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .25s}
+.mo.open{opacity:1;pointer-events:all}
+.md{background:var(--sf);border-radius:24px 24px 0 0;border:1px solid var(--bd);border-bottom:none;width:100%;padding:16px 16px 32px;transform:translateY(30px);transition:transform .25s;max-height:94dvh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.mo.open .md{transform:translateY(0)}
+.mh{width:40px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 14px}
+.mtr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.mt2{font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:2px;color:var(--green)}
+.mhint{font-size:11px;color:var(--mt)}
+.mlb{background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:10px 12px;margin-bottom:14px}
+.mlbt{font-family:'Bebas Neue',cursive;font-size:13px;letter-spacing:1px;color:var(--mt);margin-bottom:8px}
+.mlbr{display:flex;flex-direction:column;gap:5px}
+.mr{display:flex;align-items:center;gap:7px}
+.mrk{font-family:'DM Mono',monospace;font-size:11px;color:var(--mt);min-width:18px;text-align:center}
+.mn{font-family:'Bebas Neue',cursive;font-size:14px;letter-spacing:.5px;flex:1;color:var(--tx)}
+.mpv{font-family:'DM Mono',monospace;font-size:11px;color:var(--mt);min-width:28px;text-align:right}
+.maw{font-size:10px;color:var(--mt)}
+.mnw{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;min-width:52px;text-align:right;color:var(--tx)}
+.mnw.up{color:var(--green)}
+.mnw.fc{color:var(--gold)}
+.mbw{width:50px;background:var(--bd);border-radius:3px;height:3px;overflow:hidden}
+.mbf{height:100%;border-radius:3px;background:var(--green);transition:width .3s}
+.mbf.near{background:var(--gold)}
+.sg{display:flex;flex-direction:column;gap:0;margin-bottom:14px;border:1px solid var(--bd);border-radius:14px;overflow:hidden}
+.er{background:var(--card);border-bottom:1px solid var(--bd);padding:10px 12px;display:flex;align-items:center;gap:8px;transition:background .15s}
+.er:last-child{border-bottom:none}
+.er.cur{background:#132a1e}
+.el{font-family:'Bebas Neue',cursive;font-size:18px;letter-spacing:1px;min-width:42px;color:var(--tx)}
+.ep{font-family:'DM Mono',monospace;font-size:11px;color:var(--mt);flex:1}
+.ec{display:flex;align-items:center;gap:6px}
+.sf{background:var(--bg);border:1px solid var(--bd);border-radius:8px;color:var(--tx);font-family:'DM Mono',monospace;font-size:16px;font-weight:500;padding:8px 6px;width:68px;text-align:center;outline:none;transition:border-color .2s}
+.sf:focus{border-color:var(--green)}
+.bf7{background:transparent;border:1px solid var(--goldim);color:var(--gold);font-family:'Bebas Neue',cursive;font-size:12px;border-radius:8px;padding:8px 9px;cursor:pointer;transition:background .15s,border-color .15s;white-space:nowrap}
+.bf7.on{background:var(--goldim);border-color:var(--gold)}
+.bsub{width:100%;background:var(--green);color:#000;font-family:'Bebas Neue',cursive;font-size:20px;letter-spacing:2px;border:none;border-radius:14px;padding:14px;cursor:pointer;margin-bottom:8px}
+.bsub:active{transform:scale(.98)}
+.bcan{width:100%;background:transparent;border:1px solid var(--bd);color:var(--mt);font-family:'DM Sans',sans-serif;font-size:14px;border-radius:12px;padding:12px;cursor:pointer}
+.cov{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.cov.open{opacity:1;pointer-events:all}
+.cb{background:var(--sf);border:1px solid var(--bd);border-radius:20px;padding:24px 20px;width:calc(100% - 48px);max-width:360px;text-align:center}
+.cb h3{font-family:'Bebas Neue',cursive;font-size:22px;color:var(--red);margin-bottom:8px}
+.cb p{color:var(--mt);font-size:13px;margin-bottom:20px}
+.cbs{display:flex;gap:10px}
+.cbs button{flex:1;padding:12px;border-radius:12px;border:none;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer}
+.bdn{background:var(--red);color:#fff}
+.bsf{background:var(--card);color:var(--mt);border:1px solid var(--bd)!important}
+.load{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;z-index:999}
+.load h2{font-family:'Bebas Neue',cursive;font-size:32px;letter-spacing:3px;color:var(--green)}
+.load p{font-size:13px;color:var(--mt)}
+.spin{width:32px;height:32px;border:3px solid var(--bd);border-top-color:var(--green);border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:48px 20px;color:var(--mt)}
+.empty .ci{font-size:48px;margin-bottom:12px}
+.empty p{font-size:14px;line-height:1.6}
+</style>
+</head>
+<body>
+
+<div class="load" id="loadScr">
+  <div class="spin"></div>
+  <h2>FLIP 7</h2>
+  <p id="loadMsg">Connecting…</p>
+</div>
+
+<header>
+  <h1>FLIP<span>7</span></h1>
+  <div class="hr">
+    <div class="hb live" id="liveBadge" style="display:none">LIVE</div>
+    <div class="hb gold" id="tgtBadge" style="display:none"><strong id="tgtVal">200</strong>pt</div>
+    <div class="hb" id="rdBadge" style="display:none">Rd <strong id="rdNum">0</strong></div>
+  </div>
+</header>
+
+<!-- SETUP -->
+<div class="screen" id="setupScreen">
+  <div id="cwarn"></div>
+  <p class="stitle">NEW GAME</p>
+  <p class="ssub">Set players, then share the code with friends.</p>
+  <div class="crow">
+    <label><strong>Players</strong><br>How many are playing?</label>
+    <div class="cctrl">
+      <button class="cbtn" onclick="chg(-1)">−</button>
+      <span class="cval" id="cntVal">4</span>
+      <button class="cbtn" onclick="chg(1)">+</button>
+    </div>
+  </div>
+  <div class="pgrid" id="pgrid"></div>
+  <div class="wrow">
+    <label><strong>Win target</strong><br>First to this score wins</label>
+    <input class="wi" type="number" id="winTgt" value="200" min="50">
+  </div>
+  <button class="bstart" onclick="createGame()">CREATE GAME ▶</button>
+  <div class="divid">or join existing game</div>
+  <div class="jrow">
+    <input class="jinput" id="jcode" placeholder="ABC123" maxlength="6" autocomplete="off" autocorrect="off" spellcheck="false">
+    <button class="bjoin" onclick="joinGame()">JOIN →</button>
+  </div>
+</div>
+
+<!-- GAME -->
+<div class="screen" id="gameScreen">
+  <div class="sharebar" id="sharebar" style="display:none">
+    <span class="gcode" id="gcodeEl"></span>
+    <button class="bcopy" id="copyBtn" onclick="copyLink()">Copy Link</button>
+  </div>
+  <div class="vbadge" id="vbadge" style="display:none">👀 Spectator — watching live</div>
+  <div id="wbanner"></div>
+  <div class="lb" id="lboard">
+    <div class="empty"><div class="ci">🃏</div><p>Waiting for rounds…</p></div>
+  </div>
+</div>
+
+<div class="fab" id="fabBar" style="display:none">
+  <button class="fadd" id="fabAdd" onclick="openModal()">+ ADD ROUND</button>
+  <button class="frst" onclick="confReset()">↺</button>
+</div>
+
+<!-- MODAL -->
+<div class="mo" id="mo">
+  <div class="md">
+    <div class="mh"></div>
+    <div class="mtr">
+      <div class="mt2">ROUND <span id="mrd"></span></div>
+      <span class="mhint">F7 = +15 bonus</span>
+    </div>
+    <div class="mlb">
+      <div class="mlbt">LIVE SCORES</div>
+      <div class="mlbr" id="mlbr"></div>
+    </div>
+    <div class="sg" id="sg"></div>
+    <button class="bsub" onclick="submitRound()">CONFIRM ROUND ✓</button>
+    <button class="bcan" onclick="closeMo()">Cancel</button>
+  </div>
+</div>
+
+<!-- CONFIRM RESET -->
+<div class="cov" id="cov">
+  <div class="cb">
+    <h3>RESET GAME?</h3>
+    <p>All rounds wiped for everyone. Names kept.</p>
+    <div class="cbs">
+      <button class="bsf" onclick="closeCov()">Cancel</button>
+      <button class="bdn" onclick="doReset()">Reset</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let db = null, gameId = null, isHost = false, gameState = null, unsub = null;
+let pCount = 4;
+
+// ── Firebase init ──
+function initFB() {
+  try {
+    if (FIREBASE_CONFIG.apiKey === 'PASTE_YOUR_API_KEY') { noConfig(); return; }
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.database();
+    onReady();
+  } catch(e) { noConfig(); }
+}
+function noConfig() {
+  document.getElementById('cwarn').innerHTML = `<div class="cwarn">
+    <h3>⚠ Firebase not configured</h3>
+    <p>Edit this file and replace the values in <code>FIREBASE_CONFIG</code> at the top with your Firebase project credentials. See the deploy guide.</p>
+  </div>`;
+  hideLd(); showScr('setupScreen'); buildGrid();
+}
+function onReady() {
+  const p = new URLSearchParams(location.search).get('g');
+  if (p) { watchGame(p.toUpperCase(), false); }
+  else { hideLd(); showScr('setupScreen'); buildGrid(); }
+}
+
+// ── Setup ──
+function chg(d) {
+  pCount = Math.max(2, Math.min(20, pCount + d));
+  document.getElementById('cntVal').textContent = pCount;
+  buildGrid();
+}
+function buildGrid() {
+  const saved = Array.from({length:20}, (_, i) => document.getElementById(`ini${i}`)?.value || '');
+  const g = document.getElementById('pgrid');
+  g.innerHTML = '';
+  for (let i = 0; i < pCount; i++) {
+    const w = document.createElement('div');
+    w.className = 'pw';
+    w.innerHTML = `<span class="pn">P${i+1}</span>
+      <input class="pi" maxlength="3" placeholder="???" id="ini${i}"
+             autocomplete="off" autocorrect="off" spellcheck="false">`;
+    g.appendChild(w);
+    if (saved[i]) document.getElementById(`ini${i}`).value = saved[i];
+  }
+}
+
+// ── Create game ──
+function createGame() {
+  if (!db) { alert('Firebase not configured.'); return; }
+  const players = Array.from({length: pCount}, (_, i) =>
+    document.getElementById(`ini${i}`).value.trim().toUpperCase() || `P${i+1}`);
+  const winTarget = parseInt(document.getElementById('winTgt').value) || 200;
+  const code = Math.random().toString(36).substring(2,8).toUpperCase();
+  const hostKey = Math.random().toString(36).substring(2,14);
+  db.ref(`games/${code}`).set({ players, winTarget, rounds:[], hostKey, ts: Date.now() }).then(() => {
+    localStorage.setItem(`f7h_${code}`, hostKey);
+    history.replaceState({}, '', `?g=${code}`);
+    watchGame(code, true);
+  });
+}
+
+// ── Join ──
+function joinGame() {
+  const c = document.getElementById('jcode').value.trim().toUpperCase();
+  if (c.length < 4) { alert('Enter a valid game code.'); return; }
+  history.replaceState({}, '', `?g=${c}`);
+  watchGame(c, false);
+}
+
+// ── Watch game ──
+function watchGame(code, _) {
+  setLdMsg('Loading game…');
+  gameId = code;
+  if (unsub) unsub();
+  const ref = db.ref(`games/${code}`);
+  const fn = ref.on('value', snap => {
+    const d = snap.val();
+    if (!d) { hideLd(); alert(`Game "${code}" not found.`); showScr('setupScreen'); buildGrid(); return; }
+    gameState = {...d, rounds: d.rounds || []};
+    isHost = localStorage.getItem(`f7h_${code}`) === d.hostKey;
+    hideLd();
+    render();
+  });
+  unsub = () => ref.off('value', fn);
+}
+
+// ── Totals ──
+function totals() {
+  return gameState.players.map((_, pi) =>
+    gameState.rounds.reduce((s, rnd) => s + rnd[pi].score + (rnd[pi].flip7 ? 15 : 0), 0));
+}
+function winnerIdx(t) {
+  const mx = Math.max(...t);
+  return mx >= gameState.winTarget ? t.indexOf(mx) : -1;
+}
+
+// ── Render ──
+function render() {
+  const { players, winTarget, rounds } = gameState;
+  showScr('gameScreen');
+  document.getElementById('tgtVal').textContent = winTarget;
+  document.getElementById('tgtBadge').style.display = '';
+  document.getElementById('rdBadge').style.display  = '';
+  document.getElementById('liveBadge').style.display = '';
+  document.getElementById('rdNum').textContent = rounds.length;
+  document.getElementById('sharebar').style.display = isHost ? '' : 'none';
+  document.getElementById('gcodeEl').textContent = gameId;
+  document.getElementById('vbadge').style.display = isHost ? 'none' : '';
+  document.getElementById('fabBar').style.display = isHost ? 'flex' : 'none';
+
+  const t = totals();
+  const wi = winnerIdx(t);
+  const wb = document.getElementById('wbanner');
+  if (wi >= 0) {
+    wb.innerHTML = `<div class="wbanner"><div class="tr">🏆</div><div>
+      <h3>${players[wi]} WINS!</h3><p>${t[wi]} pts — ${winTarget} reached</p></div></div>`;
+    if (isHost) { document.getElementById('fabAdd').textContent = '+ KEEP PLAYING'; document.getElementById('fabAdd').classList.add('ov'); }
+  } else {
+    wb.innerHTML = '';
+    if (isHost) { document.getElementById('fabAdd').textContent = '+ ADD ROUND'; document.getElementById('fabAdd').classList.remove('ov'); }
+  }
+
+  const lb = document.getElementById('lboard');
+  if (!rounds.length) {
+    lb.innerHTML = `<div class="empty"><div class="ci">🃏</div><p>${isHost ? 'Tap <strong>+ ADD ROUND</strong> to start.' : 'Waiting for the host…'}</p></div>`;
+    return;
+  }
+  const ord = players.map((_,i)=>i).sort((a,b)=>t[b]-t[a]);
+  lb.innerHTML = '';
+  ord.forEach((pi, rank) => {
+    const pct = Math.min(100, Math.round(t[pi]/winTarget*100));
+    const bc  = pct>=100?'done':pct>=70?'near':'';
+    const med = ['🥇','🥈','🥉'][rank] ?? (rank+1);
+    const chips = rounds.map((rnd,ri) => {
+      const d=rnd[pi], pts=d.score+(d.flip7?15:0);
+      if (pts===0) return `<span class="rc">R${ri+1}:0</span>`;
+      return `<span class="rc ${d.flip7?'f7':'sc'}">R${ri+1}:${pts>=0?'+':''}${pts}${d.flip7?'⚡':''}</span>`;
+    }).join('');
+    const r = document.createElement('div');
+    r.className = 'pr'+(rank===0?' ld':'');
+    r.innerHTML = `<span class="rnk">${med}</span>
+      <div class="av">${players[pi]}</div>
+      <div class="pi2">
+        <div class="pnm">${players[pi]}</div>
+        <div class="pw2"><div class="pb ${bc}" style="width:${pct}%"></div></div>
+        <div class="rs">${chips}</div>
+      </div>
+      <div class="sr"><span class="ts">${t[pi]}</span><span class="pl">${pct}%</span></div>`;
+    lb.appendChild(r);
+  });
+}
+
+// ── Modal ──
+function openModal() {
+  document.getElementById('mrd').textContent = gameState.rounds.length + 1;
+  buildEntryGrid();
+  updMini();
+  document.getElementById('mo').classList.add('open');
+  setTimeout(() => document.querySelector('.sf')?.focus(), 300);
+}
+function buildEntryGrid() {
+  const t = totals();
+  const g = document.getElementById('sg');
+  g.innerHTML = '';
+  gameState.players.forEach((name, pi) => {
+    const row = document.createElement('div');
+    row.className = 'er';
+    row.id = `er${pi}`;
+    row.innerHTML = `<span class="el">${name}</span><span class="ep">${t[pi]}pt</span>
+      <div class="ec">
+        <input class="sf" type="number" inputmode="decimal" id="sf${pi}" placeholder="0" autocomplete="off">
+        <button class="bf7" id="f7_${pi}" onclick="togF7(${pi})">F7 +15</button>
+      </div>`;
+    row.querySelector('.sf').addEventListener('focus', () => {
+      document.querySelectorAll('.er').forEach(r=>r.classList.remove('cur'));
+      row.classList.add('cur');
+    });
+    row.querySelector('.sf').addEventListener('input', updMini);
+    g.appendChild(row);
+  });
+}
+function togF7(pi) { document.getElementById(`f7_${pi}`).classList.toggle('on'); updMini(); }
+function updMini() {
+  const { players, winTarget } = gameState;
+  const prev = totals();
+  const gain = players.map((_, pi) => {
+    const v = parseFloat(document.getElementById(`sf${pi}`)?.value) || 0;
+    const f = document.getElementById(`f7_${pi}`)?.classList.contains('on');
+    return v + (f ? 15 : 0);
+  });
+  const next = prev.map((p,i)=>p+gain[i]);
+  const ord  = players.map((_,i)=>i).sort((a,b)=>next[b]-next[a]);
+  const c = document.getElementById('mlbr');
+  c.innerHTML = '';
+  ord.forEach((pi, rank) => {
+    const pct = Math.min(100, Math.round(next[pi]/winTarget*100));
+    const med = ['🥇','🥈','🥉'][rank] ?? (rank+1);
+    const f   = document.getElementById(`f7_${pi}`)?.classList.contains('on');
+    const gs  = gain[pi]>0?`+${gain[pi]}`:gain[pi]<0?`${gain[pi]}`:'';
+    const cls = f?'fc':gain[pi]>0?'up':'';
+    const r   = document.createElement('div');
+    r.className = 'mr';
+    r.innerHTML = `<span class="mrk">${med}</span><span class="mn">${players[pi]}</span>
+      <span class="mpv">${prev[pi]}</span><span class="maw">→</span>
+      <span class="mnw ${cls}">${next[pi]}${gs?` (${gs})`:''}</span>
+      <div class="mbw"><div class="mbf ${pct>=70?'near':''}" style="width:${pct}%"></div></div>`;
+    c.appendChild(r);
+  });
+}
+function closeMo() { document.getElementById('mo').classList.remove('open'); }
+function submitRound() {
+  const rd = gameState.players.map((_,pi) => ({
+    score: parseFloat(document.getElementById(`sf${pi}`).value)||0,
+    flip7: document.getElementById(`f7_${pi}`).classList.contains('on')
+  }));
+  db.ref(`games/${gameId}/rounds`).set([...gameState.rounds, rd]);
+  closeMo();
+}
+
+// ── Reset ──
+function confReset() { document.getElementById('cov').classList.add('open'); }
+function closeCov()  { document.getElementById('cov').classList.remove('open'); }
+function doReset()   { db.ref(`games/${gameId}/rounds`).set([]); closeCov(); }
+
+// ── Share ──
+function copyLink() {
+  const url = `${location.origin}${location.pathname}?g=${gameId}`;
+  navigator.clipboard.writeText(url).then(() => {
+    const b = document.getElementById('copyBtn');
+    b.textContent = 'Copied ✓'; b.classList.add('ok');
+    setTimeout(() => { b.textContent = 'Copy Link'; b.classList.remove('ok'); }, 2000);
+  });
+}
+
+function showScr(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+function hideLd() { document.getElementById('loadScr').style.display = 'none'; }
+function setLdMsg(m) { document.getElementById('loadMsg').textContent = m; }
+
+document.getElementById('mo').addEventListener('click', function(e) { if(e.target===this) closeMo(); });
+
+initFB();
+</script>
+</body>
+</html>
