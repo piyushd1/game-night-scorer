@@ -238,8 +238,8 @@ function _showHostPrompt(container, roomCode, playerId, playerName) {
 
   playerList.insertAdjacentElement('beforebegin', prompt);
 
-  prompt.querySelector('#host-prompt-yes').addEventListener('click', () => {
-    fb.updateRoomMeta(roomCode, { hostPlayerId: playerId });
+  prompt.querySelector('#host-prompt-yes').addEventListener('click', async () => {
+    await fb.updateRoomMeta(roomCode, { hostPlayerId: playerId });
     toast.show('You are set as the host player');
     prompt.remove();
   });
