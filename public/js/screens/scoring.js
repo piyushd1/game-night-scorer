@@ -21,10 +21,15 @@ export function mount(container, params = {}) {
     return;
   }
 
+  if (!roomCode) {
+    router.navigate('home');
+    return;
+  }
   const topBar = document.getElementById('top-bar');
   topBar.style.display = 'flex';
   document.getElementById('top-bar-title').textContent = 'SCORING';
-  document.getElementById('top-bar-back').classList.add('hidden');
+  document.getElementById('top-bar-back').classList.remove('hidden');
+  document.getElementById('top-bar-back').onclick = () => router.navigate('lobby', { roomCode });
   hostMenu.hide();
   hostMenu.renderTopBarActions(roomCode);
 
