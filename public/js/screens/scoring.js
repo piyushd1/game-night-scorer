@@ -15,7 +15,11 @@ let _unsubTab = null;
 export function mount(container, params = {}) {
   const roomCode = params.roomCode || state.get('roomCode');
 
-  if (!state.isHost()) {
+  // Robust host guard: if room meta hasn't loaded yet the user shouldn't be
+  // on the scoring screen at all — redirect to dashboard where the watcher
+  // will sort things out.  Once meta IS loaded, check the real isHost flag.
+  const meta = state.get('roomMeta');
+  if (!meta || !state.isHost()) {
     router.navigate('dashboard', { roomCode });
     return;
   }

@@ -90,7 +90,7 @@ function _render(container, roomCode) {
   // Top bar actions — room code + host menu
   document.getElementById('top-bar-actions').innerHTML = `
     <span class="font-mono text-[10px] text-outline border border-outline px-2 py-1">${roomCode}</span>
-    ${isHost ? `<button id="btn-host-menu" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 ml-1" style="font-size:22px">more_vert</button>` : ''}
+    ${isHost ? `<button id="btn-host-menu" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 ml-1" style="font-size:22px">more_vert</button>` : `<button id="btn-viewer-leave" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 ml-1" style="font-size:22px" title="Leave room">door_open</button>`}
   `;
 
   // Derive standings
@@ -184,9 +184,6 @@ function _render(container, roomCode) {
           <span class="material-symbols-outlined text-sm">undo</span>
           UNDO
         </button>
-        <button id="btn-manage" class="flex-none bg-surface-container-lowest border border-outline py-3 px-4 text-sm flex items-center justify-center hover:bg-surface-container-high transition-colors">
-          <span class="material-symbols-outlined text-sm">group</span>
-        </button>
       </div>
     `;
   }
@@ -218,6 +215,15 @@ function _render(container, roomCode) {
 
   content.innerHTML = html;
 
+  // Bind viewer leave button
+  const viewerLeaveBtn = document.getElementById('btn-viewer-leave');
+  if (viewerLeaveBtn) {
+    viewerLeaveBtn.addEventListener('click', () => {
+      fb.unwatchRoom();
+      router.navigate('home', {}, 'back');
+    });
+  }
+
   // Bind host actions
   if (isHost) {
     content.querySelector('#btn-undo')?.addEventListener('click', () => _undoRound(roomCode, game, gameModule));
@@ -241,6 +247,7 @@ function _render(container, roomCode) {
         menuDropdown.style.display = 'none';
         const action = btn.dataset.action;
         if (action === 'new-game') {
+          fb.setRoomStatus(roomCode, 'lobby');
           router.navigate('game-select', { roomCode });
         } else if (action === 'lobby') {
           router.navigate('lobby', { roomCode });

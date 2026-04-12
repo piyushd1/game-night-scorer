@@ -8,6 +8,7 @@ import * as router from '../router.js';
 import * as bottomNav from '../components/bottom-nav.js';
 import { getGame } from '../games/registry.js';
 import { ACCENT_COLORS } from '../state.js';
+import { show as toast } from '../components/toast.js';
 
 export function mount(container, params = {}) {
   const roomCode = params.roomCode || state.get('roomCode');
@@ -78,7 +79,10 @@ export function mount(container, params = {}) {
           </button>
         </footer>
       ` : `
-        <footer class="p-6">
+        <footer class="p-6 space-y-3">
+          <button id="btn-back-lobby" class="w-full py-4 border border-white/40 text-white font-headline font-extrabold uppercase tracking-widest text-base transition-colors hover:bg-white/10">
+            BACK TO LOBBY
+          </button>
           <p class="font-mono text-[10px] text-center uppercase tracking-widest opacity-60">Waiting for host...</p>
         </footer>
       `}
@@ -89,6 +93,11 @@ export function mount(container, params = {}) {
   if (isHost) {
     container.querySelector('#btn-replay')?.addEventListener('click', async () => {
       const players = state.activePlayers();
+      const minPlayers = gameModule.minPlayers || 2;
+      if (players.length < minPlayers) {
+        toast(`Need at least ${minPlayers} players to play ${gameModule.label}`);
+        return;
+      }
       const playerIds = players.map((p) => p.id);
       const snapshot = {};
       players.forEach((p) => {
@@ -103,8 +112,13 @@ export function mount(container, params = {}) {
       }
     });
 
-    container.querySelector('#btn-new-game')?.addEventListener('click', () => {
+    container.querySelector('#btn-new-game')?.addEventListener('click', async () => {
+      await fb.setRoomStatus(roomCode, 'lobby');
       router.navigate('game-select', { roomCode });
+    });
+  } else {
+    container.querySelector('#btn-back-lobby')?.addEventListener('click', () => {
+      router.navigate('lobby', { roomCode });
     });
   }
 }
