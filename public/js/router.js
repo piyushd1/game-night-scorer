@@ -9,6 +9,10 @@ let _direction = 'forward';
 const _history = [];
 let _lastRenderTime = 0;
 
+// Debug callbacks (set by debug.js in staging)
+export let onNavigate = null;
+export let onRender = null;
+
 export function registerScreen(id, { mount, unmount }) {
   _screens.set(id, { mount, unmount });
 }
@@ -20,6 +24,7 @@ export function init(containerId) {
 }
 
 export function navigate(screenId, params = {}, direction = 'forward') {
+  if (onNavigate) onNavigate(screenId, params, direction);
   _direction = direction;
   if (direction === 'forward' && _currentId) {
     _history.push(_currentId);
@@ -89,4 +94,6 @@ function _renderScreen(screenId, params = {}) {
   } catch (e) {
     console.error(`Screen "${screenId}" mount error:`, e);
   }
+
+  if (onRender) onRender(screenId, _container.querySelectorAll('.screen').length);
 }
