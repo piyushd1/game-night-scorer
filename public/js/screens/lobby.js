@@ -79,8 +79,16 @@ export function mount(container, params = {}) {
       <!-- Player List -->
       <div id="player-list" class="flex flex-col gap-1"></div>
 
+      <!-- Night Recap (visible after at least 1 game) -->
+      <div id="recap-section" class="mt-6" style="display:none">
+        <button id="btn-recap" class="w-full bg-surface-container-lowest border border-outline py-3 font-headline font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-surface-container-high transition-colors">
+          <span class="material-symbols-outlined text-sm">bar_chart</span>
+          NIGHT RECAP
+        </button>
+      </div>
+
       <!-- Start Game (host only) -->
-      <div id="start-section" class="mt-8" style="display:none">
+      <div id="start-section" class="mt-4" style="display:none">
         <button id="btn-start-game" class="btn-primary flex items-center justify-center gap-2" disabled>
           CHOOSE GAME
           <span class="material-symbols-outlined text-lg">arrow_forward</span>
@@ -117,13 +125,17 @@ function _bindEvents(container, roomCode) {
 
   // Start game
   container.querySelector('#btn-start-game')?.addEventListener('click', () => {
-    // Check if there's already an active game
     const meta = state.get('roomMeta');
     if (meta?.activeGameId && meta?.status === 'playing') {
       router.navigate('dashboard');
     } else {
       router.navigate('game-select', { roomCode });
     }
+  });
+
+  // Night recap
+  container.querySelector('#btn-recap')?.addEventListener('click', () => {
+    router.navigate('recap', { roomCode });
   });
 }
 
@@ -135,7 +147,16 @@ async function _addPlayer(container, roomCode) {
     return;
   }
 
+  // Check for duplicate names
   const players = state.get('players') || {};
+  const nameUpper = name.toUpperCase();
+  const duplicate = Object.values(players).some((p) => p.name === nameUpper);
+  if (duplicate) {
+    toast.show('Name already exists');
+    input.select();
+    return;
+  }
+
   const count = Object.keys(players).length;
   const accentIndex = count % ACCENT_COLORS.length;
 
@@ -173,6 +194,12 @@ function _startWatching(roomCode, container) {
 
     // Render player list
     _renderPlayers(container, players, isHost, roomCode);
+
+    // Show recap button if any games have been played
+    const games = data.games || {};
+    const hasPlayedGames = Object.values(games).some((g) => g.rounds && Object.keys(g.rounds).length > 0);
+    const recapSection = container.querySelector('#recap-section');
+    if (recapSection) recapSection.style.display = hasPlayedGames ? 'block' : 'none';
 
     // Enable/disable start
     const activeCount = Object.values(players).filter((p) => p.isActive).length;

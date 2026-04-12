@@ -28,6 +28,7 @@ import * as dashboardScreen from './screens/dashboard.js';
 import * as rulesScreen from './screens/rules.js';
 import * as scoringScreen from './screens/scoring.js';
 import * as winnerScreen from './screens/winner.js';
+import * as recapScreen from './screens/recap.js';
 
 // ── Init ──
 async function init() {
@@ -42,6 +43,7 @@ async function init() {
   router.registerScreen('rules', rulesScreen);
   router.registerScreen('scoring', scoringScreen);
   router.registerScreen('winner', winnerScreen);
+  router.registerScreen('recap', recapScreen);
 
   // Check URL for room code
   const urlParams = new URLSearchParams(window.location.search);
