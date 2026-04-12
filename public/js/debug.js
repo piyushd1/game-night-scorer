@@ -6,8 +6,8 @@
 // This file should NEVER be shipped to production (main branch).
 
 import * as state from './state.js';
-import * as router from './router.js';
-import * as fb from './firebase.js';
+import { currentScreen, setOnNavigate, setOnRender } from './router.js';
+import { setOnFirebaseEvent } from './firebase.js';
 
 // ── Activation ──
 
@@ -63,20 +63,20 @@ function checkDOM() {
 // ── Hook Registration ──
 
 function registerHooks() {
-  // Router hooks (via exported callbacks)
-  router.onNavigate = (screenId, params, direction) => {
+  // Router hooks (via setter functions)
+  setOnNavigate((screenId, params, direction) => {
     pushEvent('ROUTER', `navigate → ${screenId} (${direction})`);
-  };
+  });
 
-  router.onRender = (screenId, screenCount) => {
+  setOnRender((screenId, screenCount) => {
     pushEvent('ROUTER', `mounted: ${screenId} (${screenCount} screen element${screenCount !== 1 ? 's' : ''} in DOM)`);
     if (screenCount > 1) {
       pushEvent('DOM', `STACKING DETECTED after mount: ${screenCount} .screen elements`, 'error');
     }
-  };
+  });
 
-  // Firebase hooks (via exported callback)
-  fb.onFirebaseEvent = (event, data) => {
+  // Firebase hooks (via setter function)
+  setOnFirebaseEvent((event, data) => {
     if (event === 'watchRoom') {
       const meta = data.meta || {};
       const playerCount = data.players ? Object.keys(data.players).length : 0;
@@ -84,7 +84,7 @@ function registerHooks() {
     } else {
       pushEvent('FIREBASE', `${event}(${JSON.stringify(data)})`);
     }
-  };
+  });
 
   // State hooks (wildcard listener)
   state.on('*', (key, value, prev) => {
@@ -172,7 +172,7 @@ function _updatePanel() {
   // Info bar
   const info = _panel.querySelector('#debug-info');
   if (info) {
-    const screen = router.currentScreen() || 'none';
+    const screen = currentScreen() || 'none';
     const roomCode = state.get('roomCode') || '-';
     const isHost = state.isHost() ? 'HOST' : 'VIEWER';
     info.innerHTML = `<span style="color: #FFB800">${screen}</span> | Room: ${roomCode} | ${isHost}`;
