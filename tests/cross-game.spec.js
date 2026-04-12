@@ -24,9 +24,9 @@ test.describe('Cross-Game Flows', () => {
     await expectPlayerScore(page, 'BOB', 0);
     await expectPlayerScore(page, 'CHARLIE', 0);
 
-    // Verify game label shows Papayoo
-    const dashText = await page.locator('#screen-dashboard').textContent();
-    expect(dashText.toUpperCase()).toContain('PAPAYOO');
+    // Verify game label shows Papayoo (in the heading/header, not dashboard body)
+    const heading = await page.locator('h1').textContent();
+    expect(heading.toUpperCase()).toContain('PAPAYOO');
   });
 
   test('play all 3 games in one session', async ({ page }) => {

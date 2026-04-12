@@ -16,16 +16,25 @@ export async function createRoomAndAddPlayers(page, playerNames = ['ALICE', 'BOB
 
   const roomCode = await getRoomCode(page);
 
+  // Wait for the add-player input to be ready before interacting
+  await page.waitForSelector('#input-player-name', { state: 'visible', timeout: 5000 });
+
   // Add each player
   for (let i = 0; i < playerNames.length; i++) {
+    // Ensure input is clear and ready
+    await page.locator('#input-player-name').click();
     await page.fill('#input-player-name', playerNames[i]);
     await page.click('#btn-confirm-add');
     // Wait for the player row count to reach i+1 (robust, no text matching issues)
     await page.waitForFunction(
       (expected) => document.querySelectorAll('#player-list .bg-surface-container-lowest').length >= expected,
       i + 1,
-      { timeout: 10000 }
+      { timeout: 15000 }
     );
+    // Brief pause for Firebase sync between rapid adds
+    if (i < playerNames.length - 1) {
+      await page.waitForTimeout(300);
+    }
   }
 
   return { roomCode };
