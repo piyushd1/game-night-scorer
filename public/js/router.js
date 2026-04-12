@@ -5,8 +5,9 @@
 const _screens = new Map();
 let _currentId = null;
 let _container = null;
-let _direction = 'forward'; // 'forward' or 'back'
+let _direction = 'forward';
 const _history = [];
+let _navigating = false;
 
 export function registerScreen(id, { mount, unmount }) {
   _screens.set(id, { mount, unmount });
@@ -15,7 +16,6 @@ export function registerScreen(id, { mount, unmount }) {
 export function init(containerId) {
   _container = document.getElementById(containerId);
   window.addEventListener('hashchange', _onHashChange);
-  // Handle initial route
   _onHashChange();
 }
 
@@ -26,7 +26,6 @@ export function navigate(screenId, params = {}, direction = 'forward') {
   }
   const hash = `#${screenId}`;
   if (window.location.hash === hash) {
-    // Same hash — force re-render
     _renderScreen(screenId, params);
   } else {
     window._routeParams = params;
@@ -59,35 +58,36 @@ function _renderScreen(screenId, params = {}) {
     return;
   }
 
-  // Unmount current
+  // Prevent re-entrant navigation (e.g., Firebase watchers triggering mid-mount)
+  if (_navigating) return;
+  _navigating = true;
+
+  // Unmount current screen
   if (_currentId) {
-    const currentEl = _container.querySelector('.screen.active');
     const currentScreen = _screens.get(_currentId);
     if (currentScreen && currentScreen.unmount) {
       currentScreen.unmount();
     }
-    if (currentEl) {
-      currentEl.classList.remove('active');
-      currentEl.classList.add(_direction === 'forward' ? 'exit-left' : 'exit-right');
-      setTimeout(() => currentEl.remove(), 220);
-    }
   }
 
-  // Mount new
+  // AGGRESSIVELY remove ALL existing screens from container
+  // This prevents stacking from rapid navigation or Firebase re-renders
+  const oldScreens = _container.querySelectorAll('.screen');
+  oldScreens.forEach((el) => el.remove());
+
+  // Mount new screen
   const el = document.createElement('div');
-  el.className = `screen ${_direction === 'forward' ? 'enter-right' : 'enter-left'}`;
+  el.className = 'screen active';
   el.id = `screen-${screenId}`;
   _container.appendChild(el);
 
-  screen.mount(el, params);
-
-  // Trigger transition
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      el.classList.remove('enter-right', 'enter-left');
-      el.classList.add('active');
-    });
-  });
-
   _currentId = screenId;
+
+  try {
+    screen.mount(el, params);
+  } catch (e) {
+    console.error(`Screen "${screenId}" mount error:`, e);
+  }
+
+  _navigating = false;
 }

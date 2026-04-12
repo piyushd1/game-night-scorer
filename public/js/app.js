@@ -29,6 +29,7 @@ import * as rulesScreen from './screens/rules.js';
 import * as scoringScreen from './screens/scoring.js';
 import * as winnerScreen from './screens/winner.js';
 import * as recapScreen from './screens/recap.js';
+import * as hostMenu from './components/host-menu.js';
 
 // ── Init ──
 async function init() {
@@ -44,6 +45,9 @@ async function init() {
   router.registerScreen('scoring', scoringScreen);
   router.registerScreen('winner', winnerScreen);
   router.registerScreen('recap', recapScreen);
+
+  // Init shared host menu
+  hostMenu.init();
 
   // Check URL for room code
   const urlParams = new URLSearchParams(window.location.search);
