@@ -7,7 +7,7 @@ let _currentId = null;
 let _container = null;
 let _direction = 'forward';
 const _history = [];
-let _navigating = false;
+// no re-entrancy guard — screens may redirect in mount()
 
 export function registerScreen(id, { mount, unmount }) {
   _screens.set(id, { mount, unmount });
@@ -58,9 +58,7 @@ function _renderScreen(screenId, params = {}) {
     return;
   }
 
-  // Prevent re-entrant navigation (e.g., Firebase watchers triggering mid-mount)
-  if (_navigating) return;
-  _navigating = true;
+  // Screens may call navigate() inside mount() for redirects — that's OK
 
   // Unmount current screen
   if (_currentId) {
@@ -88,6 +86,4 @@ function _renderScreen(screenId, params = {}) {
   } catch (e) {
     console.error(`Screen "${screenId}" mount error:`, e);
   }
-
-  _navigating = false;
 }
