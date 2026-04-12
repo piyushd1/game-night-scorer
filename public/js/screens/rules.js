@@ -3,9 +3,9 @@
 // ═══════════════════════════════════════════
 
 import * as state from '../state.js';
-import * as fb from '../firebase.js';
 import * as router from '../router.js';
 import * as bottomNav from '../components/bottom-nav.js';
+import * as hostMenu from '../components/host-menu.js';
 import { getGame } from '../games/registry.js';
 
 let _unsubTab = null;
@@ -17,18 +17,8 @@ export function mount(container, params = {}) {
   topBar.style.display = 'flex';
   document.getElementById('top-bar-title').textContent = 'RULES';
   document.getElementById('top-bar-back').classList.add('hidden');
-
-  // Exit button so no user (host or viewer) gets trapped on the rules screen
-  const actionsEl = document.getElementById('top-bar-actions');
-  actionsEl.innerHTML = `
-    <button id="btn-leave-rules" class="icon-btn" title="Leave room">
-      <span class="material-symbols-outlined text-lg">logout</span>
-    </button>
-  `;
-  actionsEl.querySelector('#btn-leave-rules').addEventListener('click', () => {
-    fb.unwatchRoom();
-    router.navigate('home', {}, 'back');
-  });
+  hostMenu.hide();
+  hostMenu.renderTopBarActions(roomCode);
 
   bottomNav.show('rules');
 

@@ -7,6 +7,7 @@ import * as fb from '../firebase.js';
 import * as router from '../router.js';
 import * as toast from '../components/toast.js';
 import * as bottomNav from '../components/bottom-nav.js';
+import * as hostMenu from '../components/host-menu.js';
 import { getGame } from '../games/registry.js';
 import { ACCENT_COLORS } from '../state.js';
 
@@ -28,7 +29,8 @@ export function mount(container, params = {}) {
   topBar.style.display = 'flex';
   document.getElementById('top-bar-title').textContent = 'SCORING';
   document.getElementById('top-bar-back').classList.add('hidden');
-  document.getElementById('top-bar-actions').innerHTML = '';
+  hostMenu.hide();
+  hostMenu.renderTopBarActions(roomCode);
 
   bottomNav.show('scoring');
 

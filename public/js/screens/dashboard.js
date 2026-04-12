@@ -7,6 +7,7 @@ import * as fb from '../firebase.js';
 import * as router from '../router.js';
 import * as bottomNav from '../components/bottom-nav.js';
 import * as toast from '../components/toast.js';
+import * as hostMenu from '../components/host-menu.js';
 import { renderRow } from '../components/player-row.js';
 import { getGame } from '../games/registry.js';
 import { ACCENT_COLORS } from '../state.js';
@@ -87,11 +88,9 @@ function _render(container, roomCode) {
   // Title
   document.getElementById('top-bar-title').textContent = gameModule.label.toUpperCase();
 
-  // Top bar actions — room code + host menu
-  document.getElementById('top-bar-actions').innerHTML = `
-    <span class="font-mono text-[10px] text-outline border border-outline px-2 py-1">${roomCode}</span>
-    ${isHost ? `<button id="btn-host-menu" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 ml-1" style="font-size:22px">more_vert</button>` : `<button id="btn-viewer-leave" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 ml-1" style="font-size:22px" title="Leave room">door_open</button>`}
-  `;
+  // Top bar actions — shared host menu component
+  hostMenu.hide();
+  hostMenu.renderTopBarActions(roomCode);
 
   // Derive standings
   const standings = gameModule.deriveStandings(totals, playerIds, gameModule.winMode);
@@ -188,87 +187,11 @@ function _render(container, roomCode) {
     `;
   }
 
-  // Host menu (dropdown)
-  html += `
-    <div id="host-menu-dropdown" class="fixed inset-0 z-[90] pointer-events-none" style="display:none">
-      <div class="host-menu-backdrop absolute inset-0 pointer-events-all" style="background:transparent"></div>
-      <div class="absolute top-14 right-4 max-w-[250px] bg-surface-container-lowest border border-outline shadow-none z-[91] pointer-events-all">
-        <button class="menu-item w-full text-left px-4 py-3 font-headline font-bold text-xs uppercase tracking-widest hover:bg-surface-container-high transition-colors flex items-center gap-3 border-b border-outline-variant" data-action="new-game">
-          <span class="material-symbols-outlined text-sm">casino</span>
-          NEW GAME
-        </button>
-        <button class="menu-item w-full text-left px-4 py-3 font-headline font-bold text-xs uppercase tracking-widest hover:bg-surface-container-high transition-colors flex items-center gap-3 border-b border-outline-variant" data-action="lobby">
-          <span class="material-symbols-outlined text-sm">group</span>
-          MANAGE PLAYERS
-        </button>
-        <button class="menu-item w-full text-left px-4 py-3 font-headline font-bold text-xs uppercase tracking-widest hover:bg-surface-container-high transition-colors flex items-center gap-3 border-b border-outline-variant" data-action="end-game">
-          <span class="material-symbols-outlined text-sm">stop_circle</span>
-          END GAME
-        </button>
-        <button class="menu-item w-full text-left px-4 py-3 font-headline font-bold text-xs uppercase tracking-widest hover:bg-surface-container-high transition-colors flex items-center gap-3" data-action="home">
-          <span class="material-symbols-outlined text-sm">home</span>
-          LEAVE ROOM
-        </button>
-      </div>
-    </div>
-  `;
-
   content.innerHTML = html;
-
-  // Bind viewer leave button
-  const viewerLeaveBtn = document.getElementById('btn-viewer-leave');
-  if (viewerLeaveBtn) {
-    viewerLeaveBtn.addEventListener('click', () => {
-      fb.unwatchRoom();
-      router.navigate('home', {}, 'back');
-    });
-  }
 
   // Bind host actions
   if (isHost) {
     content.querySelector('#btn-undo')?.addEventListener('click', () => _undoRound(roomCode, game, gameModule));
-
-    // Host menu toggle
-    const menuBtn = document.getElementById('btn-host-menu');
-    const menuDropdown = content.querySelector('#host-menu-dropdown');
-    if (menuBtn && menuDropdown) {
-      menuBtn.addEventListener('click', () => {
-        const isOpen = menuDropdown.style.display !== 'none';
-        menuDropdown.style.display = isOpen ? 'none' : 'block';
-      });
-      menuDropdown.querySelector('.host-menu-backdrop')?.addEventListener('click', () => {
-        menuDropdown.style.display = 'none';
-      });
-    }
-
-    // Menu actions
-    content.querySelectorAll('.menu-item').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        menuDropdown.style.display = 'none';
-        const action = btn.dataset.action;
-        if (action === 'new-game') {
-          fb.setRoomStatus(roomCode, 'lobby');
-          router.navigate('game-select', { roomCode });
-        } else if (action === 'lobby') {
-          router.navigate('lobby', { roomCode });
-        } else if (action === 'end-game') {
-          _endGame(roomCode, game);
-        } else if (action === 'home') {
-          fb.unwatchRoom();
-          router.navigate('home', {}, 'back');
-        }
-      });
-    });
-  }
-}
-
-async function _endGame(roomCode, game) {
-  try {
-    await fb.setRoomStatus(roomCode, 'lobby');
-    toast.show('Game ended');
-    router.navigate('lobby', { roomCode });
-  } catch (e) {
-    toast.show('Failed to end game');
   }
 }
 

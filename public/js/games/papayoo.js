@@ -54,7 +54,7 @@ export default {
 
   // Called from scoring screen with round count
   checkEndWithRounds(totals, config, playerIds, roundCount) {
-    const roundLimit = config?.roundLimit || 5;
+    const roundLimit = parseInt(config?.roundLimit) || 5;
 
     if (roundCount < roundLimit) return { ended: false, winner: null, overtime: false };
 
