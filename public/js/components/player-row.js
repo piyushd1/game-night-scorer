@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════
 
 import { ACCENT_COLORS } from '../state.js';
+import { escapeHTML } from '../utils.js';
 
 /**
  * Renders a player row for the dashboard scoreboard.
@@ -48,7 +49,7 @@ export function renderRow({
       <div class="p-4 flex items-center gap-3">
         <div class="flex-1 min-w-0">
           <div class="flex items-baseline gap-2">
-            <p class="font-headline font-extrabold text-base uppercase truncate">${name}</p>
+            <p class="font-headline font-extrabold text-base uppercase truncate">${escapeHTML(name)}</p>
             <span class="font-mono text-[10px] text-outline uppercase shrink-0">${rankLabel}</span>
           </div>
           ${rounds.length > 0 ? `<div class="flex gap-1 mt-1 flex-wrap">${roundChips}</div>` : ''}

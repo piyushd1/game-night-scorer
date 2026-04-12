@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════
 
 import { ACCENT_COLORS } from '../state.js';
+import { escapeHTML } from '../utils.js';
 
 const SUITS = [
   { id: 'spades', label: 'Spades', icon: 'playing_cards' },
@@ -112,7 +113,7 @@ export default {
               <div class="h-[3px]" style="background:${color}"></div>
               <div class="p-4 flex items-center gap-3">
                 <div class="flex-1 min-w-0">
-                  <p class="font-headline font-extrabold text-sm uppercase truncate">${p.name || pid}</p>
+                  <p class="font-headline font-extrabold text-sm uppercase truncate">${escapeHTML(p.name || pid)}</p>
                   <p class="font-mono text-[10px] text-outline">${currentTotal} PTS</p>
                 </div>
                 <input

@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════
 
 import { ACCENT_COLORS } from '../state.js';
+import { escapeHTML } from '../utils.js';
 
 export default {
   id: 'cabo',
@@ -144,7 +145,7 @@ export default {
               <button
                 data-caller="${pid}"
                 class="caller-btn px-3 py-2 border border-outline-variant font-headline font-bold text-xs uppercase tracking-widest transition-colors hover:border-primary"
-              >${p.name || pid}</button>
+              >${escapeHTML(p.name || pid)}</button>
             `;
           }).join('')}
         </div>
@@ -172,7 +173,7 @@ export default {
               <div class="h-[3px]" style="background:${color}"></div>
               <div class="p-4 flex items-center gap-3">
                 <div class="flex-1 min-w-0">
-                  <p class="font-headline font-extrabold text-sm uppercase truncate">${p.name || pid}</p>
+                  <p class="font-headline font-extrabold text-sm uppercase truncate">${escapeHTML(p.name || pid)}</p>
                   <p class="font-mono text-[10px] text-outline">${currentTotal} PTS${currentTotal === 50 ? ' (RESET)' : ''}</p>
                 </div>
                 <input

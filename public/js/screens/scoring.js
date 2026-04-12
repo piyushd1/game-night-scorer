@@ -10,6 +10,7 @@ import * as bottomNav from '../components/bottom-nav.js';
 import * as hostMenu from '../components/host-menu.js';
 import { getGame } from '../games/registry.js';
 import { ACCENT_COLORS } from '../state.js';
+import { escapeHTML } from '../utils.js';
 
 export function mount(container, params = {}) {
   const roomCode = params.roomCode || state.get('roomCode');
@@ -100,7 +101,7 @@ function _render(container, roomCode) {
               <div class="flex items-center px-4 py-2 gap-3">
                 <div class="w-1 self-stretch shrink-0" style="background:${color}"></div>
                 <span class="font-mono text-[10px] text-outline w-6">${rankLabel}</span>
-                <span class="font-headline font-bold text-xs uppercase flex-1 truncate">${p.name || s.playerId}</span>
+                <span class="font-headline font-bold text-xs uppercase flex-1 truncate">${escapeHTML(p.name || s.playerId)}</span>
                 <span class="font-mono text-sm font-bold ${s.rank === 1 ? 'text-secondary' : ''}">${s.total}</span>
               </div>
             `;

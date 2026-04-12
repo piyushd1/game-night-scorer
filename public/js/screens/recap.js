@@ -7,6 +7,7 @@ import * as router from '../router.js';
 import * as bottomNav from '../components/bottom-nav.js';
 import { computeNightStats } from '../stats.js';
 import { ACCENT_COLORS } from '../state.js';
+import { escapeHTML } from '../utils.js';
 
 export function mount(container, params = {}) {
   const roomCode = params.roomCode || state.get('roomCode');
@@ -55,7 +56,7 @@ export function mount(container, params = {}) {
             <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">emoji_events</span>
             <span class="font-mono text-[10px] uppercase tracking-widest opacity-80">MOST VALUABLE PLAYER</span>
           </div>
-          <h3 class="font-headline font-black text-3xl uppercase tracking-tight">${mvp.name}</h3>
+          <h3 class="font-headline font-black text-3xl uppercase tracking-tight">${escapeHTML(mvp.name)}</h3>
           <p class="font-mono text-sm opacity-80 mt-1">${mvp.gamesWon} WIN${mvp.gamesWon > 1 ? 'S' : ''} / ${mvp.gamesPlayed} GAME${mvp.gamesPlayed > 1 ? 'S' : ''}</p>
         </div>
       `;
@@ -83,7 +84,7 @@ export function mount(container, params = {}) {
             <div class="grid grid-cols-12 items-center px-4 py-3 border-b border-outline-variant last:border-0 ${bgClass}">
               <div class="col-span-5 flex items-center gap-2">
                 <div class="w-1 h-6" style="background:${color}"></div>
-                <span class="font-headline font-bold text-xs uppercase truncate">${p.name}</span>
+                <span class="font-headline font-bold text-xs uppercase truncate">${escapeHTML(p.name)}</span>
                 ${stats.mvpId === p.playerId ? '<span class="font-mono text-[7px] bg-primary text-on-primary px-1 py-0.5 uppercase">MVP</span>' : ''}
               </div>
               <div class="col-span-2 font-mono text-sm text-center">${p.gamesPlayed}</div>
@@ -115,7 +116,7 @@ export function mount(container, params = {}) {
       html += `
         <div class="bg-surface-container-high border border-outline p-3 mb-3 flex items-center gap-3">
           <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">emoji_events</span>
-          <span class="font-headline font-bold text-sm uppercase">${w.name}</span>
+          <span class="font-headline font-bold text-sm uppercase">${escapeHTML(w.name)}</span>
           <span class="font-mono text-[10px] text-outline ml-auto">WINNER</span>
         </div>
       `;
@@ -140,7 +141,7 @@ export function mount(container, params = {}) {
           <div class="p-4">
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center gap-2">
-                <span class="font-headline font-extrabold text-sm uppercase">${ps.name}</span>
+                <span class="font-headline font-extrabold text-sm uppercase">${escapeHTML(ps.name)}</span>
                 <span class="font-mono text-[10px] text-outline">${_ordinal(ps.finalRank)}</span>
               </div>
               <span class="font-mono text-lg font-bold ${ps.isWinner ? 'text-secondary' : ''}">${ps.totalScore}</span>
