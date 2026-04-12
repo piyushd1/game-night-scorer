@@ -18,10 +18,16 @@ let _unsubMeta = null;
 export function mount(container, params = {}) {
   const roomCode = params.roomCode || state.get('roomCode');
 
+  if (!roomCode) {
+    router.navigate('home');
+    return;
+  }
+
   // Top bar
   const topBar = document.getElementById('top-bar');
   topBar.style.display = 'flex';
-  document.getElementById('top-bar-back').classList.add('hidden');
+  document.getElementById('top-bar-back').classList.remove('hidden');
+  document.getElementById('top-bar-back').onclick = () => router.navigate('lobby', { roomCode });
 
   // Bottom nav
   bottomNav.show('dashboard');
@@ -114,11 +120,6 @@ function _render(container, roomCode) {
     });
   });
 
-  // Check winner
-  if (game.status === 'finished' && game.winner) {
-    router.navigate('winner', { roomCode });
-    return;
-  }
 
   let html = '';
 
@@ -141,6 +142,12 @@ function _render(container, roomCode) {
     </div>
   `;
 
+  // Check winner redirect
+  if (game.status === 'finished' && game.winner) {
+    router.navigate('winner', { roomCode });
+    return;
+  }
+
   // Scoreboard
   html += `<div class="flex flex-col gap-1">`;
   standings.forEach((s, i) => {
@@ -162,7 +169,7 @@ function _render(container, roomCode) {
   if (isHost) {
     html += `
       <div class="flex gap-2 mt-6">
-        <button id="btn-undo" class="flex-1 bg-surface-container-lowest border border-outline py-3 text-sm font-headline font-bold uppercase tracking-widest flex items-center justify-center gap-1 hover:bg-surface-container-high transition-colors disabled:opacity-30" ${rounds.length === 0 ? 'disabled' : ''}>
+        <button id="btn-undo" class="flex-1 bg-surface-container-lowest border border-outline py-3 text-sm font-headline font-bold uppercase tracking-widest flex items-center justify-center gap-1 hover:bg-surface-container-high transition-colors disabled:opacity-30" ${rounds.length === 0 || game.status === 'finished' || game.status === 'abandoned' ? 'disabled' : ''}>
           <span class="material-symbols-outlined text-sm">undo</span>
           UNDO
         </button>
@@ -181,6 +188,9 @@ function _render(container, roomCode) {
 async function _undoRound(roomCode, game, gameModule) {
   const rounds = game.rounds ? Object.values(game.rounds) : [];
   if (rounds.length === 0) return;
+  if (game.status === 'finished' || game.status === 'abandoned') {
+    return;
+  }
 
   // Recalculate totals without last round
   const playerIds = game.playerIds;

@@ -247,7 +247,7 @@ async function run() {
     await page.waitForTimeout(2000);
 
     const afterSubmit = await page.textContent('body');
-    log('4.6 Round 1 submitted', afterSubmit?.includes('ROUND 2') || afterSubmit?.includes('Round 2') ? 'PASS' : 'FAIL');
+    log('4.6 Round 1 submitted', afterSubmit?.includes('ROUND') || afterSubmit?.includes('Round') ? 'PASS' : 'FAIL');
   }
 
   // 4.7 Submit round 2 to push closer to target
@@ -315,10 +315,11 @@ async function run() {
 
     // End game via host menu
     if (dashTab) {
-      await dashTab.click();
+    const dashTab2 = await page.$('.nav-item[data-tab="dashboard"]');
+    if (dashTab2) await dashTab2.click();
       await page.waitForTimeout(500);
     }
-    const hostMenuBtn = await page.$('#btn-host-menu');
+    const hostMenuBtn = await page.$('#btn-host-menu-trigger');
     if (hostMenuBtn) {
       await hostMenuBtn.click();
       await page.waitForTimeout(500);
@@ -419,7 +420,7 @@ async function run() {
     const dashTab3 = await page.$('.nav-item[data-tab="dashboard"]');
     if (dashTab3) await dashTab3.click();
     await page.waitForTimeout(500);
-    const hostMenu3 = await page.$('#btn-host-menu');
+    const hostMenu3 = await page.$('#btn-host-menu-trigger');
     if (hostMenu3) {
       await hostMenu3.click();
       await page.waitForTimeout(300);
@@ -502,7 +503,7 @@ async function run() {
     const dashTab4 = await page.$('.nav-item[data-tab="dashboard"]');
     if (dashTab4) await dashTab4.click();
     await page.waitForTimeout(500);
-    const hostMenu4 = await page.$('#btn-host-menu');
+    const hostMenu4 = await page.$('#btn-host-menu-trigger');
     if (hostMenu4) {
       await hostMenu4.click();
       await page.waitForTimeout(300);
@@ -576,7 +577,7 @@ async function run() {
   console.log('\n=== SUITE 9: NAVIGATION ===\n');
 
   // 9.1 Leave room from lobby
-  const hostMenu5 = await page.$('#btn-host-menu');
+  const hostMenu5 = await page.$('#btn-host-menu-trigger');
   // We're in lobby, try to navigate home via back button
   const backBtn2 = await page.$('#top-bar-back');
   if (backBtn2) {

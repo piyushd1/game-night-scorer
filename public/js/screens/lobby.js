@@ -275,6 +275,10 @@ function _startWatching(roomCode, container) {
         btn.querySelector('.material-symbols-outlined')?.remove();
         btn.disabled = false;
         hint.textContent = '';
+      } else if (meta.status === 'lobby') {
+        btn.innerHTML = 'CHOOSE GAME <span class="material-symbols-outlined text-lg">arrow_forward</span>';
+        btn.disabled = activeCount < 2;
+        hint.textContent = activeCount < 2 ? 'ADD AT LEAST 2 PLAYERS' : `${activeCount} PLAYERS READY`;
       } else {
         hint.textContent = activeCount < 2 ? 'ADD AT LEAST 2 PLAYERS' : `${activeCount} PLAYERS READY`;
       }

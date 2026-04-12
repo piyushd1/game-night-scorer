@@ -1,0 +1,25 @@
+--- test-automation.mjs
++++ test-automation.mjs
+@@ -419,7 +419,7 @@
+     const dashTab3 = await page.$('.nav-item[data-tab="dashboard"]');
+     if (dashTab3) await dashTab3.click();
+     await page.waitForTimeout(500);
+-    const hostMenu3 = await page.$('#btn-host-menu');
++    const hostMenu3 = await page.$('#btn-host-menu-trigger');
+     if (hostMenu3) {
+       await hostMenu3.click();
+@@ -502,7 +502,7 @@
+     const dashTab4 = await page.$('.nav-item[data-tab="dashboard"]');
+     if (dashTab4) await dashTab4.click();
+     await page.waitForTimeout(500);
+-    const hostMenu4 = await page.$('#btn-host-menu');
++    const hostMenu4 = await page.$('#btn-host-menu-trigger');
+     if (hostMenu4) {
+       await hostMenu4.click();
+@@ -576,7 +576,7 @@
+   console.log('\n=== SUITE 9: NAVIGATION ===\n');
+
+   // 9.1 Leave room from lobby
+-  const hostMenu5 = await page.$('#btn-host-menu');
++  const hostMenu5 = await page.$('#btn-host-menu-trigger');
+   // We're in lobby, try to navigate home via back button

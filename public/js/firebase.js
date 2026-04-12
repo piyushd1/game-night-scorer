@@ -202,6 +202,11 @@ export async function undoLastRound(roomCode, gameId, newTotals, prevStatus, ove
   const game = state.get('games')?.[gameId];
   if (!game || !game.rounds) return;
 
+  // Do not allow undo if game is finished or abandoned.
+  if (game.status === 'finished' || game.status === 'abandoned') {
+    return;
+  }
+
   const roundKeys = Object.keys(game.rounds);
   if (roundKeys.length === 0) return;
 
