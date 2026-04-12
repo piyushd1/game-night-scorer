@@ -4,14 +4,15 @@ import { submitFlip7Round } from './helpers/scoring.js';
 import { expectOnScreen } from './helpers/assertions.js';
 
 test.describe('Viewer', () => {
-  test('viewer joins room and sees spectator mode', async ({ page, context }) => {
+  test('viewer joins room and sees spectator mode', async ({ page, browser }) => {
     // Host creates room
     await page.goto('/');
     await createRoomAndAddPlayers(page, ['ALICE', 'BOB']);
     const roomCode = await getRoomCode(page);
 
-    // Viewer joins
-    const viewer = await context.newPage();
+    // Viewer joins in separate context (separate localStorage)
+    const viewerContext = await browser.newContext();
+    const viewer = await viewerContext.newPage();
     await viewer.goto(`/?room=${roomCode}`);
     await viewer.waitForSelector('#screen-lobby', { timeout: 15000 });
 
@@ -19,29 +20,35 @@ test.describe('Viewer', () => {
     await expect(viewer.locator('#viewer-label')).toBeVisible();
     const viewerText = await viewer.locator('#viewer-label').textContent();
     expect(viewerText.toUpperCase()).toContain('SPECTATOR');
+
+    await viewerContext.close();
   });
 
-  test('viewer does not see host controls', async ({ page, context }) => {
+  test('viewer does not see host controls', async ({ page, browser }) => {
     await page.goto('/');
     await createRoomAndAddPlayers(page, ['ALICE', 'BOB']);
     const roomCode = await getRoomCode(page);
 
-    const viewer = await context.newPage();
+    const viewerContext = await browser.newContext();
+    const viewer = await viewerContext.newPage();
     await viewer.goto(`/?room=${roomCode}`);
     await viewer.waitForSelector('#screen-lobby', { timeout: 15000 });
 
     // Host controls should be hidden
     await expect(viewer.locator('#host-controls')).toBeHidden();
     await expect(viewer.locator('#start-section')).toBeHidden();
+
+    await viewerContext.close();
   });
 
-  test('viewer auto-navigated to dashboard when game starts', async ({ page, context }) => {
+  test('viewer auto-navigated to dashboard when game starts', async ({ page, browser }) => {
     await page.goto('/');
     await createRoomAndAddPlayers(page, ['ALICE', 'BOB']);
     const roomCode = await getRoomCode(page);
 
-    // Viewer joins lobby
-    const viewer = await context.newPage();
+    // Viewer joins lobby in separate context
+    const viewerContext = await browser.newContext();
+    const viewer = await viewerContext.newPage();
     await viewer.goto(`/?room=${roomCode}`);
     await viewer.waitForSelector('#screen-lobby', { timeout: 15000 });
 
@@ -52,15 +59,18 @@ test.describe('Viewer', () => {
     // Viewer should auto-navigate to dashboard
     await viewer.waitForSelector('#screen-dashboard', { timeout: 15000 });
     await expectOnScreen(viewer, 'dashboard');
+
+    await viewerContext.close();
   });
 
-  test('viewer sees live score updates', async ({ page, context }) => {
+  test('viewer sees live score updates', async ({ page, browser }) => {
     await page.goto('/');
     await createRoomAndAddPlayers(page, ['ALICE', 'BOB']);
     const roomCode = await getRoomCode(page);
 
-    // Viewer joins
-    const viewer = await context.newPage();
+    // Viewer joins in separate context
+    const viewerContext = await browser.newContext();
+    const viewer = await viewerContext.newPage();
     await viewer.goto(`/?room=${roomCode}`);
     await viewer.waitForSelector('#screen-lobby', { timeout: 15000 });
 
@@ -82,5 +92,7 @@ test.describe('Viewer', () => {
       },
       { timeout: 10000 }
     );
+
+    await viewerContext.close();
   });
 });

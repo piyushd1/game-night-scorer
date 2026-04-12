@@ -9,6 +9,6 @@
     "verify-deploy": "node scripts/verify-deploy.mjs"
   },
   "devDependencies": {
-    "playwright": "^1.52.0"
+    "@playwright/test": "^1.52.0"
   }
 }

@@ -9,13 +9,13 @@ test.describe('Papayoo', () => {
     await fullGameSetup(page, ['ALICE', 'BOB', 'CHARLIE'], 'papayoo', { roundLimit: 2 });
 
     // Round 1: penalties sum to 250
-    await submitPapayooRound(page, 'hearts', [100, 100, 50]);
+    await submitPapayooRound(page, 'hearts', [50, 100, 100]);
     await expectOnScreen(page, 'dashboard');
 
     // Round 2: penalties sum to 250
     await submitPapayooRound(page, 'spades', [50, 100, 100]);
 
-    // Should navigate to winner — ALICE has lowest (100+50=150)
+    // Should navigate to winner — ALICE has lowest (50+50=100), no tie
     await page.waitForSelector('#screen-winner', { timeout: 10000 });
     await expectOnScreen(page, 'winner');
     const winnerText = await page.locator('#screen-winner').textContent();

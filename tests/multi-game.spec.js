@@ -13,13 +13,9 @@ test.describe('Multi-Game Night', () => {
     await page.waitForSelector('#screen-winner', { timeout: 10000 });
 
     // Click "Choose New Game" from winner screen
-    const newGameBtn = page.locator('button', { hasText: /CHOOSE NEW GAME|NEW GAME/i });
-    if (await newGameBtn.isVisible()) {
-      await newGameBtn.click();
-      // Should go to game select
-      await page.waitForSelector('#screen-game-select', { timeout: 5000 });
-      await expectOnScreen(page, 'game-select');
-    }
+    await page.click('#btn-new-game');
+    await page.waitForSelector('#screen-game-select', { timeout: 5000 });
+    await expectOnScreen(page, 'game-select');
   });
 
   test('replay same game type works', async ({ page }) => {
@@ -31,13 +27,9 @@ test.describe('Multi-Game Night', () => {
     await page.waitForSelector('#screen-winner', { timeout: 10000 });
 
     // Click REPLAY
-    const replayBtn = page.locator('button', { hasText: /REPLAY/i });
-    if (await replayBtn.isVisible()) {
-      await replayBtn.click();
-      // Should go to dashboard with fresh scores
-      await page.waitForSelector('#screen-dashboard', { timeout: 10000 });
-      await expectOnScreen(page, 'dashboard');
-    }
+    await page.click('#btn-replay');
+    await page.waitForSelector('#screen-dashboard', { timeout: 10000 });
+    await expectOnScreen(page, 'dashboard');
   });
 
   test('manual end game via host menu returns to lobby', async ({ page }) => {
