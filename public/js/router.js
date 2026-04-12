@@ -7,7 +7,7 @@ let _currentId = null;
 let _container = null;
 let _direction = 'forward';
 const _history = [];
-// no re-entrancy guard — screens may redirect in mount()
+let _lastRenderTime = 0;
 
 export function registerScreen(id, { mount, unmount }) {
   _screens.set(id, { mount, unmount });
@@ -58,7 +58,10 @@ function _renderScreen(screenId, params = {}) {
     return;
   }
 
-  // Screens may call navigate() inside mount() for redirects — that's OK
+  // Debounce: skip if same screen rendered within 100ms (hashchange race)
+  const now = Date.now();
+  if (screenId === _currentId && now - _lastRenderTime < 100) return;
+  _lastRenderTime = now;
 
   // Unmount current screen
   if (_currentId) {
