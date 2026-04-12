@@ -9,6 +9,7 @@ import * as bottomNav from '../components/bottom-nav.js';
 import { getGame } from '../games/registry.js';
 import { ACCENT_COLORS } from '../state.js';
 import { show as toast } from '../components/toast.js';
+import { escapeHTML } from '../utils.js';
 
 export function mount(container, params = {}) {
   const roomCode = params.roomCode || state.get('roomCode');
@@ -43,7 +44,7 @@ export function mount(container, params = {}) {
             <span class="font-mono text-sm uppercase tracking-widest opacity-80">WINNER</span>
           </div>
 
-          <h1 class="font-headline font-black text-[48px] uppercase tracking-tight leading-none mb-4 truncate">${winner.name || 'UNKNOWN'}</h1>
+          <h1 class="font-headline font-black text-[48px] uppercase tracking-tight leading-none mb-4 truncate">${escapeHTML(winner.name || 'UNKNOWN')}</h1>
 
           <div class="font-mono text-[72px] font-bold leading-none tracking-tighter">
             ${winnerTotal}
@@ -59,7 +60,7 @@ export function mount(container, params = {}) {
               <div class="flex justify-between items-center py-2 border-b border-white/20">
                 <div class="flex items-center gap-3">
                   <span class="font-mono text-sm opacity-50 w-6 text-center">${s.rank}</span>
-                  <span class="font-headline font-bold text-lg uppercase">${p.name || s.playerId}</span>
+                  <span class="font-headline font-bold text-lg uppercase">${escapeHTML(p.name || s.playerId)}</span>
                 </div>
                 <span class="font-mono text-xl font-bold">${s.total}</span>
               </div>

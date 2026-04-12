@@ -8,6 +8,7 @@ import * as router from '../router.js';
 import * as toast from '../components/toast.js';
 import * as bottomNav from '../components/bottom-nav.js';
 import { ACCENT_COLORS } from '../state.js';
+import { escapeHTML } from '../utils.js';
 
 let _unsub = null;
 
@@ -308,24 +309,24 @@ function _renderPlayers(container, players, isHost, roomCode) {
           <div class="w-1.5 self-stretch" style="background:${color}"></div>
           <div class="flex-1 p-4 flex items-center gap-3">
             <div class="w-10 h-10 border border-outline flex items-center justify-center font-mono font-bold text-sm" style="border-top: 3px solid ${color}">
-              ${p.name.substring(0, 2)}
+              ${escapeHTML(p.name.substring(0, 2))}
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2">
-                <p class="font-headline font-extrabold text-sm uppercase truncate">${p.name}</p>
+                <p class="font-headline font-extrabold text-sm uppercase truncate">${escapeHTML(p.name)}</p>
                 ${isHostPlayer ? '<span class="font-mono text-[8px] bg-primary text-on-primary px-1.5 py-0.5 uppercase tracking-widest shrink-0">HOST</span>' : ''}
               </div>
               <p class="font-mono text-[10px] text-outline uppercase">${p.isActive ? 'ACTIVE' : 'INACTIVE'}</p>
             </div>
             ${isHost ? `
               <div class="flex gap-1">
-                <button class="player-set-host p-1.5 hover:bg-surface-container-high transition-colors ${isHostPlayer ? 'opacity-30' : ''}" data-id="${p.id}" title="Set as host player" aria-label="Set ${p.name} as host player">
+                <button class="player-set-host p-1.5 hover:bg-surface-container-high transition-colors ${isHostPlayer ? 'opacity-30' : ''}" data-id="${p.id}" title="Set as host player" aria-label="Set ${escapeHTML(p.name)} as host player">
                   <span class="material-symbols-outlined text-sm">${isHostPlayer ? 'shield_person' : 'person'}</span>
                 </button>
-                <button class="player-toggle p-1.5 hover:bg-surface-container-high transition-colors" data-id="${p.id}" data-active="${p.isActive}" title="${p.isActive ? 'Deactivate' : 'Activate'}" aria-label="${p.isActive ? 'Deactivate' : 'Activate'} ${p.name}">
+                <button class="player-toggle p-1.5 hover:bg-surface-container-high transition-colors" data-id="${p.id}" data-active="${p.isActive}" title="${p.isActive ? 'Deactivate' : 'Activate'}" aria-label="${p.isActive ? 'Deactivate' : 'Activate'} ${escapeHTML(p.name)}">
                   <span class="material-symbols-outlined text-sm">${p.isActive ? 'person_off' : 'person_add'}</span>
                 </button>
-                <button class="player-remove p-1.5 hover:bg-surface-container-high transition-colors" data-id="${p.id}" title="Remove" aria-label="Remove ${p.name}">
+                <button class="player-remove p-1.5 hover:bg-surface-container-high transition-colors" data-id="${p.id}" title="Remove" aria-label="Remove ${escapeHTML(p.name)}">
                   <span class="material-symbols-outlined text-sm text-error">close</span>
                 </button>
               </div>
