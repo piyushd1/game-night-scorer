@@ -118,7 +118,7 @@ export function mount(container, params = {}) {
     });
 
     container.querySelector('#btn-new-game')?.addEventListener('click', async () => {
-      await fb.setRoomStatus(roomCode, 'lobby');
+      await fb.updateRoomMeta(roomCode, { status: 'lobby', activeGameId: null });
       router.navigate('game-select', { roomCode });
     });
   } else {
