@@ -23,6 +23,9 @@ export default {
       if (!draft.entries[pid] || draft.entries[pid].cardTotal === undefined) {
         return { valid: false, error: `Enter card total for all players` };
       }
+      if ((draft.entries[pid].cardTotal || 0) < 0) {
+        return { valid: false, error: 'Card totals cannot be negative' };
+      }
     }
 
     return { valid: true };

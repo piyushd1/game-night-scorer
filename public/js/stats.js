@@ -192,6 +192,7 @@ function _computeGameSpecificStats(game, gameModule, rounds, playerIds, snapshot
         let roundPts = 0;
         if (rnd.kamikaze) {
           roundPts = isCaller ? 0 : 50;
+          if (isCaller) successfulCabos++;
         } else {
           const allTotals = Object.entries(rnd.entries).map(([id, e]) => e.cardTotal || 0);
           const minCard = Math.min(...allTotals);

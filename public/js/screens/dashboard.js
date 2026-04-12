@@ -12,6 +12,9 @@ import { renderRow } from '../components/player-row.js';
 import { getGame } from '../games/registry.js';
 import { ACCENT_COLORS } from '../state.js';
 
+let _unsubGames = null;
+let _unsubMeta = null;
+
 export function mount(container, params = {}) {
   const roomCode = params.roomCode || state.get('roomCode');
 
@@ -27,8 +30,8 @@ export function mount(container, params = {}) {
 
   // Watch for state changes
   const renderHandler = () => _render(container, roomCode);
-  state.on('games', renderHandler);
-  state.on('roomMeta', renderHandler);
+  _unsubGames = state.on('games', renderHandler);
+  _unsubMeta = state.on('roomMeta', renderHandler);
 
   // Ensure room is being watched
   if (!state.get('roomCode')) {
@@ -42,7 +45,12 @@ export function mount(container, params = {}) {
   _render(container, roomCode);
 }
 
-export function unmount() {}
+export function unmount() {
+  if (_unsubGames) _unsubGames();
+  _unsubGames = null;
+  if (_unsubMeta) _unsubMeta();
+  _unsubMeta = null;
+}
 
 function _render(container, roomCode) {
   const content = container.querySelector('#dash-content');
