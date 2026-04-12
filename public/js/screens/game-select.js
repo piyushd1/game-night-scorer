@@ -137,7 +137,10 @@ function _renderConfig(container) {
       <p class="font-mono text-[10px] uppercase tracking-widest text-outline mb-4">GAME SETTINGS</p>
       ${game.configFields.map((f) => `
         <div class="flex items-center justify-between py-3 border-b border-outline-variant last:border-0">
-          <label class="font-headline font-bold text-sm uppercase">${f.label}</label>
+          <div>
+            <label class="font-headline font-bold text-sm uppercase block">${f.label}</label>
+            <span class="font-mono text-[9px] text-outline">MIN ${f.min || 1}</span>
+          </div>
           <input
             type="number"
             id="config-${f.key}"

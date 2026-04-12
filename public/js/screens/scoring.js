@@ -11,14 +11,9 @@ import * as hostMenu from '../components/host-menu.js';
 import { getGame } from '../games/registry.js';
 import { ACCENT_COLORS } from '../state.js';
 
-let _unsubTab = null;
-
 export function mount(container, params = {}) {
   const roomCode = params.roomCode || state.get('roomCode');
 
-  // Robust host guard: if room meta hasn't loaded yet the user shouldn't be
-  // on the scoring screen at all — redirect to dashboard where the watcher
-  // will sort things out.  Once meta IS loaded, check the real isHost flag.
   const meta = state.get('roomMeta');
   if (!meta || !state.isHost()) {
     router.navigate('dashboard', { roomCode });
@@ -34,18 +29,10 @@ export function mount(container, params = {}) {
 
   bottomNav.show('scoring');
 
-  _unsubTab = state.on('activeTab', (tab) => {
-    if (tab === 'dashboard') router.navigate('dashboard', { roomCode });
-    else if (tab === 'rules') router.navigate('rules', { roomCode });
-  });
-
   _render(container, roomCode);
 }
 
-export function unmount() {
-  if (_unsubTab) _unsubTab();
-  _unsubTab = null;
-}
+export function unmount() {}
 
 function _render(container, roomCode) {
   const game = state.currentGame();

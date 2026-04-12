@@ -55,16 +55,15 @@ function render() {
     )
     .join('');
 
-  // Bind clicks
+  // Direct routing on click — no state indirection
   nav.querySelectorAll('.nav-item').forEach((el) => {
     el.addEventListener('click', () => {
       const tabId = el.dataset.tab;
-      if (tabId !== _activeTab) {
-        _activeTab = tabId;
-        render();
-        // Emit tab change event
-        state.set('activeTab', tabId);
-      }
+      if (tabId === _activeTab) return;
+      _activeTab = tabId;
+      render();
+      const roomCode = state.get('roomCode');
+      router.navigate(tabId, { roomCode });
     });
   });
 }

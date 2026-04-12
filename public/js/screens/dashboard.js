@@ -12,8 +12,6 @@ import { renderRow } from '../components/player-row.js';
 import { getGame } from '../games/registry.js';
 import { ACCENT_COLORS } from '../state.js';
 
-let _unsubTab = null;
-
 export function mount(container, params = {}) {
   const roomCode = params.roomCode || state.get('roomCode');
 
@@ -24,12 +22,6 @@ export function mount(container, params = {}) {
 
   // Bottom nav
   bottomNav.show('dashboard');
-
-  // Listen for tab changes
-  _unsubTab = state.on('activeTab', (tab) => {
-    if (tab === 'rules') router.navigate('rules', { roomCode });
-    else if (tab === 'scoring') router.navigate('scoring', { roomCode });
-  });
 
   container.innerHTML = `<div id="dash-content" class="p-6 pb-8"></div>`;
 
@@ -50,10 +42,7 @@ export function mount(container, params = {}) {
   _render(container, roomCode);
 }
 
-export function unmount() {
-  if (_unsubTab) _unsubTab();
-  _unsubTab = null;
-}
+export function unmount() {}
 
 function _render(container, roomCode) {
   const content = container.querySelector('#dash-content');
