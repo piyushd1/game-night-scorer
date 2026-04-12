@@ -25,19 +25,19 @@ export function init() {
 
   // Bind menu actions
   overlay.querySelectorAll('.host-menu-action').forEach((btn) => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       hide();
       const action = btn.dataset.action;
       const roomCode = state.get('roomCode');
 
       if (action === 'new-game') {
         // The room activeGameId should also be cleared to ensure it goes back to a clean state.
-        fb.updateRoomMeta(roomCode, { status: 'lobby', activeGameId: null });
+        await fb.updateRoomMeta(roomCode, { status: 'lobby', activeGameId: null });
         router.navigate('game-select', { roomCode });
       } else if (action === 'lobby') {
         router.navigate('lobby', { roomCode });
       } else if (action === 'end-game') {
-        _endGameWithWinner(roomCode);
+        await _endGameWithWinner(roomCode);
         router.navigate('lobby', { roomCode });
       } else if (action === 'home') {
         fb.unwatchRoom();

@@ -101,7 +101,6 @@ export function watchRoom(roomCode, onUpdate) {
     state.set('games', data.games || {});
     state.set('roomCode', roomCode);
 
-'watchRoom', data);
     onUpdate(data);
   });
 
