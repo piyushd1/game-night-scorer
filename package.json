@@ -1,0 +1,14 @@
+{
+  "name": "game-night-scorer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:headed": "npx playwright test --headed",
+    "test:debug": "npx playwright test --debug",
+    "verify-deploy": "node scripts/verify-deploy.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.52.0"
+  }
+}

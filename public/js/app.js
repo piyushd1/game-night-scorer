@@ -6,6 +6,7 @@ import { initFirebase } from './firebase.js';
 import * as router from './router.js';
 import * as state from './state.js';
 import * as fb from './firebase.js';
+import './debug.js'; // staging only — debug panel + logging hooks
 
 // ── Firebase Config ──
 // Replace with your Firebase project config
