@@ -54,20 +54,14 @@ function _render(container, roomCode) {
     return;
   }
 
-  // If game is finished, redirect to winner
-  if (game.status === 'finished' && game.winner) {
-    router.navigate('winner', { roomCode });
+  // Guard: don't allow scoring on a finished game
+  if (game.status === 'finished') {
+    router.navigate(game.winner ? 'winner' : 'dashboard', { roomCode });
     return;
   }
 
   const gameModule = getGame(game.type);
   if (!gameModule) return;
-
-  // Guard: don't allow scoring on a finished game
-  if (game.status === 'finished') {
-    router.navigate('winner', { roomCode });
-    return;
-  }
 
   const snapshot = game.playerSnapshot || {};
   const totals = game.totals || {};
