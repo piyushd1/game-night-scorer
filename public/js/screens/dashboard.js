@@ -87,9 +87,10 @@ function _render(container, roomCode) {
   // Title
   document.getElementById('top-bar-title').textContent = gameModule.label.toUpperCase();
 
-  // Room code in top bar actions
+  // Top bar actions — room code + host menu
   document.getElementById('top-bar-actions').innerHTML = `
     <span class="font-mono text-[10px] text-outline border border-outline px-2 py-1">${roomCode}</span>
+    ${isHost ? `<button id="btn-host-menu" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 ml-1" style="font-size:22px">more_vert</button>` : ''}
   `;
 
   // Derive standings
@@ -190,12 +191,77 @@ function _render(container, roomCode) {
     `;
   }
 
+  // Host menu (dropdown)
+  html += `
+    <div id="host-menu-dropdown" class="fixed inset-0 z-[90] pointer-events-none" style="display:none">
+      <div class="host-menu-backdrop absolute inset-0 pointer-events-all" style="background:transparent"></div>
+      <div class="absolute top-14 right-4 max-w-[250px] bg-surface-container-lowest border border-outline shadow-none z-[91] pointer-events-all">
+        <button class="menu-item w-full text-left px-4 py-3 font-headline font-bold text-xs uppercase tracking-widest hover:bg-surface-container-high transition-colors flex items-center gap-3 border-b border-outline-variant" data-action="new-game">
+          <span class="material-symbols-outlined text-sm">casino</span>
+          NEW GAME
+        </button>
+        <button class="menu-item w-full text-left px-4 py-3 font-headline font-bold text-xs uppercase tracking-widest hover:bg-surface-container-high transition-colors flex items-center gap-3 border-b border-outline-variant" data-action="lobby">
+          <span class="material-symbols-outlined text-sm">group</span>
+          MANAGE PLAYERS
+        </button>
+        <button class="menu-item w-full text-left px-4 py-3 font-headline font-bold text-xs uppercase tracking-widest hover:bg-surface-container-high transition-colors flex items-center gap-3 border-b border-outline-variant" data-action="end-game">
+          <span class="material-symbols-outlined text-sm">stop_circle</span>
+          END GAME
+        </button>
+        <button class="menu-item w-full text-left px-4 py-3 font-headline font-bold text-xs uppercase tracking-widest hover:bg-surface-container-high transition-colors flex items-center gap-3" data-action="home">
+          <span class="material-symbols-outlined text-sm">home</span>
+          LEAVE ROOM
+        </button>
+      </div>
+    </div>
+  `;
+
   content.innerHTML = html;
 
   // Bind host actions
   if (isHost) {
     content.querySelector('#btn-undo')?.addEventListener('click', () => _undoRound(roomCode, game, gameModule));
-    content.querySelector('#btn-manage')?.addEventListener('click', () => router.navigate('lobby', { roomCode }));
+
+    // Host menu toggle
+    const menuBtn = document.getElementById('btn-host-menu');
+    const menuDropdown = content.querySelector('#host-menu-dropdown');
+    if (menuBtn && menuDropdown) {
+      menuBtn.addEventListener('click', () => {
+        const isOpen = menuDropdown.style.display !== 'none';
+        menuDropdown.style.display = isOpen ? 'none' : 'block';
+      });
+      menuDropdown.querySelector('.host-menu-backdrop')?.addEventListener('click', () => {
+        menuDropdown.style.display = 'none';
+      });
+    }
+
+    // Menu actions
+    content.querySelectorAll('.menu-item').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        menuDropdown.style.display = 'none';
+        const action = btn.dataset.action;
+        if (action === 'new-game') {
+          router.navigate('game-select', { roomCode });
+        } else if (action === 'lobby') {
+          router.navigate('lobby', { roomCode });
+        } else if (action === 'end-game') {
+          _endGame(roomCode, game);
+        } else if (action === 'home') {
+          fb.unwatchRoom();
+          router.navigate('home', {}, 'back');
+        }
+      });
+    });
+  }
+}
+
+async function _endGame(roomCode, game) {
+  try {
+    await fb.setRoomStatus(roomCode, 'lobby');
+    toast.show('Game ended');
+    router.navigate('lobby', { roomCode });
+  } catch (e) {
+    toast.show('Failed to end game');
   }
 }
 
