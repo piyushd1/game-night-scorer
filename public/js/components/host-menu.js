@@ -80,8 +80,8 @@ export function renderTopBarActions(roomCode) {
   actionsEl.innerHTML = `
     <span class="font-mono text-[10px] text-outline border border-outline px-2 py-1">${roomCode}</span>
     ${isHost
-      ? `<button id="btn-host-menu-trigger" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 ml-1" style="font-size:22px">more_vert</button>`
-      : `<button id="btn-viewer-leave" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 ml-1" style="font-size:22px" title="Leave room">logout</button>`
+      ? `<button id="btn-host-menu-trigger" aria-label="Open host menu" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 ml-1" style="font-size:22px">more_vert</button>`
+      : `<button id="btn-viewer-leave" aria-label="Leave room" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 ml-1" style="font-size:22px" title="Leave room">logout</button>`
     }
   `;
 
