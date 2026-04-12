@@ -228,3 +228,21 @@ export async function updateRoomMeta(roomCode, updates) {
   if (!db) return;
   await db.ref(`rooms/${roomCode}/meta`).update({ ...updates, updatedAt: Date.now() });
 }
+
+export async function submitGameEnd(roomCode, gameId, winnerId) {
+  if (!db) return;
+  await db.ref(`rooms/${roomCode}/games/${gameId}`).update({
+    status: 'finished',
+    winner: winnerId,
+    finishedAt: Date.now(),
+  });
+}
+
+export async function submitGameAbandon(roomCode, gameId) {
+  if (!db) return;
+  await db.ref(`rooms/${roomCode}/games/${gameId}`).update({
+    status: 'abandoned',
+    winner: null,
+    finishedAt: Date.now(),
+  });
+}

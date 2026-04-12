@@ -22,7 +22,7 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: env(safe-area-inset-bottom, 0);
+  padding-bottom: calc(80px + env(safe-area-inset-bottom, 0));
 }
 
 .screen.active {

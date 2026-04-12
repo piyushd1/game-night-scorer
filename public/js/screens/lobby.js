@@ -359,6 +359,11 @@ function _renderPlayers(container, players, isHost, roomCode) {
     list.querySelectorAll('.player-toggle').forEach((btn) => {
       btn.addEventListener('click', () => {
         const id = btn.dataset.id;
+        const meta = state.get('roomMeta') || {};
+        if (id === meta.hostPlayerId) {
+          toast.show('Cannot deactivate host player');
+          return;
+        }
         const isActive = btn.dataset.active === 'true';
         fb.updatePlayer(roomCode, id, { isActive: !isActive });
       });
@@ -367,6 +372,11 @@ function _renderPlayers(container, players, isHost, roomCode) {
     list.querySelectorAll('.player-remove').forEach((btn) => {
       btn.addEventListener('click', () => {
         const id = btn.dataset.id;
+        const meta = state.get('roomMeta') || {};
+        if (id === meta.hostPlayerId) {
+          toast.show('Cannot remove host player');
+          return;
+        }
         fb.removePlayer(roomCode, id);
       });
     });

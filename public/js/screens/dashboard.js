@@ -126,7 +126,7 @@ function _render(container, roomCode) {
   let html = '';
 
   // Overtime banner
-  if (game.overtime || game.status === 'overtime') {
+  if (game.status === 'overtime') {
     html += `<div class="overtime-banner mb-4">TIE-BREAKER / OVERTIME</div>`;
   }
 

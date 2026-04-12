@@ -8,6 +8,7 @@ import * as state from '../state.js';
 import * as fb from '../firebase.js';
 import * as router from '../router.js';
 import * as toast from './toast.js';
+import { getGame } from '../games/registry.js';
 
 let _bound = false;
 
@@ -35,8 +36,7 @@ export function init() {
       } else if (action === 'lobby') {
         router.navigate('lobby', { roomCode });
       } else if (action === 'end-game') {
-        fb.setRoomStatus(roomCode, 'lobby');
-        toast.show('Game ended');
+        _endGameWithWinner(roomCode);
         router.navigate('lobby', { roomCode });
       } else if (action === 'home') {
         fb.unwatchRoom();
@@ -98,4 +98,45 @@ export function renderTopBarActions(roomCode) {
       router.navigate('home', {}, 'back');
     });
   }
+}
+
+async function _endGameWithWinner(roomCode) {
+  const game = state.currentGame();
+  if (!game) {
+    fb.setRoomStatus(roomCode, 'lobby');
+    toast.show('Game ended');
+    return;
+  }
+
+  const gameModule = getGame(game.type);
+  const totals = game.totals || {};
+  const playerIds = game.playerIds || [];
+  const rounds = Object.keys(game.rounds || {}).length;
+
+  // If no rounds played, just abandon
+  if (rounds === 0 || !gameModule) {
+    fb.setRoomStatus(roomCode, 'lobby');
+    toast.show('Game ended');
+    return;
+  }
+
+  // Compute standings to find if there's a clear leader
+  const standings = gameModule.deriveStandings(totals, playerIds, gameModule.winMode);
+  const rank1Players = standings.filter((s) => s.rank === 1);
+
+  if (rank1Players.length === 1) {
+    // Clear leader — set them as winner, mark game finished
+    await fb.submitGameEnd(roomCode, game.gameId, rank1Players[0].playerId);
+    toast.show(`Game ended — ${_winnerName(game, rank1Players[0].playerId)} wins`);
+  } else {
+    // Tied or inconclusive — mark as abandoned
+    await fb.submitGameAbandon(roomCode, game.gameId);
+    toast.show('Game ended (no clear winner)');
+  }
+
+  fb.setRoomStatus(roomCode, 'lobby');
+}
+
+function _winnerName(game, playerId) {
+  return game.playerSnapshot?.[playerId]?.name || playerId;
 }

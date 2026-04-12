@@ -69,10 +69,10 @@ function _render(container, roomCode) {
   const roundNum = rounds.length + 1;
   const playerIds = game.playerIds || [];
 
-  // Safety: for round-limited games, check if we've already reached the limit
+  // Safety: for round-limited games, block scoring if at the limit (unless overtime)
   if (game.type === 'papayoo') {
     const limit = parseInt(game.config?.roundLimit) || 5;
-    if (rounds.length >= limit && game.status !== 'overtime') {
+    if (rounds.length >= limit && game.status === 'active') {
       container.innerHTML = `
         <div class="p-6 text-center py-20">
           <span class="material-symbols-outlined text-5xl text-outline mb-4">check_circle</span>
@@ -277,17 +277,14 @@ async function _submitRound(container, roomCode, game, gameModule) {
     await fb.submitRound(roomCode, game.gameId, draft, newTotals, endResult.ended ? endResult : null);
 
     if (endResult.ended && endResult.winner) {
-      // Game over — unique winner
       router.navigate('winner', { roomCode });
     } else if (endResult.ended && endResult.overtime) {
-      // Overtime — go to dashboard to show overtime banner, then come back to score
       toast.show('Tied! Overtime round needed');
       router.navigate('dashboard', { roomCode });
     } else {
-      // Normal: wait for Firebase sync then re-render
+      // Always go to dashboard after submit — avoids stale state bugs
       toast.show(`Round ${newRoundCount} submitted`);
-      await new Promise((r) => setTimeout(r, 600));
-      _render(container, roomCode);
+      router.navigate('dashboard', { roomCode });
     }
   } catch (e) {
     console.error('Submit round failed:', e);
