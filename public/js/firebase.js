@@ -7,10 +7,6 @@ import * as state from './state.js';
 let db = null;
 let _roomUnsub = null;
 
-// Debug callback (set by debug.js in staging)
-let _onFirebaseEvent = null;
-export function setOnFirebaseEvent(fn) { _onFirebaseEvent = fn; }
-
 // ── Init ──
 
 export function initFirebase(config) {
@@ -105,7 +101,7 @@ export function watchRoom(roomCode, onUpdate) {
     state.set('games', data.games || {});
     state.set('roomCode', roomCode);
 
-    if (_onFirebaseEvent) _onFirebaseEvent('watchRoom', data);
+'watchRoom', data);
     onUpdate(data);
   });
 
@@ -148,7 +144,7 @@ export async function removePlayer(roomCode, playerId) {
 
 export async function createGame(roomCode, type, config, playerIds, playerSnapshot) {
   if (!db) return;
-  if (_onFirebaseEvent) _onFirebaseEvent('createGame', { type });
+
   const gameId = `g_${Date.now()}`;
   const now = Date.now();
 
@@ -179,7 +175,7 @@ export async function createGame(roomCode, type, config, playerIds, playerSnapsh
 
 export async function submitRound(roomCode, gameId, roundData, newTotals, endResult) {
   if (!db) return;
-  if (_onFirebaseEvent) _onFirebaseEvent('submitRound', { gameId });
+
 
   const game = state.get('games')?.[gameId];
   if (!game) return;
@@ -205,7 +201,7 @@ export async function submitRound(roomCode, gameId, roundData, newTotals, endRes
 
 export async function undoLastRound(roomCode, gameId, newTotals, prevStatus, overtime = false) {
   if (!db) return;
-  if (_onFirebaseEvent) _onFirebaseEvent('undoLastRound', { gameId });
+
 
   const game = state.get('games')?.[gameId];
   if (!game || !game.rounds) return;
