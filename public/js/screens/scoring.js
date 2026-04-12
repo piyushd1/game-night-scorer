@@ -57,15 +57,41 @@ function _render(container, roomCode) {
   const roundNum = rounds.length + 1;
   const playerIds = game.playerIds || [];
 
+  // Derive standings for mini scoreboard
+  const standings = gameModule.deriveStandings(totals, playerIds, gameModule.winMode);
+
   container.innerHTML = `
     <div class="p-6 pb-32">
       <!-- Round Header -->
-      <div class="flex justify-between items-end mb-6">
+      <div class="flex justify-between items-end mb-4">
         <div>
           <p class="font-mono text-[10px] uppercase tracking-widest text-outline">ENTER SCORES</p>
           <h2 class="font-headline font-black text-2xl uppercase tracking-tight">Round ${roundNum}</h2>
         </div>
         <span class="font-mono text-[10px] border border-outline px-2 py-1 uppercase">${gameModule.label}</span>
+      </div>
+
+      <!-- Mini Standings -->
+      <div class="bg-surface-container-lowest border border-outline mb-6 overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-2 bg-surface-container-high border-b border-outline">
+          <span class="font-mono text-[10px] uppercase tracking-widest text-outline">STANDINGS</span>
+          <span class="font-mono text-[10px] text-outline">RD ${rounds.length}${game.type === 'papayoo' ? '/' + (game.config?.roundLimit || 5) : ''}</span>
+        </div>
+        <div class="divide-y divide-outline-variant">
+          ${standings.map((s) => {
+            const p = snapshot[s.playerId] || {};
+            const color = ACCENT_COLORS[p.accentIndex || 0];
+            const rankLabel = s.rank <= 3 ? ['1ST', '2ND', '3RD'][s.rank - 1] : s.rank + 'TH';
+            return `
+              <div class="flex items-center px-4 py-2 gap-3">
+                <div class="w-1 self-stretch shrink-0" style="background:${color}"></div>
+                <span class="font-mono text-[10px] text-outline w-6">${rankLabel}</span>
+                <span class="font-headline font-bold text-xs uppercase flex-1 truncate">${p.name || s.playerId}</span>
+                <span class="font-mono text-sm font-bold ${s.rank === 1 ? 'text-secondary' : ''}">${s.total}</span>
+              </div>
+            `;
+          }).join('')}
+        </div>
       </div>
 
       <!-- Game-specific scorer -->
