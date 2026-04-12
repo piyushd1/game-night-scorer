@@ -7,7 +7,7 @@ import { ACCENT_COLORS } from '../state.js';
 const SUITS = [
   { id: 'spades', label: 'Spades', icon: 'playing_cards' },
   { id: 'hearts', label: 'Hearts', icon: 'favorite' },
-  { id: 'diamonds', label: 'diamond', icon: 'diamond' },
+  { id: 'diamonds', label: 'Diamonds', icon: 'diamond' },
   { id: 'clubs', label: 'Clubs', icon: 'eco' },
 ];
 
@@ -27,6 +27,10 @@ export default {
     if (!draft.papayooSuit) return { valid: false, error: 'Select the Papayoo suit' };
     if (!draft.entries) return { valid: false, error: 'No scores entered' };
 
+    for (const [pid, e] of Object.entries(draft.entries)) {
+      if ((e.penaltyPoints || 0) < 0) return { valid: false, error: 'Penalty points cannot be negative' };
+    }
+
     const sum = Object.values(draft.entries).reduce((s, e) => s + (e.penaltyPoints || 0), 0);
     if (sum !== 250) return { valid: false, error: `Penalties must total 250 (currently ${sum})` };
 
@@ -42,21 +46,10 @@ export default {
     return newTotals;
   },
 
-  checkEnd(totals, config, playerIds) {
-    const roundLimit = config?.roundLimit || 5;
-    // This is called after a round is submitted, so we need the game state to know round count
-    // The caller passes totals after applying the new round
-    // We check via the round count in the game state — but we don't have it here
-    // Instead, we'll pass this check from the scoring screen which has access to round count
-    // For now, return not ended — the scoring screen handles the round count check
-    return { ended: false, winner: null, overtime: false };
-  },
-
-  // Called from scoring screen with round count
-  checkEndWithRounds(totals, config, playerIds, roundCount) {
+  checkEnd(totals, config, playerIds, roundCount) {
     const roundLimit = parseInt(config?.roundLimit) || 5;
 
-    if (roundCount < roundLimit) return { ended: false, winner: null, overtime: false };
+    if (roundCount == null || roundCount < roundLimit) return { ended: false, winner: null, overtime: false };
 
     // At or past round limit — find lowest
     const scores = playerIds.map((id) => ({ id, total: totals[id] || 0 }));
@@ -81,6 +74,10 @@ export default {
       s.rank = rank;
     });
     return sorted;
+  },
+
+  getRoundPoints(roundData, playerId) {
+    return roundData.entries?.[playerId]?.penaltyPoints || 0;
   },
 
   // ── Scoring Form ──
