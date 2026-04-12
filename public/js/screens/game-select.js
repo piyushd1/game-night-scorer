@@ -43,18 +43,13 @@ export function mount(container, params = {}) {
         ${games.map((g) => {
           const compatible = playerCount >= g.minPlayers && playerCount <= g.maxPlayers;
           return `
-            <button class="game-card w-full text-left bg-surface-container-lowest border-r border-b border-outline p-6 transition-colors ${compatible ? 'hover:bg-surface-container group' : 'opacity-40 cursor-not-allowed'}" data-id="${g.id}" ${!compatible ? 'disabled' : ''}>
+            <button class="game-card w-full text-left bg-surface-container-lowest border border-outline p-6 transition-all ${compatible ? 'hover:bg-surface-container group' : 'opacity-40 cursor-not-allowed'}" data-id="${g.id}" ${!compatible ? 'disabled' : ''}>
               <div class="flex justify-between items-start mb-3">
-                <span class="font-mono text-[10px] text-outline tracking-widest uppercase">${g.minPlayers}-${g.maxPlayers} PLAYERS</span>
-                <div class="w-6 h-6 border ${_selectedGame === g.id ? 'bg-primary border-primary' : 'border-outline'} flex items-center justify-center transition-colors">
-                  ${_selectedGame === g.id ? '<span class="material-symbols-outlined text-white text-sm">check</span>' : ''}
-                </div>
+                <span class="font-mono text-[10px] text-outline tracking-widest uppercase">${g.minPlayers}-${g.maxPlayers} PLAYERS / ${g.winMode === 'highest_total' ? 'HIGHEST WINS' : 'LOWEST WINS'}</span>
+                <div class="game-check w-7 h-7 border-2 border-outline-variant flex items-center justify-center transition-all"></div>
               </div>
-              <h3 class="font-headline font-black text-2xl uppercase tracking-tighter mb-1 group-hover:text-secondary transition-colors">${g.label}</h3>
-              <p class="text-on-surface-variant text-sm">${g.description}</p>
-              <div class="flex gap-3 mt-3">
-                <span class="font-mono text-[10px] text-outline uppercase">${g.winMode === 'highest_total' ? 'HIGHEST WINS' : 'LOWEST WINS'}</span>
-              </div>
+              <h3 class="font-headline font-black text-3xl uppercase tracking-tighter mb-2 group-hover:text-secondary transition-colors">${g.label}</h3>
+              <p class="text-on-surface-variant text-sm leading-relaxed">${g.description}</p>
             </button>
           `;
         }).join('')}
@@ -66,8 +61,7 @@ export function mount(container, params = {}) {
       <!-- Start Button -->
       <div class="mt-8">
         <button id="btn-start" class="btn-primary flex items-center justify-center gap-2" disabled>
-          START GAME
-          <span class="material-symbols-outlined text-lg">arrow_forward</span>
+          SELECT A GAME
         </button>
       </div>
     </div>
@@ -92,21 +86,36 @@ export function unmount() {
 
 function _renderSelection(container) {
   container.querySelectorAll('.game-card').forEach((card) => {
-    const indicator = card.querySelector('div:last-child > div');
+    const indicator = card.querySelector('.game-check');
     if (!indicator) return;
     const isSelected = card.dataset.id === _selectedGame;
     if (isSelected) {
-      card.style.borderLeft = '3px solid #000000';
-      indicator.className = 'w-6 h-6 border bg-primary border-primary flex items-center justify-center transition-colors';
-      indicator.innerHTML = '<span class="material-symbols-outlined text-white text-sm">check</span>';
+      card.style.borderColor = '#000000';
+      card.style.borderWidth = '2px';
+      card.style.background = '#ffffff';
+      card.style.borderLeft = '4px solid #000000';
+      indicator.className = 'game-check w-7 h-7 bg-primary border-2 border-primary flex items-center justify-center transition-all';
+      indicator.innerHTML = '<span class="material-symbols-outlined text-white text-base">check</span>';
     } else {
+      card.style.borderColor = '';
+      card.style.borderWidth = '';
+      card.style.background = '';
       card.style.borderLeft = '';
-      indicator.className = 'w-6 h-6 border border-outline flex items-center justify-center transition-colors';
+      indicator.className = 'game-check w-7 h-7 border-2 border-outline-variant flex items-center justify-center transition-all';
       indicator.innerHTML = '';
     }
   });
 
-  container.querySelector('#btn-start').disabled = !_selectedGame;
+  // Update start button to show selected game name
+  const startBtn = container.querySelector('#btn-start');
+  if (_selectedGame) {
+    const game = getGame(_selectedGame);
+    startBtn.disabled = false;
+    startBtn.innerHTML = `START ${game.label.toUpperCase()} <span class="material-symbols-outlined text-lg">arrow_forward</span>`;
+  } else {
+    startBtn.disabled = true;
+    startBtn.innerHTML = `SELECT A GAME`;
+  }
 }
 
 function _renderConfig(container) {
