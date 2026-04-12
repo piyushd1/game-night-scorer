@@ -79,7 +79,20 @@ export function mount(container, params = {}) {
       <!-- Player List -->
       <div id="player-list" class="flex flex-col gap-1"></div>
 
-      <!-- Night Recap (visible after at least 1 game) -->
+      <!-- Track Stats Toggle (host only, before first game) -->
+      <div id="stats-toggle-section" class="mt-6" style="display:none">
+        <div class="bg-surface-container-lowest border border-outline p-4 flex items-center justify-between">
+          <div class="flex-1 mr-4">
+            <p class="font-headline font-bold text-sm uppercase">Track Tonight's Stats</p>
+            <p class="font-mono text-[10px] text-outline mt-0.5">See MVP, per-game breakdowns, and player highlights at the end of the night</p>
+          </div>
+          <button id="btn-stats-toggle" class="w-12 h-7 border border-outline bg-surface-container-high transition-all relative shrink-0" data-on="false">
+            <div class="absolute top-[2px] left-[2px] w-[22px] h-[22px] bg-outline transition-transform"></div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Night Recap (visible after at least 1 game, only if tracking) -->
       <div id="recap-section" class="mt-6" style="display:none">
         <button id="btn-recap" class="w-full bg-surface-container-lowest border border-outline py-3 font-headline font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-surface-container-high transition-colors">
           <span class="material-symbols-outlined text-sm">bar_chart</span>
@@ -137,6 +150,30 @@ function _bindEvents(container, roomCode) {
   container.querySelector('#btn-recap')?.addEventListener('click', () => {
     router.navigate('recap', { roomCode });
   });
+
+  // Stats tracking toggle
+  const statsToggle = container.querySelector('#btn-stats-toggle');
+  if (statsToggle) {
+    statsToggle.addEventListener('click', () => {
+      const isOn = statsToggle.dataset.on === 'true';
+      const newVal = !isOn;
+      statsToggle.dataset.on = String(newVal);
+      const dot = statsToggle.querySelector('div');
+      if (newVal) {
+        statsToggle.style.background = '#000';
+        statsToggle.style.borderColor = '#000';
+        dot.style.transform = 'translateX(20px)';
+        dot.style.background = '#fff';
+      } else {
+        statsToggle.style.background = '';
+        statsToggle.style.borderColor = '';
+        dot.style.transform = 'translateX(0)';
+        dot.style.background = '';
+      }
+      // Save to Firebase
+      fb.updateRoomMeta(roomCode, { trackStats: newVal });
+    });
+  }
 }
 
 async function _addPlayer(container, roomCode) {
@@ -195,11 +232,37 @@ function _startWatching(roomCode, container) {
     // Render player list
     _renderPlayers(container, players, isHost, roomCode);
 
-    // Show recap button if any games have been played
+    // Stats tracking
+    const trackStats = meta.trackStats || false;
     const games = data.games || {};
     const hasPlayedGames = Object.values(games).some((g) => g.rounds && Object.keys(g.rounds).length > 0);
+
+    // Show stats toggle only for host, before first game
+    const statsToggleSection = container.querySelector('#stats-toggle-section');
+    if (statsToggleSection) {
+      statsToggleSection.style.display = (isHost && !hasPlayedGames) ? 'block' : 'none';
+      // Sync toggle state from Firebase
+      const toggleBtn = container.querySelector('#btn-stats-toggle');
+      if (toggleBtn && toggleBtn.dataset.on !== String(trackStats)) {
+        toggleBtn.dataset.on = String(trackStats);
+        const dot = toggleBtn.querySelector('div');
+        if (trackStats) {
+          toggleBtn.style.background = '#000';
+          toggleBtn.style.borderColor = '#000';
+          dot.style.transform = 'translateX(20px)';
+          dot.style.background = '#fff';
+        } else {
+          toggleBtn.style.background = '';
+          toggleBtn.style.borderColor = '';
+          dot.style.transform = 'translateX(0)';
+          dot.style.background = '';
+        }
+      }
+    }
+
+    // Show recap only if tracking is on and games have been played
     const recapSection = container.querySelector('#recap-section');
-    if (recapSection) recapSection.style.display = hasPlayedGames ? 'block' : 'none';
+    if (recapSection) recapSection.style.display = (trackStats && hasPlayedGames) ? 'block' : 'none';
 
     // Enable/disable start
     const activeCount = Object.values(players).filter((p) => p.isActive).length;
@@ -222,6 +285,8 @@ function _startWatching(roomCode, container) {
 function _renderPlayers(container, players, isHost, roomCode) {
   const list = container.querySelector('#player-list');
   const sorted = Object.values(players).sort((a, b) => a.seatOrder - b.seatOrder);
+  const meta = state.get('roomMeta') || {};
+  const hostPlayerId = meta.hostPlayerId || null;
 
   if (sorted.length === 0) {
     list.innerHTML = `
@@ -237,6 +302,7 @@ function _renderPlayers(container, players, isHost, roomCode) {
     .map((p) => {
       const color = ACCENT_COLORS[p.accentIndex % ACCENT_COLORS.length];
       const inactive = !p.isActive ? 'opacity-40' : '';
+      const isHostPlayer = hostPlayerId === p.id;
       return `
         <div class="bg-surface-container-lowest border border-outline ${inactive} flex items-center">
           <div class="w-1.5 self-stretch" style="background:${color}"></div>
@@ -247,16 +313,19 @@ function _renderPlayers(container, players, isHost, roomCode) {
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2">
                 <p class="font-headline font-extrabold text-sm uppercase truncate">${p.name}</p>
-                ${p.seatOrder === 0 ? '<span class="font-mono text-[8px] bg-primary text-on-primary px-1.5 py-0.5 uppercase tracking-widest shrink-0">HOST</span>' : ''}
+                ${isHostPlayer ? '<span class="font-mono text-[8px] bg-primary text-on-primary px-1.5 py-0.5 uppercase tracking-widest shrink-0">HOST</span>' : ''}
               </div>
               <p class="font-mono text-[10px] text-outline uppercase">${p.isActive ? 'ACTIVE' : 'INACTIVE'}</p>
             </div>
             ${isHost ? `
               <div class="flex gap-1">
-                <button class="player-toggle p-1.5 hover:bg-surface-container-high transition-colors" data-id="${p.id}" data-active="${p.isActive}">
-                  <span class="material-symbols-outlined text-sm">${p.isActive ? 'person_off' : 'person'}</span>
+                <button class="player-set-host p-1.5 hover:bg-surface-container-high transition-colors ${isHostPlayer ? 'opacity-30' : ''}" data-id="${p.id}" title="Set as host player">
+                  <span class="material-symbols-outlined text-sm">${isHostPlayer ? 'shield_person' : 'person'}</span>
                 </button>
-                <button class="player-remove p-1.5 hover:bg-surface-container-high transition-colors" data-id="${p.id}">
+                <button class="player-toggle p-1.5 hover:bg-surface-container-high transition-colors" data-id="${p.id}" data-active="${p.isActive}" title="${p.isActive ? 'Deactivate' : 'Activate'}">
+                  <span class="material-symbols-outlined text-sm">${p.isActive ? 'person_off' : 'person_add'}</span>
+                </button>
+                <button class="player-remove p-1.5 hover:bg-surface-container-high transition-colors" data-id="${p.id}" title="Remove">
                   <span class="material-symbols-outlined text-sm text-error">close</span>
                 </button>
               </div>
@@ -267,8 +336,26 @@ function _renderPlayers(container, players, isHost, roomCode) {
     })
     .join('');
 
+  // Show hint if no host player selected yet and there are players
+  if (isHost && !hostPlayerId && sorted.length > 0) {
+    list.insertAdjacentHTML('beforeend', `
+      <p class="font-mono text-[10px] text-outline text-center mt-2 uppercase">
+        <span class="material-symbols-outlined text-[10px] align-middle">info</span>
+        TAP THE PERSON ICON TO MARK HOST PLAYER
+      </p>
+    `);
+  }
+
   // Bind player action buttons
   if (isHost) {
+    list.querySelectorAll('.player-set-host').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        fb.updateRoomMeta(roomCode, { hostPlayerId: id });
+        toast.show('Host player set');
+      });
+    });
+
     list.querySelectorAll('.player-toggle').forEach((btn) => {
       btn.addEventListener('click', () => {
         const id = btn.dataset.id;

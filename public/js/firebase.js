@@ -223,3 +223,8 @@ export async function setRoomStatus(roomCode, status) {
   if (!db) return;
   await db.ref(`rooms/${roomCode}/meta`).update({ status, updatedAt: Date.now() });
 }
+
+export async function updateRoomMeta(roomCode, updates) {
+  if (!db) return;
+  await db.ref(`rooms/${roomCode}/meta`).update({ ...updates, updatedAt: Date.now() });
+}
