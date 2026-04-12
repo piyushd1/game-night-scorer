@@ -196,7 +196,7 @@ export async function submitRound(roomCode, gameId, roundData, newTotals, endRes
   await db.ref().update(updates);
 }
 
-export async function undoLastRound(roomCode, gameId, newTotals, prevStatus) {
+export async function undoLastRound(roomCode, gameId, newTotals, prevStatus, overtime = false) {
   if (!db) return;
 
   const game = state.get('games')?.[gameId];
@@ -211,7 +211,7 @@ export async function undoLastRound(roomCode, gameId, newTotals, prevStatus) {
   updates[`rooms/${roomCode}/games/${gameId}/rounds/${lastKey}`] = null;
   updates[`rooms/${roomCode}/games/${gameId}/totals`] = newTotals;
   updates[`rooms/${roomCode}/games/${gameId}/status`] = prevStatus;
-  updates[`rooms/${roomCode}/games/${gameId}/overtime`] = false;
+  updates[`rooms/${roomCode}/games/${gameId}/overtime`] = overtime;
   updates[`rooms/${roomCode}/games/${gameId}/winner`] = null;
   updates[`rooms/${roomCode}/games/${gameId}/finishedAt`] = null;
   updates[`rooms/${roomCode}/meta/updatedAt`] = Date.now();

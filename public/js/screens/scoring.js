@@ -63,6 +63,12 @@ function _render(container, roomCode) {
   const gameModule = getGame(game.type);
   if (!gameModule) return;
 
+  // Guard: don't allow scoring on a finished game
+  if (game.status === 'finished') {
+    router.navigate('winner', { roomCode });
+    return;
+  }
+
   const snapshot = game.playerSnapshot || {};
   const totals = game.totals || {};
   const rounds = game.rounds ? Object.values(game.rounds) : [];
@@ -267,12 +273,7 @@ async function _submitRound(container, roomCode, game, gameModule) {
 
   // Check end condition
   const newRoundCount = rounds.length + 1;
-  let endResult;
-  if (gameModule.checkEndWithRounds) {
-    endResult = gameModule.checkEndWithRounds(newTotals, game.config, playerIds, newRoundCount);
-  } else {
-    endResult = gameModule.checkEnd(newTotals, game.config, playerIds);
-  }
+  const endResult = gameModule.checkEnd(newTotals, game.config, playerIds, newRoundCount);
 
   const btn = container.querySelector('#btn-submit-round');
   btn.disabled = true;
