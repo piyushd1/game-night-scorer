@@ -54,6 +54,12 @@ function _render(container, roomCode) {
     return;
   }
 
+  // If game is finished, redirect to winner
+  if (game.status === 'finished' && game.winner) {
+    router.navigate('winner', { roomCode });
+    return;
+  }
+
   const gameModule = getGame(game.type);
   if (!gameModule) return;
 
@@ -62,6 +68,21 @@ function _render(container, roomCode) {
   const rounds = game.rounds ? Object.values(game.rounds) : [];
   const roundNum = rounds.length + 1;
   const playerIds = game.playerIds || [];
+
+  // Safety: for round-limited games, check if we've already reached the limit
+  if (game.type === 'papayoo') {
+    const limit = parseInt(game.config?.roundLimit) || 5;
+    if (rounds.length >= limit && game.status !== 'overtime') {
+      container.innerHTML = `
+        <div class="p-6 text-center py-20">
+          <span class="material-symbols-outlined text-5xl text-outline mb-4">check_circle</span>
+          <p class="font-headline font-bold text-lg uppercase mb-2">All Rounds Complete</p>
+          <p class="font-body text-sm text-on-surface-variant">Determining winner...</p>
+        </div>
+      `;
+      return;
+    }
+  }
 
   // Derive standings for mini scoreboard
   const standings = gameModule.deriveStandings(totals, playerIds, gameModule.winMode);
@@ -261,10 +282,16 @@ async function _submitRound(container, roomCode, game, gameModule) {
     await fb.submitRound(roomCode, game.gameId, draft, newTotals, endResult.ended ? endResult : null);
 
     if (endResult.ended && endResult.winner) {
+      // Game over — unique winner
       router.navigate('winner', { roomCode });
+    } else if (endResult.ended && endResult.overtime) {
+      // Overtime — go to dashboard to show overtime banner, then come back to score
+      toast.show('Tied! Overtime round needed');
+      router.navigate('dashboard', { roomCode });
     } else {
-      // Re-render scoring form for next round
-      toast.show(`Round ${rounds.length + 1} submitted`);
+      // Normal: wait for Firebase sync then re-render
+      toast.show(`Round ${newRoundCount} submitted`);
+      await new Promise((r) => setTimeout(r, 600));
       _render(container, roomCode);
     }
   } catch (e) {
