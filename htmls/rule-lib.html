@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Space+Mono&amp;family=Space+Grotesk:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-low": "#f4f4f2",
+                        "on-secondary": "#ffffff",
+                        "inverse-on-surface": "#f1f1ef",
+                        "secondary-fixed-dim": "#94a6ff",
+                        "surface-bright": "#f9f9f7",
+                        "on-tertiary-fixed-variant": "#ffdad6",
+                        "tertiary-fixed-dim": "#93000b",
+                        "on-primary-fixed": "#ffffff",
+                        "outline-variant": "#c6c6c6",
+                        "error-container": "#ffdad6",
+                        "surface": "#f9f9f7",
+                        "on-background": "#1a1c1b",
+                        "surface-container": "#eeeeec",
+                        "outline": "#777777",
+                        "on-primary-container": "#ffffff",
+                        "surface-container-high": "#e8e8e6",
+                        "on-primary-fixed-variant": "#e5e2e1",
+                        "primary-fixed": "#5f5e5e",
+                        "on-error-container": "#410002",
+                        "on-surface-variant": "#474747",
+                        "on-tertiary": "#ffdad6",
+                        "surface-dim": "#dadad8",
+                        "secondary-fixed": "#b9c3ff",
+                        "inverse-primary": "#c8c6c5",
+                        "on-secondary-fixed-variant": "#002ba5",
+                        "surface-container-highest": "#e2e3e1",
+                        "surface-variant": "#e2e3e1",
+                        "primary": "#000000",
+                        "on-tertiary-fixed": "#ffffff",
+                        "on-error": "#ffffff",
+                        "on-surface": "#1a1c1b",
+                        "on-secondary-container": "#001257",
+                        "tertiary": "#7e0008",
+                        "secondary-container": "#cbd2ff",
+                        "inverse-surface": "#2f3130",
+                        "on-tertiary-container": "#ffffff",
+                        "primary-fixed-dim": "#474746",
+                        "on-primary": "#e5e2e1",
+                        "on-secondary-fixed": "#001257",
+                        "surface-tint": "#5f5e5e",
+                        "primary-container": "#3c3b3b",
+                        "tertiary-container": "#e61720",
+                        "tertiary-fixed": "#c00013",
+                        "error": "#ba1a1a",
+                        "secondary": "#0046fa",
+                        "background": "#f9f9f7",
+                        "surface-container-lowest": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0px",
+                        "lg": "4px",
+                        "xl": "8px",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Manrope"],
+                        "label": ["Space Grotesk"],
+                        "mono": ["Space Mono"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #F4F4F2;
+            color: #1A1A1A;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body selection:bg-secondary selection:text-white">
+<!-- TopAppBar -->
+<header class="bg-[#F4F4F2] dark:bg-[#1A1A1A] text-[#1A1A1A] dark:text-[#F4F4F2] docked full-width top-0 border-b border-[#777777] flex justify-between items-center w-full px-6 py-4 sticky z-50">
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined hover:bg-[#E8E8E6] dark:hover:bg-[#2A2A2A] transition-colors p-2">menu</button>
+<h1 class="font-['Manrope'] font-black uppercase tracking-tighter text-xl text-[#1A1A1A] dark:text-[#F4F4F2]">THE ANALOG ARCHITECT</h1>
+</div>
+<div class="flex items-center gap-2">
+<button class="material-symbols-outlined hover:bg-[#E8E8E6] dark:hover:bg-[#2A2A2A] transition-colors p-2">search</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="max-w-7xl mx-auto px-6 pt-12 pb-32">
+<!-- Search Section -->
+<section class="mb-16">
+<div class="relative group">
+<div class="absolute inset-y-0 left-6 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline">search</span>
+</div>
+<input class="w-full bg-surface-container-low border-2 border-primary py-8 pl-16 pr-8 font-mono text-xl focus:outline-none focus:ring-0 focus:border-secondary transition-colors placeholder:text-outline/50 placeholder:font-body placeholder:italic" placeholder="Search rules for any game..." type="text"/>
+<div class="absolute right-6 top-1/2 -translate-y-1/2 flex gap-4">
+<span class="font-mono text-xs text-outline uppercase tracking-widest hidden md:block">CMD + K TO SEARCH</span>
+</div>
+</div>
+<div class="flex flex-wrap gap-4 mt-6">
+<span class="px-3 py-1 bg-surface-container-highest text-[10px] font-mono border border-outline-variant">POPULAR: CABO</span>
+<span class="px-3 py-1 bg-surface-container-highest text-[10px] font-mono border border-outline-variant">POPULAR: SPLENDOR</span>
+<span class="px-3 py-1 bg-surface-container-highest text-[10px] font-mono border border-outline-variant">NEWLY ADDED: PAPAYOO</span>
+</div>
+</section>
+<!-- Library Grid -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0 border-t border-l border-outline">
+<!-- Game Card: Cabo -->
+<article class="border-r border-b border-outline bg-surface-container-lowest p-8 flex flex-col justify-between hover:bg-surface-container transition-colors group">
+<div>
+<div class="flex justify-between items-start mb-12">
+<span class="font-mono text-xs text-outline tracking-widest uppercase">CAT: CARD_GAME</span>
+<div class="w-8 h-[3px] bg-secondary"></div>
+</div>
+<h2 class="font-headline font-black text-4xl uppercase tracking-tighter mb-4 group-hover:text-secondary transition-colors">CABO</h2>
+<p class="text-on-surface-variant font-body leading-relaxed mb-8 pr-12">
+                        A memory-based card game where you try to minimize the total value of your cards by spying, swapping, and peeking.
+                    </p>
+</div>
+<div class="flex items-center justify-between mt-auto">
+<button class="font-headline font-bold text-sm uppercase tracking-widest border-b-2 border-primary pb-1 group-hover:border-secondary transition-colors">READ RULES</button>
+<span class="font-mono text-xs text-outline">v2.1_DIGITAL</span>
+</div>
+</article>
+<!-- Game Card: Papayoo -->
+<article class="border-r border-b border-outline bg-surface-container-lowest p-8 flex flex-col justify-between hover:bg-surface-container transition-colors group">
+<div>
+<div class="flex justify-between items-start mb-12">
+<span class="font-mono text-xs text-outline tracking-widest uppercase">CAT: TRICK_TAKING</span>
+<div class="w-8 h-[3px] bg-error"></div>
+</div>
+<h2 class="font-headline font-black text-4xl uppercase tracking-tighter mb-4 group-hover:text-secondary transition-colors">PAPAYOO</h2>
+<p class="text-on-surface-variant font-body leading-relaxed mb-8 pr-12">
+                        Avoid the Payoos and especially the Papayoo, the 7 of diamonds, whose color changes with each deal.
+                    </p>
+</div>
+<div class="flex items-center justify-between mt-auto">
+<button class="font-headline font-bold text-sm uppercase tracking-widest border-b-2 border-primary pb-1 group-hover:border-secondary transition-colors">READ RULES</button>
+<span class="font-mono text-xs text-outline">v1.0_LATEST</span>
+</div>
+</article>
+<!-- Game Card: Splendor -->
+<article class="border-r border-b border-outline bg-surface-container-lowest p-8 flex flex-col justify-between hover:bg-surface-container transition-colors group">
+<div>
+<div class="flex justify-between items-start mb-12">
+<span class="font-mono text-xs text-outline tracking-widest uppercase">CAT: STRATEGY</span>
+<div class="w-8 h-[3px] bg-[#FFB800]"></div>
+</div>
+<h2 class="font-headline font-black text-4xl uppercase tracking-tighter mb-4 group-hover:text-secondary transition-colors">SPLENDOR</h2>
+<p class="text-on-surface-variant font-body leading-relaxed mb-8 pr-12">
+                        Collect gems and build an engine to win the favor of nobles in this Renaissance-themed strategy classic.
+                    </p>
+</div>
+<div class="flex items-center justify-between mt-auto">
+<button class="font-headline font-bold text-sm uppercase tracking-widest border-b-2 border-primary pb-1 group-hover:border-secondary transition-colors">READ RULES</button>
+<span class="font-mono text-xs text-outline">v3.4_GOLD</span>
+</div>
+</article>
+<!-- Game Card: Catan -->
+<article class="border-r border-b border-outline bg-surface-container-lowest p-8 flex flex-col justify-between hover:bg-surface-container transition-colors group">
+<div>
+<div class="flex justify-between items-start mb-12">
+<span class="font-mono text-xs text-outline tracking-widest uppercase">CAT: BOARD_GAME</span>
+<div class="w-8 h-[3px] bg-[#00B85C]"></div>
+</div>
+<h2 class="font-headline font-black text-4xl uppercase tracking-tighter mb-4 group-hover:text-secondary transition-colors">CATAN</h2>
+<p class="text-on-surface-variant font-body leading-relaxed mb-8 pr-12">
+                        Trade, build, and settle on the island of Catan. Manage resources to become the dominant force on the board.
+                    </p>
+</div>
+<div class="flex items-center justify-between mt-auto">
+<button class="font-headline font-bold text-sm uppercase tracking-widest border-b-2 border-primary pb-1 group-hover:border-secondary transition-colors">READ RULES</button>
+<span class="font-mono text-xs text-outline">v5.0_ANNIV</span>
+</div>
+</article>
+<!-- Game Card: 7 Wonders -->
+<article class="border-r border-b border-outline bg-surface-container-lowest p-8 flex flex-col justify-between hover:bg-surface-container transition-colors group">
+<div>
+<div class="flex justify-between items-start mb-12">
+<span class="font-mono text-xs text-outline tracking-widest uppercase">CAT: DRAFTING</span>
+<div class="w-8 h-[3px] bg-secondary"></div>
+</div>
+<h2 class="font-headline font-black text-4xl uppercase tracking-tighter mb-4 group-hover:text-secondary transition-colors">7 WONDERS</h2>
+<p class="text-on-surface-variant font-body leading-relaxed mb-8 pr-12">
+                        Lead an ancient city and build one of the seven wonders of the world. Draft cards to develop your civilization.
+                    </p>
+</div>
+<div class="flex items-center justify-between mt-auto">
+<button class="font-headline font-bold text-sm uppercase tracking-widest border-b-2 border-primary pb-1 group-hover:border-secondary transition-colors">READ RULES</button>
+<span class="font-mono text-xs text-outline">v2.2_EDIT</span>
+</div>
+</article>
+<!-- Placeholder / Add New -->
+<article class="border-r border-b border-outline bg-surface-container-high p-8 flex flex-col items-center justify-center border-dashed group cursor-pointer">
+<span class="material-symbols-outlined text-outline text-6xl mb-4 group-hover:text-primary transition-colors">add_box</span>
+<span class="font-mono text-xs text-outline uppercase tracking-widest">Request a Rulebook</span>
+</article>
+</section>
+<!-- Editorial Footnote -->
+<footer class="mt-24 pt-8 border-t border-outline flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+<div class="max-w-md">
+<h3 class="font-headline font-extrabold text-lg uppercase mb-2">THE ANALOG ARCHITECT ARCHIVE</h3>
+<p class="text-xs font-body text-outline leading-tight uppercase tracking-wide">
+                    All rulebooks are digitally transcribed and archived for high-precision access. Data accuracy is verified against official technical documentation.
+                </p>
+</div>
+<div class="flex gap-12 font-mono text-[10px] text-outline uppercase tracking-widest">
+<div>
+<p class="font-bold text-primary mb-1">TOTAL ENTRIES</p>
+<p>142_TITLES</p>
+</div>
+<div>
+<p class="font-bold text-primary mb-1">LAST_UPDATE</p>
+<p>OCT_24_2023</p>
+</div>
+</div>
+</footer>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-end px-4 bg-[#F4F4F2] dark:bg-[#1A1A1A] text-[#1A1A1A] dark:text-[#F4F4F2] border-t border-[#777777] transition-all duration-75 ease-linear">
+<a class="flex flex-col items-center justify-center pt-3 pb-4 text-[#777777] dark:text-[#C6C6C6] hover:bg-[#E2E3E1] dark:hover:bg-[#2A2A2A] flex-1" href="#">
+<span class="material-symbols-outlined mb-1">dashboard</span>
+<span class="font-['Space_Mono'] text-[10px] uppercase tracking-widest">DASHBOARD</span>
+</a>
+<a class="flex flex-col items-center justify-center border-t-4 border-[#1A1A1A] dark:border-[#F4F4F2] pt-2 pb-4 text-[#1A1A1A] dark:text-[#F4F4F2] flex-1" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+<span class="font-['Space_Mono'] text-[10px] uppercase tracking-widest">RULES</span>
+</a>
+<a class="flex flex-col items-center justify-center pt-3 pb-4 text-[#777777] dark:text-[#C6C6C6] hover:bg-[#E2E3E1] dark:hover:bg-[#2A2A2A] flex-1" href="#">
+<span class="material-symbols-outlined mb-1">calculate</span>
+<span class="font-['Space_Mono'] text-[10px] uppercase tracking-widest">SCORING</span>
+</a>
+<a class="flex flex-col items-center justify-center pt-3 pb-4 text-[#777777] dark:text-[#C6C6C6] hover:bg-[#E2E3E1] dark:hover:bg-[#2A2A2A] flex-1" href="#">
+<span class="material-symbols-outlined mb-1">history</span>
+<span class="font-['Space_Mono'] text-[10px] uppercase tracking-widest">HISTORY</span>
+</a>
+</nav>
+</body></html>

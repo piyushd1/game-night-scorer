@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>THE ANALOG ARCHITECT - Design System Assets</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Space+Mono&amp;family=Space+Grotesk:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-low": "#f4f4f2",
+                        "on-secondary": "#ffffff",
+                        "inverse-on-surface": "#f1f1ef",
+                        "secondary-fixed-dim": "#94a6ff",
+                        "surface-bright": "#f9f9f7",
+                        "on-tertiary-fixed-variant": "#ffdad6",
+                        "tertiary-fixed-dim": "#93000b",
+                        "on-primary-fixed": "#ffffff",
+                        "outline-variant": "#c6c6c6",
+                        "error-container": "#ffdad6",
+                        "surface": "#f9f9f7",
+                        "on-background": "#1a1c1b",
+                        "surface-container": "#eeeeec",
+                        "outline": "#777777",
+                        "on-primary-container": "#ffffff",
+                        "surface-container-high": "#e8e8e6",
+                        "on-primary-fixed-variant": "#e5e2e1",
+                        "primary-fixed": "#5f5e5e",
+                        "on-error-container": "#410002",
+                        "on-surface-variant": "#474747",
+                        "on-tertiary": "#ffdad6",
+                        "surface-dim": "#dadad8",
+                        "secondary-fixed": "#b9c3ff",
+                        "inverse-primary": "#c8c6c5",
+                        "on-secondary-fixed-variant": "#002ba5",
+                        "surface-container-highest": "#e2e3e1",
+                        "surface-variant": "#e2e3e1",
+                        "primary": "#000000",
+                        "on-tertiary-fixed": "#ffffff",
+                        "on-error": "#ffffff",
+                        "on-surface": "#1a1c1b",
+                        "on-secondary-container": "#001257",
+                        "tertiary": "#7e0008",
+                        "secondary-container": "#cbd2ff",
+                        "inverse-surface": "#2f3130",
+                        "on-tertiary-container": "#ffffff",
+                        "primary-fixed-dim": "#474746",
+                        "on-primary": "#e5e2e1",
+                        "on-secondary-fixed": "#001257",
+                        "surface-tint": "#5f5e5e",
+                        "primary-container": "#3c3b3b",
+                        "tertiary-container": "#e61720",
+                        "tertiary-fixed": "#c00013",
+                        "error": "#ba1a1a",
+                        "secondary": "#0046fa",
+                        "background": "#f9f9f7",
+                        "surface-container-lowest": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Manrope"],
+                        "label": ["Space Grotesk"],
+                        "mono": ["Space Mono"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #F4F4F2;
+            color: #1A1A1A;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body pb-24">
+<!-- TopAppBar -->
+<header class="bg-[#F4F4F2] dark:bg-[#1A1A1A] text-[#1A1A1A] dark:text-[#F4F4F2] flex justify-between items-center w-full px-6 py-4 docked full-width top-0 border-b border-[#777777] z-50 sticky">
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined hover:bg-[#E8E8E6] dark:hover:bg-[#2A2A2A] transition-colors active:opacity-80 p-2">menu</button>
+<h1 class="font-['Manrope'] font-black uppercase tracking-tighter text-xl">THE ANALOG ARCHITECT</h1>
+</div>
+<div class="flex items-center gap-2">
+<button class="material-symbols-outlined hover:bg-[#E8E8E6] dark:hover:bg-[#2A2A2A] transition-colors active:opacity-80 p-2">search</button>
+</div>
+</header>
+<main class="max-w-7xl mx-auto px-6 pt-12">
+<!-- Hero Section: Editorial Header -->
+<section class="mb-16 border-l-4 border-primary pl-8">
+<p class="font-mono text-xs uppercase tracking-[0.2em] mb-4 text-outline">System.Reference_01</p>
+<h2 class="text-6xl font-headline font-black uppercase tracking-tightest leading-none mb-4">Design Assets<br/>&amp; Components</h2>
+<p class="max-w-2xl text-lg text-on-surface-variant font-medium">The visual DNA of a tactile board game experience. Precise, brutalist, and architectural.</p>
+</section>
+<!-- Bento Grid Catalog -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-1 bg-outline mb-24">
+<!-- Cell: Typography Samples -->
+<div class="md:col-span-8 bg-surface-container-lowest p-8 flex flex-col justify-between min-h-[400px]">
+<div class="mb-12">
+<span class="font-mono text-[10px] bg-primary text-on-primary px-2 py-1 uppercase mb-8 inline-block">Typography Scale</span>
+<div class="space-y-8">
+<div>
+<p class="font-mono text-[10px] text-outline mb-2">Display-LG / Manrope Black / 3.5rem</p>
+<h3 class="text-[3.5rem] font-headline font-black uppercase leading-none tracking-tightest">9,999</h3>
+</div>
+<div>
+<p class="font-mono text-[10px] text-outline mb-2">Headline-MD / Manrope Bold / 1.75rem</p>
+<h3 class="text-3xl font-headline font-bold uppercase">Game Statistics</h3>
+</div>
+<div>
+<p class="font-mono text-[10px] text-outline mb-2">Data-Body / Space Mono / 1rem</p>
+<p class="font-mono text-base">ROUND_04 / SCORE: 1,420 / POS: 01</p>
+</div>
+</div>
+</div>
+<div class="border-t border-outline-variant pt-4 flex justify-between items-end">
+<p class="text-sm font-bold uppercase tracking-widest">Type Identity</p>
+<p class="font-mono text-xs text-outline">SWISS MODULAR REVIVAL</p>
+</div>
+</div>
+<!-- Cell: Numeric Pad -->
+<div class="md:col-span-4 bg-surface-container-high p-8 flex flex-col">
+<span class="font-mono text-[10px] border border-primary text-primary px-2 py-1 uppercase mb-8 self-start">Input_Pad.v1</span>
+<div class="flex-grow flex flex-col justify-center">
+<div class="grid grid-cols-3 gap-px bg-outline border border-outline">
+<button class="bg-surface-container-lowest aspect-square font-mono text-xl hover:bg-primary hover:text-on-primary transition-colors">1</button>
+<button class="bg-surface-container-lowest aspect-square font-mono text-xl hover:bg-primary hover:text-on-primary transition-colors">2</button>
+<button class="bg-surface-container-lowest aspect-square font-mono text-xl hover:bg-primary hover:text-on-primary transition-colors">3</button>
+<button class="bg-surface-container-lowest aspect-square font-mono text-xl hover:bg-primary hover:text-on-primary transition-colors">4</button>
+<button class="bg-surface-container-lowest aspect-square font-mono text-xl hover:bg-primary hover:text-on-primary transition-colors">5</button>
+<button class="bg-surface-container-lowest aspect-square font-mono text-xl hover:bg-primary hover:text-on-primary transition-colors">6</button>
+<button class="bg-surface-container-lowest aspect-square font-mono text-xl hover:bg-primary hover:text-on-primary transition-colors">7</button>
+<button class="bg-surface-container-lowest aspect-square font-mono text-xl hover:bg-primary hover:text-on-primary transition-colors">8</button>
+<button class="bg-surface-container-lowest aspect-square font-mono text-xl hover:bg-primary hover:text-on-primary transition-colors">9</button>
+<button class="bg-surface-container-high aspect-square font-mono text-xl">.</button>
+<button class="bg-surface-container-lowest aspect-square font-mono text-xl hover:bg-primary hover:text-on-primary transition-colors">0</button>
+<button class="bg-surface-container-high aspect-square flex items-center justify-center"><span class="material-symbols-outlined">backspace</span></button>
+</div>
+</div>
+</div>
+<!-- Cell: Custom Icons -->
+<div class="md:col-span-3 bg-surface-container-lowest p-8 min-h-[300px] border-r border-outline-variant">
+<span class="font-mono text-[10px] text-primary uppercase mb-6 block font-bold">Iconography_Set</span>
+<div class="grid grid-cols-3 gap-6">
+<div class="flex flex-col items-center">
+<span class="material-symbols-outlined text-3xl mb-1">casino</span>
+<span class="font-mono text-[8px] text-outline">casino</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="material-symbols-outlined text-3xl mb-1">playing_cards</span>
+<span class="font-mono text-[8px] text-outline">cards</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="material-symbols-outlined text-3xl mb-1">chess_pawn</span>
+<span class="font-mono text-[8px] text-outline">pawn</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="material-symbols-outlined text-3xl mb-1">timer</span>
+<span class="font-mono text-[8px] text-outline">timer</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="material-symbols-outlined text-3xl mb-1">strategy</span>
+<span class="font-mono text-[8px] text-outline">strategy</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="material-symbols-outlined text-3xl mb-1">military_tech</span>
+<span class="font-mono text-[8px] text-outline">victory</span>
+</div>
+</div>
+</div>
+<!-- Cell: Player Tokens -->
+<div class="md:col-span-5 bg-surface-container-lowest p-8 flex flex-col border-r border-outline-variant">
+<span class="font-mono text-[10px] text-primary uppercase mb-6 block font-bold">Player_Tokens</span>
+<div class="flex flex-wrap gap-4 items-start">
+<!-- Blue Player -->
+<div class="w-20 h-24 border border-outline bg-surface-container-low flex flex-col">
+<div class="h-1 bg-[#0047FF]"></div>
+<div class="flex-grow flex items-center justify-center font-mono font-bold text-xl">P1</div>
+</div>
+<!-- Red Player -->
+<div class="w-20 h-24 border border-outline bg-surface-container-low flex flex-col">
+<div class="h-1 bg-[#FF2E2E]"></div>
+<div class="flex-grow flex items-center justify-center font-mono font-bold text-xl">P2</div>
+</div>
+<!-- Yellow Player -->
+<div class="w-20 h-24 border border-outline bg-surface-container-low flex flex-col">
+<div class="h-1 bg-[#FFB800]"></div>
+<div class="flex-grow flex items-center justify-center font-mono font-bold text-xl">P3</div>
+</div>
+<!-- Green Player -->
+<div class="w-20 h-24 border border-outline bg-surface-container-low flex flex-col">
+<div class="h-1 bg-[#00B85C]"></div>
+<div class="flex-grow flex items-center justify-center font-mono font-bold text-xl">P4</div>
+</div>
+</div>
+<p class="mt-auto font-mono text-[10px] text-outline uppercase">Accent Bar Identification System</p>
+</div>
+<!-- Cell: Chip Designs -->
+<div class="md:col-span-4 bg-surface-container-lowest p-8 flex flex-col">
+<span class="font-mono text-[10px] text-primary uppercase mb-6 block font-bold">Badges_Chips</span>
+<div class="space-y-4">
+<div class="flex gap-2">
+<span class="px-3 py-1 bg-primary text-on-primary text-[10px] font-mono uppercase tracking-widest">Winning</span>
+<span class="px-3 py-1 border border-primary text-primary text-[10px] font-mono uppercase tracking-widest">Active</span>
+</div>
+<div class="flex gap-2">
+<span class="px-2 py-1 bg-surface-container-highest text-outline text-[9px] font-mono uppercase">Eliminated</span>
+<span class="px-2 py-1 bg-secondary text-on-secondary text-[9px] font-mono uppercase">Highest Score</span>
+</div>
+<div class="flex gap-2">
+<div class="w-4 h-4 rounded-full bg-[#00B85C]"></div>
+<span class="font-mono text-[10px] uppercase">Connection Stable</span>
+</div>
+</div>
+</div>
+<!-- Cell: Tonal Palette -->
+<div class="md:col-span-12 bg-surface-container-lowest p-8 border-t border-outline">
+<span class="font-mono text-[10px] text-primary uppercase mb-8 block font-bold">Color_Architecture</span>
+<div class="grid grid-cols-2 md:grid-cols-6 gap-px bg-outline border border-outline">
+<div class="bg-primary p-4 h-32 flex flex-col justify-end">
+<span class="text-on-primary font-mono text-[10px] uppercase">Ink</span>
+<span class="text-on-primary font-mono text-xs">#1A1A1A</span>
+</div>
+<div class="bg-surface-container-lowest p-4 h-32 flex flex-col justify-end">
+<span class="text-primary font-mono text-[10px] uppercase">Highlight</span>
+<span class="text-primary font-mono text-xs">#FFFFFF</span>
+</div>
+<div class="bg-surface-container-low p-4 h-32 flex flex-col justify-end">
+<span class="text-primary font-mono text-[10px] uppercase">Paper</span>
+<span class="text-primary font-mono text-xs">#F4F4F2</span>
+</div>
+<div class="bg-outline p-4 h-32 flex flex-col justify-end">
+<span class="text-on-primary font-mono text-[10px] uppercase">Outline</span>
+<span class="text-on-primary font-mono text-xs">#777777</span>
+</div>
+<div class="bg-surface-container-highest p-4 h-32 flex flex-col justify-end">
+<span class="text-primary font-mono text-[10px] uppercase">Muted</span>
+<span class="text-primary font-mono text-xs">#E2E3E1</span>
+</div>
+<div class="bg-secondary p-4 h-32 flex flex-col justify-end">
+<span class="text-on-secondary font-mono text-[10px] uppercase">Accent</span>
+<span class="text-on-secondary font-mono text-xs">#0047FF</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Layout Patterns Section -->
+<section class="mb-24">
+<h4 class="font-headline font-black uppercase text-xl mb-8 tracking-tight">Layout Structures</h4>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+<div class="space-y-4">
+<p class="font-mono text-[10px] uppercase text-outline">Pattern_01: Asymmetric Scoreboard</p>
+<div class="border border-outline bg-surface-container-lowest overflow-hidden">
+<div class="grid grid-cols-4 border-b border-outline">
+<div class="col-span-2 p-3 font-mono text-xs font-bold bg-surface-container-high border-r border-outline uppercase">Player</div>
+<div class="p-3 font-mono text-xs font-bold bg-surface-container-high border-r border-outline text-right uppercase">R1</div>
+<div class="p-3 font-mono text-xs font-bold bg-surface-container-high text-right uppercase">Total</div>
+</div>
+<div class="grid grid-cols-4 border-b border-outline-variant">
+<div class="col-span-2 p-3 font-headline font-bold uppercase text-sm border-r border-outline-variant">Arthur M.</div>
+<div class="p-3 font-mono text-sm border-r border-outline-variant text-right">45</div>
+<div class="p-3 font-mono text-sm text-right font-black">120</div>
+</div>
+<div class="grid grid-cols-4 bg-surface-container-high/20">
+<div class="col-span-2 p-3 font-headline font-bold uppercase text-sm border-r border-outline-variant">Sarah J.</div>
+<div class="p-3 font-mono text-sm border-r border-outline-variant text-right">32</div>
+<div class="p-3 font-mono text-sm text-right font-black text-secondary">158</div>
+</div>
+</div>
+</div>
+<div class="space-y-4">
+<p class="font-mono text-[10px] uppercase text-outline">Pattern_02: Rulebook Snippet</p>
+<div class="border border-outline bg-surface-container-lowest p-6 pl-8 pr-12 relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-2 bg-primary"></div>
+<h5 class="font-headline font-extrabold uppercase text-lg mb-2">04. Scoring Phase</h5>
+<p class="text-sm leading-relaxed mb-4">Players accumulate victory points based on territory control and resource utilization at the end of each lunar cycle.</p>
+<div class="flex gap-4">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">calculate</span>
+<span class="font-mono text-[10px] uppercase">Manual Tally</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">history</span>
+<span class="font-mono text-[10px] uppercase">Log Entry</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-end px-4 bg-[#F4F4F2] dark:bg-[#1A1A1A] text-[#1A1A1A] dark:text-[#F4F4F2] font-['Space_Mono'] text-[10px] uppercase tracking-widest border-t border-[#777777] h-20 shadow-none">
+<a class="flex flex-col items-center justify-center pt-3 pb-4 text-[#777777] dark:text-[#C6C6C6] hover:bg-[#E2E3E1] dark:hover:bg-[#2A2A2A] transition-all duration-75 ease-linear flex-1" href="#">
+<span class="material-symbols-outlined mb-1">dashboard</span>
+<span>DASHBOARD</span>
+</a>
+<a class="flex flex-col items-center justify-center pt-3 pb-4 text-[#777777] dark:text-[#C6C6C6] hover:bg-[#E2E3E1] dark:hover:bg-[#2A2A2A] transition-all duration-75 ease-linear flex-1" href="#">
+<span class="material-symbols-outlined mb-1">menu_book</span>
+<span>RULES</span>
+</a>
+<a class="flex flex-col items-center justify-center border-t-4 border-[#1A1A1A] dark:border-[#F4F4F2] pt-2 pb-4 text-[#1A1A1A] dark:text-[#F4F4F2] hover:bg-[#E2E3E1] dark:hover:bg-[#2A2A2A] transition-all duration-75 ease-linear flex-1" href="#">
+<span class="material-symbols-outlined mb-1">calculate</span>
+<span>SCORING</span>
+</a>
+<a class="flex flex-col items-center justify-center pt-3 pb-4 text-[#777777] dark:text-[#C6C6C6] hover:bg-[#E2E3E1] dark:hover:bg-[#2A2A2A] transition-all duration-75 ease-linear flex-1" href="#">
+<span class="material-symbols-outlined mb-1">history</span>
+<span>HISTORY</span>
+</a>
+</nav>
+</body></html>

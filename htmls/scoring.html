@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Rules &amp; Scoring Matrix</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "primary": "#ec4141",
+          "background-light": "#f8f6f6",
+          "background-dark": "#211111",
+        },
+        fontFamily: {
+          "display": ["Space Grotesk", "sans-serif"]
+        },
+        borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+      },
+    },
+  }
+</script>
+<style>
+  body {
+    font-family: 'Space Grotesk', sans-serif;
+  }
+</style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light text-slate-900 antialiased overflow-hidden">
+<div class="relative flex h-screen w-full flex-col bg-background-light group/design-root overflow-x-hidden">
+<!-- Mock Active Dashboard Background (dimmed) -->
+<div class="absolute inset-0 p-4 opacity-30 flex flex-col gap-4 pointer-events-none">
+<div class="h-12 w-32 bg-slate-200 border border-slate-800"></div>
+<div class="h-24 w-full bg-white border border-slate-800 flex items-center justify-between px-6">
+<div class="flex items-center gap-4"><div class="h-8 w-8 rounded-full bg-blue-600"></div><div class="h-6 w-24 bg-slate-200"></div></div>
+<div class="h-12 w-16 bg-slate-200"></div>
+</div>
+<div class="h-24 w-full bg-white border border-slate-800 flex items-center justify-between px-6">
+<div class="flex items-center gap-4"><div class="h-8 w-8 rounded-full bg-red-600"></div><div class="h-6 w-24 bg-slate-200"></div></div>
+<div class="h-12 w-16 bg-slate-200"></div>
+</div>
+</div>
+<!-- Bottom Sheet Overlay -->
+<div class="flex absolute top-0 left-0 h-full w-full flex-col justify-end items-stretch bg-slate-900/40 z-10 transition-opacity">
+<!-- Bottom Sheet Content -->
+<div class="flex flex-col items-stretch bg-white rounded-t-xl border-t border-slate-800 max-h-[751px] overflow-hidden transform transition-transform">
+<!-- Handle and Header (Shared Component styling adapted for theme) -->
+<button class="flex h-6 w-full items-center justify-center pt-2 pb-1 cursor-grab active:cursor-grabbing">
+<div class="h-1.5 w-12 rounded-full bg-slate-300"></div>
+</button>
+<div class="flex-shrink-0 border-b border-slate-800 px-6 pb-4 pt-2 flex justify-between items-center">
+<h2 class="text-slate-900 text-2xl font-bold leading-tight tracking-tight">Scoring &amp; Rules</h2>
+<button class="h-10 w-10 flex items-center justify-center border border-slate-800 rounded hover:bg-slate-50 transition-colors">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+</div>
+<!-- Scrollable Content Area -->
+<div class="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-8">
+<!-- Multiplier Calculator Section -->
+<section class="flex flex-col gap-4">
+<h3 class="text-sm font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 pb-2">Calculators</h3>
+<!-- Toggle Row -->
+<div class="flex items-center justify-between py-3 border-b border-slate-100">
+<div class="flex flex-col">
+<span class="font-bold text-lg">Longest Road</span>
+<span class="text-sm text-slate-500">+15 Points</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary border border-slate-800"></div>
+</label>
+</div>
+<!-- Numeric Stepper Row -->
+<div class="flex items-center justify-between py-3 border-b border-slate-100">
+<div class="flex flex-col">
+<span class="font-bold text-lg">Military Tokens</span>
+<span class="text-sm text-slate-500">x3 Points each</span>
+</div>
+<div class="flex items-center border border-slate-800 rounded">
+<button class="h-10 w-10 flex items-center justify-center border-r border-slate-800 hover:bg-slate-50 active:bg-slate-100 transition-colors">
+<span class="material-symbols-outlined" data-icon="remove">remove</span>
+</button>
+<div class="h-10 w-14 flex items-center justify-center font-bold text-xl">
+                4
+              </div>
+<button class="h-10 w-10 flex items-center justify-center border-l border-slate-800 hover:bg-slate-50 active:bg-slate-100 transition-colors text-primary">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+</div>
+</div>
+<!-- Numeric Stepper Row -->
+<div class="flex items-center justify-between py-3 border-b border-slate-100">
+<div class="flex flex-col">
+<span class="font-bold text-lg">Unused Goods</span>
+<span class="text-sm text-slate-500">-1 Point each</span>
+</div>
+<div class="flex items-center border border-slate-800 rounded">
+<button class="h-10 w-10 flex items-center justify-center border-r border-slate-800 hover:bg-slate-50 active:bg-slate-100 transition-colors">
+<span class="material-symbols-outlined" data-icon="remove">remove</span>
+</button>
+<div class="h-10 w-14 flex items-center justify-center font-bold text-xl">
+                0
+              </div>
+<button class="h-10 w-10 flex items-center justify-center border-l border-slate-800 hover:bg-slate-50 active:bg-slate-100 transition-colors">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Rules Reference Section -->
+<section class="flex flex-col gap-0 border border-slate-800 rounded">
+<h3 class="text-sm font-bold text-slate-500 uppercase tracking-widest border-b border-slate-800 p-4 bg-slate-50">Quick Rules</h3>
+<!-- Accordion Item (Closed) -->
+<div class="border-b border-slate-800">
+<button class="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left group">
+<span class="font-bold text-lg group-hover:text-primary transition-colors">Tie-breaker rules</span>
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+<!-- Accordion Item (Open) -->
+<div class="border-b border-slate-800 bg-slate-50">
+<button class="w-full flex items-center justify-between p-4 text-left">
+<span class="font-bold text-lg text-primary">Valid Placements</span>
+<span class="material-symbols-outlined text-primary rotate-90 transition-transform" data-icon="chevron_right">chevron_right</span>
+</button>
+<div class="px-4 pb-4 text-slate-600 text-sm leading-relaxed">
+              Tokens must be placed adjacent to previously established routes. Diagonal placements are only permitted if bridging two separate continents. Invalid placements result in immediate forfeiture of the token.
+            </div>
+</div>
+<!-- Accordion Item (Closed) -->
+<div>
+<button class="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left group">
+<span class="font-bold text-lg group-hover:text-primary transition-colors">End-game triggers</span>
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</section>
+</div>
+<!-- Bottom Action Bar -->
+<div class="border-t border-slate-800 p-6 bg-white">
+<button class="w-full h-14 bg-slate-900 text-white font-bold text-lg rounded flex items-center justify-center hover:bg-slate-800 active:bg-slate-950 transition-colors border border-slate-900">
+          Apply +27 Points
+        </button>
+</div>
+</div>
+</div>
+</div>
+</body></html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Game Night Scorer</title>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&family=Space+Mono:wght@400;700&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+<!-- Tailwind CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        "surface-container-low": "#f4f4f2",
+        "surface-container": "#eeeeec",
+        "surface-container-high": "#e8e8e6",
+        "surface-container-highest": "#e2e3e1",
+        "surface-container-lowest": "#ffffff",
+        "surface-bright": "#f9f9f7",
+        "surface-dim": "#dadad8",
+        "on-surface": "#1a1c1b",
+        "on-surface-variant": "#474747",
+        "primary": "#000000",
+        "on-primary": "#ffffff",
+        "secondary": "#0046fa",
+        "on-secondary": "#ffffff",
+        "tertiary": "#7e0008",
+        "tertiary-container": "#e61720",
+        "error": "#ba1a1a",
+        "on-error": "#ffffff",
+        "outline": "#777777",
+        "outline-variant": "#c6c6c6",
+        "background": "#f4f4f2",
+        "on-background": "#1a1c1b",
+        "surface": "#f9f9f7",
+        "inverse-surface": "#2f3130",
+        "inverse-on-surface": "#f1f1ef",
+      },
+      fontFamily: {
+        headline: ["Manrope", "sans-serif"],
+        body: ["Manrope", "sans-serif"],
+        label: ["Space Grotesk", "sans-serif"],
+        mono: ["Space Mono", "monospace"],
+      },
+      borderRadius: {
+        DEFAULT: "0px",
+        lg: "0px",
+        xl: "4px",
+        full: "9999px",
+      },
+    },
+  },
+};
+</script>
+
+<!-- App CSS -->
+<link rel="stylesheet" href="css/app.css">
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#F4F4F2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Game Night">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+</head>
+
+<body class="bg-surface-container-low text-on-surface font-body antialiased selection:bg-secondary selection:text-white">
+  <!-- App Shell -->
+  <div id="app" class="relative max-w-[430px] mx-auto min-h-[100dvh] flex flex-col overflow-hidden">
+
+    <!-- Top Bar -->
+    <header id="top-bar" class="bg-surface-container-low border-b border-outline sticky top-0 z-50 flex justify-between items-center w-full px-6 py-4 shrink-0" style="display:none">
+      <div class="flex items-center gap-3">
+        <button id="top-bar-back" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 hidden" style="font-size:24px">arrow_back</button>
+        <h1 id="top-bar-title" class="font-headline font-black uppercase tracking-tighter text-lg">GAME NIGHT</h1>
+      </div>
+      <div id="top-bar-actions" class="flex items-center gap-2"></div>
+    </header>
+
+    <!-- Screen Container -->
+    <main id="screen-container" class="flex-1 relative overflow-hidden">
+      <!-- Screens are rendered here by router -->
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav id="bottom-nav" class="bg-surface-container-low border-t border-outline flex justify-around items-end px-4 shrink-0 z-50" style="display:none">
+      <!-- Rendered by bottom-nav.js -->
+    </nav>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-[200] flex flex-col items-center gap-2 pointer-events-none max-w-[400px] w-full px-4"></div>
+
+  <!-- App Entry -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

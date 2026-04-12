@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Setup &amp; Game Selection - Minimalist Scorer</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&amp;display=swap" rel="stylesheet"/>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,300,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          primary: "#1A1A1A",
+          background: "#F4F4F2",
+          surface: "#FFFFFF",
+          text: "#1A1A1A",
+          muted: "#8C8C85",
+          p1: "#0047FF",
+          p2: "#FF2E2E",
+          p3: "#FFB800",
+          p4: "#00B85C",
+        },
+        fontFamily: {
+          sans: ["Satoshi", "sans-serif"],
+          mono: ["Space Mono", "monospace"],
+        },
+        borderRadius: {
+          none: "0px",
+          sm: "2px",
+          DEFAULT: "4px",
+          md: "6px",
+          lg: "8px",
+          xl: "12px",
+          "2xl": "16px",
+          "3xl": "24px",
+          full: "9999px",
+        },
+      },
+    },
+  }
+</script>
+<style>
+  body {
+    background-color: theme('colors.background');
+    color: theme('colors.text');
+    font-family: theme('fontFamily.sans');
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  .mono-text {
+    font-family: theme('fontFamily.mono');
+  }
+  
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+</style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="min-h-screen flex flex-col relative overflow-hidden selection:bg-primary selection:text-white">
+<!-- Header: Minimal Back Button for Focused View -->
+<header class="flex items-center p-4 border-b border-primary bg-surface sticky top-0 z-10 shrink-0">
+<button class="flex items-center justify-center w-10 h-10 border border-primary hover:bg-background transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface">
+<span class="material-symbols-outlined text-primary text-2xl">arrow_back</span>
+</button>
+<h1 class="ml-4 text-2xl font-bold tracking-tight uppercase">Setup</h1>
+</header>
+<!-- Main Content -->
+<main class="flex-1 overflow-y-auto no-scrollbar pb-24">
+<!-- Player Count Section -->
+<section class="p-6 border-b border-primary bg-background">
+<h2 class="text-sm font-bold tracking-widest uppercase text-muted mb-6">1. Players</h2>
+<div class="flex flex-col items-center justify-center py-4">
+<p class="text-base font-medium mb-4 text-center">How many are playing?</p>
+<div class="flex items-center gap-6">
+<button class="w-14 h-14 flex items-center justify-center border border-primary rounded-none bg-surface hover:bg-gray-50 active:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background group">
+<span class="material-symbols-outlined text-3xl group-active:scale-95 transition-transform">remove</span>
+</button>
+<div class="w-20 text-center">
+<span class="mono-text text-5xl font-bold">4</span>
+</div>
+<button class="w-14 h-14 flex items-center justify-center border border-primary rounded-none bg-surface hover:bg-gray-50 active:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background group">
+<span class="material-symbols-outlined text-3xl group-active:scale-95 transition-transform">add</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Game Selection Section -->
+<section class="p-6 bg-background min-h-[442px]">
+<div class="flex justify-between items-end mb-6">
+<h2 class="text-sm font-bold tracking-widest uppercase text-muted">2. Select Game</h2>
+<span class="text-xs font-medium bg-white border border-primary px-2 py-1">4 Players</span>
+</div>
+<div class="space-y-3">
+<!-- Game Card: Unselected -->
+<button class="w-full text-left h-[72px] bg-surface border border-primary flex items-center px-4 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background transition-all group">
+<div class="flex-1 flex flex-col justify-center">
+<span class="font-bold text-lg leading-tight truncate group-hover:underline decoration-2 underline-offset-4">Catan</span>
+<span class="text-sm text-muted mt-0.5">Strategy • Medium</span>
+</div>
+<div class="w-6 h-6 border border-muted rounded-full flex items-center justify-center shrink-0 group-hover:border-primary transition-colors"></div>
+</button>
+<!-- Game Card: Selected -->
+<button class="w-full text-left h-[72px] bg-surface border-2 border-primary flex items-center px-4 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background transition-all relative overflow-hidden">
+<!-- Selection Indicator Line -->
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-primary"></div>
+<div class="flex-1 flex flex-col justify-center pl-2">
+<span class="font-bold text-lg leading-tight truncate">Ticket to Ride</span>
+<span class="text-sm text-muted mt-0.5">Route Building • Light</span>
+</div>
+<div class="w-6 h-6 bg-primary rounded-full flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-white text-sm" style="font-variation-settings: 'wght' 700;">check</span>
+</div>
+</button>
+<!-- Game Card: Unselected -->
+<button class="w-full text-left h-[72px] bg-surface border border-primary flex items-center px-4 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background transition-all group">
+<div class="flex-1 flex flex-col justify-center">
+<span class="font-bold text-lg leading-tight truncate group-hover:underline decoration-2 underline-offset-4">Splendor</span>
+<span class="text-sm text-muted mt-0.5">Engine Building • Light</span>
+</div>
+<div class="w-6 h-6 border border-muted rounded-full flex items-center justify-center shrink-0 group-hover:border-primary transition-colors"></div>
+</button>
+<!-- Game Card: Unselected -->
+<button class="w-full text-left h-[72px] bg-surface border border-primary flex items-center px-4 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background transition-all group">
+<div class="flex-1 flex flex-col justify-center">
+<span class="font-bold text-lg leading-tight truncate group-hover:underline decoration-2 underline-offset-4">Wingspan</span>
+<span class="text-sm text-muted mt-0.5">Card Drafting • Medium</span>
+</div>
+<div class="w-6 h-6 border border-muted rounded-full flex items-center justify-center shrink-0 group-hover:border-primary transition-colors"></div>
+</button>
+<!-- Generic "Other" Option -->
+<button class="w-full text-left h-[72px] bg-transparent border border-dashed border-primary flex items-center px-4 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background transition-all group mt-6">
+<div class="w-8 h-8 flex items-center justify-center border border-primary shrink-0 mr-4 bg-surface group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined">add</span>
+</div>
+<div class="flex-1 font-medium text-lg">Custom Game / Manual Entry</div>
+</button>
+</div>
+</section>
+</main>
+<!-- Sticky Bottom Action Bar -->
+<div class="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-primary z-20">
+<button class="w-full h-14 bg-primary text-white font-bold text-lg uppercase tracking-wider flex items-center justify-center hover:bg-black active:scale-[0.98] transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background rounded-none">
+      Start Game
+      <span class="material-symbols-outlined ml-2">arrow_forward</span>
+</button>
+</div>
+</body></html>

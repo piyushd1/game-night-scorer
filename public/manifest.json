@@ -1,0 +1,22 @@
+{
+  "name": "Game Night Scorer",
+  "short_name": "Game Night",
+  "description": "Track scores for board games and card games with friends",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F4F4F2",
+  "theme_color": "#F4F4F2",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Cabo Rulebook - The Analog Architect</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Space+Mono&amp;family=Space+Grotesk:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-low": "#f4f4f2",
+                    "on-secondary": "#ffffff",
+                    "inverse-on-surface": "#f1f1ef",
+                    "secondary-fixed-dim": "#94a6ff",
+                    "surface-bright": "#f9f9f7",
+                    "on-tertiary-fixed-variant": "#ffdad6",
+                    "tertiary-fixed-dim": "#93000b",
+                    "on-primary-fixed": "#ffffff",
+                    "outline-variant": "#c6c6c6",
+                    "error-container": "#ffdad6",
+                    "surface": "#f9f9f7",
+                    "on-background": "#1a1c1b",
+                    "surface-container": "#eeeeec",
+                    "outline": "#777777",
+                    "on-primary-container": "#ffffff",
+                    "surface-container-high": "#e8e8e6",
+                    "on-primary-fixed-variant": "#e5e2e1",
+                    "primary-fixed": "#5f5e5e",
+                    "on-error-container": "#410002",
+                    "on-surface-variant": "#474747",
+                    "on-tertiary": "#ffdad6",
+                    "surface-dim": "#dadad8",
+                    "secondary-fixed": "#b9c3ff",
+                    "inverse-primary": "#c8c6c5",
+                    "on-secondary-fixed-variant": "#002ba5",
+                    "surface-container-highest": "#e2e3e1",
+                    "surface-variant": "#e2e3e1",
+                    "primary": "#000000",
+                    "on-tertiary-fixed": "#ffffff",
+                    "on-error": "#ffffff",
+                    "on-surface": "#1a1c1b",
+                    "on-secondary-container": "#001257",
+                    "tertiary": "#7e0008",
+                    "secondary-container": "#cbd2ff",
+                    "inverse-surface": "#2f3130",
+                    "on-tertiary-container": "#ffffff",
+                    "primary-fixed-dim": "#474746",
+                    "on-primary": "#e5e2e1",
+                    "on-secondary-fixed": "#001257",
+                    "surface-tint": "#5f5e5e",
+                    "primary-container": "#3c3b3b",
+                    "tertiary-container": "#e61720",
+                    "tertiary-fixed": "#c00013",
+                    "error": "#ba1a1a",
+                    "secondary": "#0046fa",
+                    "background": "#f9f9f7",
+                    "surface-container-lowest": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0px",
+                    "lg": "4px",
+                    "xl": "4px",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope", "sans-serif"],
+                    "body": ["Manrope", "sans-serif"],
+                    "label": ["Space Mono", "monospace"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #f4f4f2;
+            color: #1a1a1a;
+            font-family: 'Manrope', sans-serif;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background selection:bg-secondary selection:text-white">
+<!-- TopAppBar -->
+<header class="bg-[#F4F4F2] dark:bg-[#1A1A1A] text-[#1A1A1A] dark:text-[#F4F4F2] font-['Manrope'] font-black uppercase tracking-tighter docked full-width top-0 border-b border-[#777777] flat no shadows flex justify-between items-center w-full px-6 py-4 sticky z-50">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined cursor-pointer hover:bg-[#E8E8E6] dark:hover:bg-[#2A2A2A] transition-colors p-1" data-icon="menu">menu</span>
+<h1 class="text-xl font-black text-[#1A1A1A] dark:text-[#F4F4F2]">THE ANALOG ARCHITECT</h1>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined cursor-pointer hover:bg-[#E8E8E6] dark:hover:bg-[#2A2A2A] transition-colors p-1" data-icon="search">search</span>
+</div>
+</header>
+<main class="max-w-5xl mx-auto px-6 pt-12 pb-32 grid grid-cols-1 lg:grid-cols-12 gap-12">
+<!-- Sidebar Navigation (Desktop) / Rule Content (Mobile) -->
+<article class="lg:col-span-8 space-y-16">
+<!-- Hero / Title -->
+<section class="border-l-4 border-primary pl-6">
+<h2 class="text-5xl font-black uppercase tracking-tight leading-[0.9] mb-4 font-headline">CABO<br/>RULEBOOK</h2>
+<p class="font-label text-xs uppercase tracking-[0.2em] text-outline">EDITION NO. 04 / ANALOG ARCHIVE</p>
+</section>
+<!-- Objective Section -->
+<section class="relative" id="objective">
+<div class="flex items-start gap-4 mb-6">
+<span class="font-label text-sm text-outline border border-outline px-2 py-1">01</span>
+<h3 class="text-2xl font-bold uppercase tracking-tight font-headline">The Objective</h3>
+</div>
+<div class="bg-surface-container-lowest p-8 border border-outline-variant relative">
+<div class="absolute top-0 right-0 w-16 h-[3px] bg-[#0047FF]"></div>
+<p class="text-lg leading-relaxed mb-6">
+                        Memorize, swap, and peek at your cards to minimize the total sum of your hand. The game ends when a player calls <span class="font-bold">"CABO"</span>, thinking they have the lowest score, or when the deck is exhausted.
+                    </p>
+<div class="grid grid-cols-2 gap-4">
+<div class="p-4 bg-surface-container-low border border-outline-variant">
+<p class="font-label text-[10px] uppercase text-outline mb-1">Target Score</p>
+<p class="font-label text-xl font-bold">100 PTS</p>
+</div>
+<div class="p-4 bg-surface-container-low border border-outline-variant">
+<p class="font-label text-[10px] uppercase text-outline mb-1">Players</p>
+<p class="font-label text-xl font-bold">2-4 ARCHITECTS</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Gameplay Section -->
+<section class="space-y-8" id="gameplay">
+<div class="flex items-start gap-4 mb-6">
+<span class="font-label text-sm text-outline border border-outline px-2 py-1">02</span>
+<h3 class="text-2xl font-bold uppercase tracking-tight font-headline">Core Gameplay</h3>
+</div>
+<!-- Setup -->
+<div class="pl-6 border-l border-outline-variant space-y-4">
+<h4 class="font-bold uppercase text-sm tracking-widest text-primary">I. Setup Phase</h4>
+<p class="text-on-surface-variant leading-relaxed">
+                        Each player receives <span class="font-bold">four cards face down</span>. You may peek at the outer two cards once. The remaining deck forms the draw pile.
+                    </p>
+</div>
+<!-- Turns -->
+<div class="pl-6 border-l border-outline-variant space-y-4">
+<h4 class="font-bold uppercase text-sm tracking-widest text-primary">II. The Turn Cycle</h4>
+<p class="text-on-surface-variant leading-relaxed">
+                        On your turn, you must perform one of three actions:
+                    </p>
+<ul class="space-y-4 mt-4">
+<li class="flex items-start gap-4">
+<div class="mt-1.5 w-2 h-2 bg-secondary shrink-0"></div>
+<div>
+<span class="font-bold uppercase text-xs block mb-1">Draw from Deck</span>
+<span class="text-sm">Draw a card. Use its ability, swap it with one of your cards, or discard it.</span>
+</div>
+</li>
+<li class="flex items-start gap-4">
+<div class="mt-1.5 w-2 h-2 bg-[#FF2E2E] shrink-0"></div>
+<div>
+<span class="font-bold uppercase text-xs block mb-1">Take from Discard</span>
+<span class="text-sm">Swap the top discard card with one of yours. You do not get the card's special ability.</span>
+</div>
+</li>
+<li class="flex items-start gap-4">
+<div class="mt-1.5 w-2 h-2 bg-[#FFB800] shrink-0"></div>
+<div>
+<span class="font-bold uppercase text-xs block mb-1">Call Cabo</span>
+<span class="text-sm">End the round. Other players get one final turn.</span>
+</div>
+</li>
+</ul>
+</div>
+</section>
+<!-- Scoring Section -->
+<section id="scoring">
+<div class="flex items-start gap-4 mb-6">
+<span class="font-label text-sm text-outline border border-outline px-2 py-1">03</span>
+<h3 class="text-2xl font-bold uppercase tracking-tight font-headline">Scoring Protocol</h3>
+</div>
+<div class="bg-primary text-on-primary p-8 space-y-6">
+<p class="text-sm tracking-wide opacity-80 uppercase font-label">The Kamikaze Rule</p>
+<h4 class="text-3xl font-black uppercase italic tracking-tighter leading-none">The Perfect Reset</h4>
+<p class="text-on-primary opacity-90 leading-relaxed">
+                        If you end the round with exactly <span class="text-white font-bold underline underline-offset-4">two 12s and two 13s</span>, your score for that round is <span class="font-label text-2xl ml-2">0</span>. All other players receive 50 penalty points.
+                    </p>
+</div>
+<div class="mt-6 overflow-hidden border border-outline-variant">
+<table class="w-full text-left font-label text-sm border-collapse">
+<thead class="bg-surface-container-high border-b border-outline-variant">
+<tr>
+<th class="p-4 uppercase tracking-widest text-[10px]">Condition</th>
+<th class="p-4 uppercase tracking-widest text-[10px] text-right">Result</th>
+</tr>
+</thead>
+<tbody class="bg-surface-container-lowest">
+<tr class="border-b border-outline-variant">
+<td class="p-4">Cabo Caller has lowest score</td>
+<td class="p-4 text-right">0 PTS</td>
+</tr>
+<tr class="border-b border-outline-variant">
+<td class="p-4">Cabo Caller does NOT have lowest</td>
+<td class="p-4 text-right">Sum + 10 PTS</td>
+</tr>
+<tr class="border-b border-outline-variant">
+<td class="p-4">Everyone else</td>
+<td class="p-4 text-right text-secondary">Sum of cards</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</article>
+<!-- Sticky Reference Section -->
+<aside class="lg:col-span-4">
+<div class="sticky top-24 space-y-6">
+<div class="bg-surface-container-high border border-outline p-6 relative">
+<div class="absolute -top-3 -right-3 w-8 h-8 bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-sm" data-icon="bolt">bolt</span>
+</div>
+<h4 class="font-headline font-black uppercase tracking-tight text-xl mb-6 border-b border-outline pb-2">Quick Ref</h4>
+<div class="space-y-4">
+<div class="flex justify-between items-end group">
+<div class="flex flex-col">
+<span class="font-label text-[10px] text-outline uppercase">Card 7-8</span>
+<span class="font-bold uppercase text-xs">Peek</span>
+</div>
+<div class="h-[1px] flex-grow mx-2 mb-1 border-t border-dotted border-outline opacity-30"></div>
+<span class="font-label text-sm font-bold">Self</span>
+</div>
+<div class="flex justify-between items-end group">
+<div class="flex flex-col">
+<span class="font-label text-[10px] text-outline uppercase">Card 9-10</span>
+<span class="font-bold uppercase text-xs">Spy</span>
+</div>
+<div class="h-[1px] flex-grow mx-2 mb-1 border-t border-dotted border-outline opacity-30"></div>
+<span class="font-label text-sm font-bold">Other</span>
+</div>
+<div class="flex justify-between items-end group">
+<div class="flex flex-col">
+<span class="font-label text-[10px] text-outline uppercase">Card 11-12</span>
+<span class="font-bold uppercase text-xs">Swap</span>
+</div>
+<div class="h-[1px] flex-grow mx-2 mb-1 border-t border-dotted border-outline opacity-30"></div>
+<span class="material-symbols-outlined text-sm" data-icon="sync">sync</span>
+</div>
+<div class="flex justify-between items-end group">
+<div class="flex flex-col">
+<span class="font-label text-[10px] text-outline uppercase">Card 13</span>
+<span class="font-bold uppercase text-xs">Black King</span>
+</div>
+<div class="h-[1px] flex-grow mx-2 mb-1 border-t border-dotted border-outline opacity-30"></div>
+<span class="font-label text-sm font-bold">13 PTS</span>
+</div>
+<div class="flex justify-between items-end group">
+<div class="flex flex-col text-[#00B85C]">
+<span class="font-label text-[10px] uppercase">Card 0</span>
+<span class="font-bold uppercase text-xs">Red King</span>
+</div>
+<div class="h-[1px] flex-grow mx-2 mb-1 border-t border-dotted border-[#00B85C] opacity-30"></div>
+<span class="font-label text-sm font-bold text-[#00B85C]">0 PTS</span>
+</div>
+</div>
+</div>
+<div class="p-6 border border-outline-variant bg-surface-container-lowest">
+<p class="font-label text-[10px] uppercase text-outline mb-4">Tactical Tip</p>
+<p class="text-xs italic leading-relaxed text-on-surface-variant">
+                        "The Architect never rushes. Observe the discard pile carefully; an opponent's discarded low card is your blueprint for victory."
+                    </p>
+</div>
+<img class="w-full grayscale border border-outline-variant aspect-square object-cover" data-alt="Minimalist abstract architectural blueprint showing interlocking geometric shapes in black and white with a single red accent line" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDPM_HI5Csy-VmV-XJJCS3gZ5PIXOwZSsUni1_aldBLmt74kRVLepl9NQRaIVRwPW0S89dE6Dve78_U5htBbYWMDeA9rAFJnA0WGEW_hlxfGXmAAMRiwtlEXj50vpfgw35zuL3g85_C6b8k5zDd8uL23cvygsID90XRzGdnf9ciDFzzl1WJA0LyM5ZA2oxOSojcZq1ccPTsMPH5Qv5JBmBkT0EIB5sxxVLr8PUoXQnBM9-VeAb3T-AQrFyKdRJ7k4-t-FUmD-Tr2R5B"/>
+</div>
+</aside>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-[#F4F4F2] dark:bg-[#1A1A1A] text-[#1A1A1A] dark:text-[#F4F4F2] font-['Space_Mono'] text-[10px] uppercase tracking-widest fixed bottom-0 w-full z-50 border-t border-[#777777] flat no shadows fixed bottom-0 left-0 w-full z-50 flex justify-around items-end px-4 transition-all duration-75 ease-linear">
+<a class="flex flex-col items-center justify-center pt-3 pb-4 text-[#777777] dark:text-[#C6C6C6] hover:bg-[#E2E3E1] dark:hover:bg-[#2A2A2A]" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>DASHBOARD</span>
+</a>
+<a class="flex flex-col items-center justify-center border-t-4 border-[#1A1A1A] dark:border-[#F4F4F2] pt-2 pb-4 text-[#1A1A1A] dark:text-[#F4F4F2] hover:bg-[#E2E3E1] dark:hover:bg-[#2A2A2A]" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span>RULES</span>
+</a>
+<a class="flex flex-col items-center justify-center pt-3 pb-4 text-[#777777] dark:text-[#C6C6C6] hover:bg-[#E2E3E1] dark:hover:bg-[#2A2A2A]" href="#">
+<span class="material-symbols-outlined" data-icon="calculate">calculate</span>
+<span>SCORING</span>
+</a>
+<a class="flex flex-col items-center justify-center pt-3 pb-4 text-[#777777] dark:text-[#C6C6C6] hover:bg-[#E2E3E1] dark:hover:bg-[#2A2A2A]" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span>HISTORY</span>
+</a>
+</nav>
+</body></html>

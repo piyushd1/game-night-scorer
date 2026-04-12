@@ -1,143 +1,134 @@
-# PLAN.md — Game Night Scorer
+# Multi-Game Scorer V1, Revised
 
-Product decisions, roadmap, and iteration log for the game-night-scorer project.
+## Summary
+Build a vanilla multi-file Firebase app around persistent `rooms`, non-destructive per-room `games`, and one `activeGameId` pointer. The app supports `Flip 7`, `Papayoo`, and `Cabo`, uses the `Analog Architect` system for all final styling, keeps live viewer sync, and preserves completed games for future history support even though V1 does not expose a History screen.
 
----
+## Design System And Flow
+- Final visual system is `Analog Architect` everywhere.
+  Use `htmls/design-assets.html`, `htmls/cabo-rules.html`, and `htmls/specific-papayu-dash.html` as the styling source of truth.
+  Treat the Space Grotesk mocks only as interaction wireframes.
+- Component extraction map:
+  `design-assets.html`: top bar, bottom nav, player tokens, chips/badges, asymmetric scoreboard rows, numeric pad, rule snippet blocks.
+  `specific-papayu-dash.html`: inline scoring layout for Papayoo and overtime banner treatment.
+  `cabo-rules.html` and `rule-lib.html`: editorial rules layout and static rules content pattern.
+- App lifecycle:
+  `Create / Join` → `Lobby / Manage Roster` → `Game Select` → `Active Game` → `Winner Modal` → `Replay Same Game` or `Back to Game Select`.
+- Bottom nav behavior:
+  Hidden before a game starts.
+  Host during active game: `Dashboard`, `Rules`, `Scoring`.
+  Viewer during active game: `Dashboard`, `Rules`.
+  No `History` tab in V1.
+- Roster behavior:
+  Manage roster is available before a game starts and between games only.
+  Active-game rosters are frozen once the game begins.
 
-## What this is
+## Data Model And Room Lifecycle
+- Use RTDB paths:
+  `rooms/{roomCode}/meta`
+  `rooms/{roomCode}/players/{playerId}`
+  `rooms/{roomCode}/games/{gameId}`
+- `meta` stores:
+  `roomCode`, `hostKey`, `status`, `activeGameId`, `createdAt`, `updatedAt`, `expiresAt`, `version`.
+- Persistent room players store:
+  `id`, `name`, `isActive`, `seatOrder`, `accentKey`.
+  `isActive` allows late arrivals and sit-outs without deleting a person from the room.
+- Each game stores a snapshot:
+  `gameId`, `type`, `config`, `playerIds`, `playerSnapshot`, `rounds`, `status`, `overtime`, `winner`, `startedAt`, `finishedAt`, `version`.
+  `playerSnapshot` freezes names and seating for that game so later roster edits do not mutate completed games.
+- New game behavior:
+  Creating or replaying a game writes a new `games/{gameId}` node and updates `activeGameId`.
+  No game data is deleted when switching games.
+- Host identity:
+  Host browser keeps the opaque `hostKey` in `localStorage`.
+  Original host regains control on return within TTL.
+  Viewers never auto-promote to host.
+- Concurrency:
+  All round submissions, undo-last-round actions, roster updates, and active-game switches use RTDB transactions against `version`.
+  On version mismatch, reject the mutation, refresh the game state, and reopen the composer with a conflict message.
+- Cleanup:
+  Room codes remain 6-character uppercase alphanumeric.
+  `expiresAt` is extended to 24 hours after last activity.
+  Scheduled cleanup removes expired rooms and their nested games.
 
-A lightweight, real-time card game scorer built for Flip 7 game nights. Designed to run on phones, require zero installs, and sync live across all players. The north star: open a link, play, done.
+## Game Contracts
+- Shared registry contract:
+  `id`, `label`, `minPlayers`, `maxPlayers`, `winMode`, `defaultConfig`, `scoreComposerType`, `validateRound(draft, gameState)`, `applyRound(gameState, draft)`, `deriveWinner(gameState)`, `rulesContent`.
+- Initial supported counts:
+  `Flip 7`: `2-20` to preserve current scorer behavior.
+  `Cabo`: `2-4`.
+  `Papayoo`: `3-8`.
+- Shared endgame rule:
+  If an end trigger is reached but first place is tied, set `overtime = true`, show a visible `TIE-BREAKER / OVERTIME` state on dashboard and scoring screens, and continue until a unique winner exists.
 
----
+## Per-Game Rules And Scoring
+- `Flip 7`
+  - `winMode = highest_total`.
+  - Config: `targetScore`, default `200`, editable before game start.
+  - Composer: bottom-sheet scoring form derived from the current scorer behavior.
+  - Draft shape: `entries[{ playerId, basePoints, flip7BonusApplied }]`.
+  - Validation: `basePoints >= 0`.
+  - Round formula: `roundPoints = basePoints + (flip7BonusApplied ? 15 : 0)`.
+  - End trigger: any cumulative total `>= targetScore`.
+  - End resolution: highest cumulative total must be unique; otherwise overtime continues.
+- `Papayoo`
+  - `winMode = lowest_total`.
+  - Config: `roundLimit`, default `5`, editable before game start.
+  - Composer: dedicated inline scoring screen, not a modal.
+  - Passing cards remains physical-only and is never tracked in-app.
+  - Draft shape: `papayooSuit`, `entries[{ playerId, penaltyPoints }]`.
+  - Validation:
+    `papayooSuit` is required.
+    Sum of all `penaltyPoints` must equal exactly `250`.
+    Disable submit until checksum passes.
+  - Storage uses host-entered final penalties only; the app does not track individual Payoo cards.
+  - End trigger: current round count reaches `roundLimit`.
+  - Overtime behavior: if lowest cumulative total is tied at the round limit, increment effective round count one round at a time until unique.
+- `Cabo`
+  - `winMode = lowest_total`.
+  - Config: fixed `lossThreshold = 100`.
+  - Composer: bottom-sheet scoring form with caller selection and Kamikaze toggle.
+  - Draft shape: `callerId`, `kamikazeApplied`, `entries[{ playerId, cardTotal }]`.
+  - Validation:
+    `callerId` required.
+    If `kamikazeApplied` is true, standard caller-rule calculation is skipped.
+    Card totals must be present for all active players.
+  - Round formula:
+    If `kamikazeApplied`, caller gets `0`, every other player gets `50`.
+    Else find the minimum `cardTotal`.
+    If caller’s `cardTotal` equals that minimum, caller gets `0`.
+    Else caller gets `cardTotal + 10`.
+    Non-callers get their `cardTotal`.
+  - Exact-100 rule:
+    After cumulative totals are updated, any player landing on exactly `100` resets to `50`.
+  - End trigger:
+    any cumulative total becomes `> 100`.
+  - End resolution:
+    lowest cumulative total must be unique; otherwise overtime continues.
+- Winner UI
+  - Always use the hero winner treatment.
+  - Rank order follows `winMode`.
+  - For lowest-wins games, first place is the smallest total and second place is the next-smallest total.
+  - Primary actions: `Replay Same Game` and `Choose New Game`.
 
-## Design decisions
+## Host Controls
+- Host-only controls in V1:
+  `Submit Round`, `Undo Last Round`, `Manage Roster`, `Replay Same Game`, `Choose New Game`.
+- `Undo Last Round` removes only the most recently submitted round from the active game via transaction and recomputes derived totals.
+- Viewers never see mutation controls.
 
-### Single HTML file
-No React, no build step, no node_modules. The entire app is one `index.html`. This means:
-- Anyone can host it anywhere (GitHub Pages, Firebase Hosting, Netlify, even a WhatsApp attachment)
-- Zero maintenance overhead — no dependency updates, no security patches for npm packages
-- Trivially forkable and editable by non-developers
+## Test Plan
+- Room creation, join-by-code, direct-link join, refresh, and browser reopen all preserve expected host/viewer roles within TTL.
+- Manage roster allows add, rename, activate, deactivate between games, and active-game rosters remain frozen.
+- Starting a new game creates a new `gameId` and leaves previous game data intact.
+- `Flip 7` preserves existing scoring behavior, respects configurable target, and enters overtime on tied leaders at threshold.
+- `Papayoo` requires `papayooSuit`, blocks submit unless penalties sum to `250`, respects configurable round limit, and signals overtime when tied at the round limit.
+- `Cabo` applies caller logic correctly, applies Kamikaze override correctly, resets exact `100` to `50`, and only ends once someone is over `100` with a unique lowest total.
+- `Undo Last Round` works for all three games and is rejected safely on stale-tab conflicts.
+- Overtime state is visually obvious on dashboard, scoring, and winner-prevention states.
+- Winner screen sorts correctly for both highest-wins and lowest-wins games.
 
-The tradeoff is code organization. CSS and JS live in the same file. Acceptable for a tool of this size.
-
-### Firebase Realtime Database over Firestore
-Realtime Database (RTDB) was chosen over Firestore for this use case:
-- WebSocket-based — sub-second push, no polling
-- Simpler data model — our state is a single JSON object per game
-- Free tier is sufficient (1 GB storage, 10 GB/month transfer)
-- No complex querying needed — we just read/write one game node
-
-Firestore would be overkill and adds latency via its REST-over-HTTP polling fallback.
-
-### No authentication
-Host identity is stored in `localStorage` keyed by game code. This is intentional:
-- Friends don't need to create accounts
-- No friction to join as spectator
-- Good enough for a private game among known people
-
-The risk (someone else claiming host) is negligible in a private game context.
-
-### 6-character random game codes
-Generated with `Math.random().toString(36).substring(2,8).toUpperCase()`. ~2.1 billion combinations. Collision probability is effectively zero for casual use. No lookup table needed.
-
----
-
-## Current state (v1)
-
-### ✅ Shipped
-- [x] Dynamic player count (2–20)
-- [x] Custom initials per player
-- [x] Configurable win target
-- [x] Firebase real-time sync
-- [x] Host / spectator split
-- [x] 6-char shareable game code
-- [x] Copy link button
-- [x] Flip 7 +15 bonus toggle (toggleable, editable until confirm)
-- [x] Live mini-leaderboard in entry modal (updates on keystroke)
-- [x] Progress bar per player toward win target
-- [x] Highest score on top (descending sort)
-- [x] 🥇🥈🥉 medals for top 3
-- [x] Round chips with score per round
-- [x] Winner detection + banner
-- [x] Reset propagates to all devices
-- [x] Row highlight on focus (no jumping rows)
-- [x] 0-score rounds shown distinctly
-
----
-
-## Roadmap
-
-### V1.1 — Polish (next)
-- [ ] **Game expiry** — auto-delete games older than 24h via Firebase Cloud Function. Prevents DB accumulating stale games forever.
-- [ ] **Undo last round** — host can remove the most recent round. Essential for input mistakes.
-- [ ] **Round history modal** — tap a round chip to see full breakdown for that round.
-- [ ] **Haptic feedback** on confirm (mobile vibration API).
-- [ ] **Dark/light theme toggle** — currently dark only.
-
-### V1.2 — Multi-game support
-- [ ] **Game lobby** — host can name a session (e.g. "Friday Night"). Multiple games run under one session.
-- [ ] **Game history** — view past completed games within a session.
-- [ ] **Other games** — scoring template for other card/board games (e.g. Rummy, 29, etc.). Name change from "Flip 7 Scorer" to "Game Night Scorer" is already reflected in the repo name.
-
-### V1.3 — Social layer
-- [ ] **Player stats** — across sessions, track each player's win count, average score, bust rate.
-- [ ] **QR code** — generate a QR from the game code for in-person sharing (no typing needed).
-- [ ] **Confetti animation** on winner declaration.
-- [ ] **Sound effects** — subtle audio on round confirm and winner (toggleable).
-
-### V2 — Auth + persistence (if this gets used regularly)
-- [ ] **Firebase Auth** (Google Sign-In) — optional, for players who want persistent identity.
-- [ ] **Player profiles** — name, avatar color, historical record.
-- [ ] **Leaderboard across sessions** — who's won the most game nights.
-- [ ] **Admin dashboard** — manage multiple ongoing game nights.
-
----
-
-## Tech debt
-
-| Item | Priority | Notes |
-|---|---|---|
-| Firebase security rules | High | Currently open test mode. Tighten to game-scoped write rules before sharing publicly. |
-| Game code collision handling | Low | Theoretical. Add a check + retry on create if ever needed. |
-| LocalStorage host key loss | Medium | If user clears browser data, host access is lost. Consider passing hostKey in URL hash (not querystring) so it's never sent to server but persists in share. |
-| No input validation | Medium | Scores accept any number. Could add range validation (e.g. 0–200 per round). |
-| Single file grows unwieldy | Low | If features keep being added, split into HTML + CSS file + JS file and bundle via a simple script. |
-
----
-
-## Iteration log
-
-### Session 1 — Initial build
-- Built offline-only scorer with static 11-player grid
-- Issues: always 11 players, lowest score sorted first, no bust support
-
-### Session 2 — UX pass
-- Dynamic player count (2–20)
-- Sort descending (highest wins)
-- Auto-rotate rows on fill → caused mis-taps on mobile
-- Added BUST button and F7 toggle
-
-### Session 3 — Fix UX, add live leaderboard
-- Removed auto-rotation entirely — rows now stable
-- Replaced rotation with green highlight on focused row
-- Removed BUST button (enter 0 instead)
-- Made F7 properly toggleable (on/off until submit)
-- Added live mini-leaderboard in modal — updates on every keystroke
-
-### Session 4 — Firebase multiplayer
-- Firebase Realtime Database integration
-- Host/spectator split via localStorage hostKey
-- Game code generation and URL-based joining
-- Copy link button
-- Reset propagates to all devices
-- Loading screen while connecting
-- Config warning if Firebase not set up
-
----
-
-## Out of scope (intentionally)
-
-- **Chat / messaging** — this is a scorer, not a social app
-- **Video/audio** — use a call for that
-- **Card dealing simulation** — the app scores what happened, it doesn't play the game
-- **Monetisation** — no ads, no paywall, this is a tool for personal use
+## Assumptions
+- V1 stores completed games now even though there is no History UI yet.
+- `Analog Architect` tokens and layout language are used across the whole product.
+- `Papayoo` uses official scoring totals, with the current Papayoo mockup treated as visual structure rather than rule truth.
+- Rules pages are static in V1; search and cross-game rule browsing remain later scope.

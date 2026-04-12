@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Modern Minimalist Scorer - Active Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#ec4141",
+              "background-light": "#f8f6f6",
+              "background-dark": "#211111",
+              "text-main": "#1A1A1A",
+              "surface": "#FFFFFF",
+              "muted": "#8C8C85",
+              "p1-blue": "#0047FF",
+              "p2-red": "#FF2E2E",
+              "p3-yellow": "#FFB800",
+              "p4-green": "#00B85C"
+            },
+            fontFamily: {
+              "display": ["Space Grotesk", "sans-serif"]
+            },
+            borderRadius: {
+                "DEFAULT": "0.125rem", 
+                "lg": "0.25rem", 
+                "xl": "0.5rem", 
+                "full": "0.75rem"
+            },
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Space Grotesk', sans-serif; }
+        /* Hide scrollbar for ticker */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light text-text-main h-screen flex flex-col overflow-hidden font-display selection:bg-primary selection:text-white">
+<!-- Shared TopAppBar Component -->
+<div class="relative flex h-auto w-full flex-col bg-[#fcf8f8] group/design-root overflow-x-hidden z-10 border-b border-text-main">
+<div class="flex items-center bg-[#fcf8f8] p-4 pb-2 justify-between">
+<h2 class="text-[#1b0e0e] text-lg font-bold leading-tight tracking-[-0.015em] flex-1">Room PIN: 8294</h2>
+<div class="flex w-12 items-center justify-end">
+<button class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded h-12 bg-transparent text-[#1b0e0e] gap-2 text-base font-bold leading-normal tracking-[0.015em] min-w-0 p-0 hover:bg-black/5 transition-colors">
+<div class="text-[#1b0e0e]" data-icon="Question" data-size="24px" data-weight="regular">
+<svg fill="currentColor" height="24px" viewbox="0 0 256 256" width="24px" xmlns="http://www.w3.org/2000/svg">
+<path d="M140,180a12,12,0,1,1-12-12A12,12,0,0,1,140,180ZM128,72c-22.06,0-40,16.15-40,36v4a8,8,0,0,0,16,0v-4c0-11,10.77-20,24-20s24,9,24,20-10.77,20-24,20a8,8,0,0,0-8,8v8a8,8,0,0,0,16,0v-.72c18.24-3.35,32-17.9,32-35.28C168,88.15,150.06,72,128,72Zm104,56A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"></path>
+</svg>
+</div>
+</button>
+</div>
+</div>
+<!-- Scroll Ticker integrated here -->
+<div class="flex gap-3 p-3 overflow-x-auto no-scrollbar whitespace-nowrap">
+<div class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded bg-surface border border-text-main pl-4 pr-4">
+<div class="w-2 h-2 rounded-full bg-p1-blue"></div>
+<p class="text-text-main text-sm font-bold leading-normal">Alice: 45</p>
+</div>
+<div class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded bg-surface border border-text-main pl-4 pr-4">
+<div class="w-2 h-2 rounded-full bg-p2-red"></div>
+<p class="text-text-main text-sm font-bold leading-normal">Bob: 38</p>
+</div>
+<div class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded bg-surface border border-text-main pl-4 pr-4">
+<div class="w-2 h-2 rounded-full bg-p3-yellow"></div>
+<p class="text-text-main text-sm font-bold leading-normal">Charlie: 42</p>
+</div>
+<div class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded bg-surface border border-text-main pl-4 pr-4">
+<div class="w-2 h-2 rounded-full bg-p4-green"></div>
+<p class="text-text-main text-sm font-bold leading-normal">Dave: 21</p>
+</div>
+</div>
+<div class="h-2 bg-background-light"></div>
+</div>
+<!-- Main Content Area: Player List -->
+<main class="flex-1 overflow-y-auto p-4 space-y-4">
+<!-- Player Row 1 -->
+<div class="flex items-center justify-between bg-surface border border-text-main rounded shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] h-[80px] w-full overflow-hidden relative cursor-pointer active:translate-y-[2px] active:translate-x-[2px] active:shadow-none transition-all">
+<div class="absolute left-0 top-0 bottom-0 w-2 bg-p1-blue border-r border-text-main"></div>
+<div class="pl-6 flex items-center gap-4 w-full">
+<div class="w-10 h-10 rounded-full border border-text-main flex items-center justify-center bg-background-light font-bold text-lg">A</div>
+<div class="flex-1">
+<h3 class="font-bold text-lg leading-none">Alice</h3>
+<p class="text-muted text-sm font-medium">1st Place</p>
+</div>
+</div>
+<div class="flex items-center gap-4 pr-4">
+<span class="text-4xl font-bold tracking-tighter w-16 text-right">45</span>
+<div class="flex items-center border border-text-main rounded bg-background-light">
+<button aria-label="Decrement" class="w-10 h-10 flex items-center justify-center hover:bg-text-main hover:text-surface transition-colors rounded-l">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">remove</span>
+</button>
+<div class="w-px h-10 bg-text-main"></div>
+<button aria-label="Increment" class="w-10 h-10 flex items-center justify-center hover:bg-text-main hover:text-surface transition-colors rounded-r">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Player Row 2 -->
+<div class="flex items-center justify-between bg-surface border border-text-main rounded shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] h-[80px] w-full overflow-hidden relative cursor-pointer active:translate-y-[2px] active:translate-x-[2px] active:shadow-none transition-all">
+<div class="absolute left-0 top-0 bottom-0 w-2 bg-p3-yellow border-r border-text-main"></div>
+<div class="pl-6 flex items-center gap-4 w-full">
+<div class="w-10 h-10 rounded-full border border-text-main flex items-center justify-center bg-background-light font-bold text-lg">C</div>
+<div class="flex-1">
+<h3 class="font-bold text-lg leading-none">Charlie</h3>
+<p class="text-muted text-sm font-medium">2nd Place</p>
+</div>
+</div>
+<div class="flex items-center gap-4 pr-4">
+<span class="text-4xl font-bold tracking-tighter w-16 text-right">42</span>
+<div class="flex items-center border border-text-main rounded bg-background-light">
+<button aria-label="Decrement" class="w-10 h-10 flex items-center justify-center hover:bg-text-main hover:text-surface transition-colors rounded-l">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">remove</span>
+</button>
+<div class="w-px h-10 bg-text-main"></div>
+<button aria-label="Increment" class="w-10 h-10 flex items-center justify-center hover:bg-text-main hover:text-surface transition-colors rounded-r">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Player Row 3 -->
+<div class="flex items-center justify-between bg-surface border border-text-main rounded shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] h-[80px] w-full overflow-hidden relative cursor-pointer active:translate-y-[2px] active:translate-x-[2px] active:shadow-none transition-all">
+<div class="absolute left-0 top-0 bottom-0 w-2 bg-p2-red border-r border-text-main"></div>
+<div class="pl-6 flex items-center gap-4 w-full">
+<div class="w-10 h-10 rounded-full border border-text-main flex items-center justify-center bg-background-light font-bold text-lg">B</div>
+<div class="flex-1">
+<h3 class="font-bold text-lg leading-none">Bob</h3>
+<p class="text-muted text-sm font-medium">3rd Place</p>
+</div>
+</div>
+<div class="flex items-center gap-4 pr-4">
+<span class="text-4xl font-bold tracking-tighter w-16 text-right">38</span>
+<div class="flex items-center border border-text-main rounded bg-background-light">
+<button aria-label="Decrement" class="w-10 h-10 flex items-center justify-center hover:bg-text-main hover:text-surface transition-colors rounded-l">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">remove</span>
+</button>
+<div class="w-px h-10 bg-text-main"></div>
+<button aria-label="Increment" class="w-10 h-10 flex items-center justify-center hover:bg-text-main hover:text-surface transition-colors rounded-r">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Player Row 4 -->
+<div class="flex items-center justify-between bg-surface border border-text-main rounded shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] h-[80px] w-full overflow-hidden relative cursor-pointer active:translate-y-[2px] active:translate-x-[2px] active:shadow-none transition-all">
+<div class="absolute left-0 top-0 bottom-0 w-2 bg-p4-green border-r border-text-main"></div>
+<div class="pl-6 flex items-center gap-4 w-full">
+<div class="w-10 h-10 rounded-full border border-text-main flex items-center justify-center bg-background-light font-bold text-lg">D</div>
+<div class="flex-1">
+<h3 class="font-bold text-lg leading-none">Dave</h3>
+<p class="text-muted text-sm font-medium">4th Place</p>
+</div>
+</div>
+<div class="flex items-center gap-4 pr-4">
+<span class="text-4xl font-bold tracking-tighter w-16 text-right">21</span>
+<div class="flex items-center border border-text-main rounded bg-background-light">
+<button aria-label="Decrement" class="w-10 h-10 flex items-center justify-center hover:bg-text-main hover:text-surface transition-colors rounded-l">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">remove</span>
+</button>
+<div class="w-px h-10 bg-text-main"></div>
+<button aria-label="Increment" class="w-10 h-10 flex items-center justify-center hover:bg-text-main hover:text-surface transition-colors rounded-r">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">add</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Numeric Keypad Modal (Hidden by default, shown for demonstration) -->
+<!-- In a real app this would be toggled via JS, we'll show it overlaid but slightly translated to show it exists -->
+<div class="fixed inset-0 bg-text-main/80 z-50 flex flex-col justify-end pointer-events-none opacity-0">
+<!-- Overlay content would go here -->
+</div>
+</body></html>

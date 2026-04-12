@@ -1,0 +1,56 @@
+// ═══════════════════════════════════════════
+// Rules Screen
+// ═══════════════════════════════════════════
+
+import * as state from '../state.js';
+import * as router from '../router.js';
+import * as bottomNav from '../components/bottom-nav.js';
+import { getGame } from '../games/registry.js';
+
+let _unsubTab = null;
+
+export function mount(container, params = {}) {
+  const roomCode = params.roomCode || state.get('roomCode');
+
+  const topBar = document.getElementById('top-bar');
+  topBar.style.display = 'flex';
+  document.getElementById('top-bar-title').textContent = 'RULES';
+  document.getElementById('top-bar-back').classList.add('hidden');
+  document.getElementById('top-bar-actions').innerHTML = '';
+
+  bottomNav.show('rules');
+
+  _unsubTab = state.on('activeTab', (tab) => {
+    if (tab === 'dashboard') router.navigate('dashboard', { roomCode });
+    else if (tab === 'scoring') router.navigate('scoring', { roomCode });
+  });
+
+  const game = state.currentGame();
+  if (!game) {
+    container.innerHTML = `<div class="p-6 text-center"><p class="text-on-surface-variant">No active game</p></div>`;
+    return;
+  }
+
+  const gameModule = getGame(game.type);
+  if (!gameModule) return;
+
+  container.innerHTML = `
+    <div class="p-6 pb-8">
+      <!-- Hero -->
+      <section class="border-l-4 border-primary pl-6 mb-12">
+        <h2 class="text-4xl font-headline font-black uppercase tracking-tight leading-[0.9] mb-3">${gameModule.label}<br>RULEBOOK</h2>
+        <p class="font-mono text-[10px] uppercase tracking-[0.2em] text-outline">QUICK REFERENCE / V1</p>
+      </section>
+
+      <!-- Rules Content -->
+      <div class="rules-content space-y-10">
+        ${gameModule.rulesHTML}
+      </div>
+    </div>
+  `;
+}
+
+export function unmount() {
+  if (_unsubTab) _unsubTab();
+  _unsubTab = null;
+}
