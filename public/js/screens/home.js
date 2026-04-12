@@ -40,6 +40,7 @@ export function mount(container) {
       <div class="w-full max-w-xs space-y-3">
         <input
           id="input-pin"
+          aria-label="Room PIN"
           type="text"
           maxlength="6"
           placeholder="ROOM PIN"

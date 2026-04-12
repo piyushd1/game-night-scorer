@@ -3,12 +3,9 @@
 // ═══════════════════════════════════════════
 
 import * as state from '../state.js';
-import * as router from '../router.js';
 import * as bottomNav from '../components/bottom-nav.js';
 import * as hostMenu from '../components/host-menu.js';
 import { getGame } from '../games/registry.js';
-
-let _unsubTab = null;
 
 export function mount(container, params = {}) {
   const roomCode = params.roomCode || state.get('roomCode');
@@ -21,11 +18,6 @@ export function mount(container, params = {}) {
   hostMenu.renderTopBarActions(roomCode);
 
   bottomNav.show('rules');
-
-  _unsubTab = state.on('activeTab', (tab) => {
-    if (tab === 'dashboard') router.navigate('dashboard', { roomCode });
-    else if (tab === 'scoring') router.navigate('scoring', { roomCode });
-  });
 
   const game = state.currentGame();
   if (!game) {
@@ -52,7 +44,4 @@ export function mount(container, params = {}) {
   `;
 }
 
-export function unmount() {
-  if (_unsubTab) _unsubTab();
-  _unsubTab = null;
-}
+export function unmount() {}

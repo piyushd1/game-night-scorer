@@ -11,14 +11,9 @@ import * as hostMenu from '../components/host-menu.js';
 import { getGame } from '../games/registry.js';
 import { ACCENT_COLORS } from '../state.js';
 
-let _unsubTab = null;
-
 export function mount(container, params = {}) {
   const roomCode = params.roomCode || state.get('roomCode');
 
-  // Robust host guard: if room meta hasn't loaded yet the user shouldn't be
-  // on the scoring screen at all — redirect to dashboard where the watcher
-  // will sort things out.  Once meta IS loaded, check the real isHost flag.
   const meta = state.get('roomMeta');
   if (!meta || !state.isHost()) {
     router.navigate('dashboard', { roomCode });
@@ -34,18 +29,10 @@ export function mount(container, params = {}) {
 
   bottomNav.show('scoring');
 
-  _unsubTab = state.on('activeTab', (tab) => {
-    if (tab === 'dashboard') router.navigate('dashboard', { roomCode });
-    else if (tab === 'rules') router.navigate('rules', { roomCode });
-  });
-
   _render(container, roomCode);
 }
 
-export function unmount() {
-  if (_unsubTab) _unsubTab();
-  _unsubTab = null;
-}
+export function unmount() {}
 
 function _render(container, roomCode) {
   const game = state.currentGame();
@@ -54,20 +41,35 @@ function _render(container, roomCode) {
     return;
   }
 
-  const gameModule = getGame(game.type);
-  if (!gameModule) return;
-
   // Guard: don't allow scoring on a finished game
   if (game.status === 'finished') {
-    router.navigate('winner', { roomCode });
+    router.navigate(game.winner ? 'winner' : 'dashboard', { roomCode });
     return;
   }
+
+  const gameModule = getGame(game.type);
+  if (!gameModule) return;
 
   const snapshot = game.playerSnapshot || {};
   const totals = game.totals || {};
   const rounds = game.rounds ? Object.values(game.rounds) : [];
   const roundNum = rounds.length + 1;
   const playerIds = game.playerIds || [];
+
+  // Safety: for round-limited games, block scoring if at the limit (unless overtime)
+  if (game.type === 'papayoo') {
+    const limit = parseInt(game.config?.roundLimit) || 5;
+    if (rounds.length >= limit && game.status === 'active') {
+      container.innerHTML = `
+        <div class="p-6 text-center py-20">
+          <span class="material-symbols-outlined text-5xl text-outline mb-4">check_circle</span>
+          <p class="font-headline font-bold text-lg uppercase mb-2">All Rounds Complete</p>
+          <p class="font-body text-sm text-on-surface-variant">Determining winner...</p>
+        </div>
+      `;
+      return;
+    }
+  }
 
   // Derive standings for mini scoreboard
   const standings = gameModule.deriveStandings(totals, playerIds, gameModule.winMode);
@@ -265,10 +267,13 @@ async function _submitRound(container, roomCode, initialGame, gameModule) {
 
     if (endResult.ended && endResult.winner) {
       router.navigate('winner', { roomCode });
+    } else if (endResult.ended && endResult.overtime) {
+      toast.show('Tied! Overtime round needed');
+      router.navigate('dashboard', { roomCode });
     } else {
-      // Re-render scoring form for next round
-      toast.show(`Round ${rounds.length + 1} submitted`);
-      _render(container, roomCode);
+      // Always go to dashboard after submit — avoids stale state bugs
+      toast.show(`Round ${newRoundCount} submitted`);
+      router.navigate('dashboard', { roomCode });
     }
   } catch (e) {
     console.error('Submit round failed:', e);

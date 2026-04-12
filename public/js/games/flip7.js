@@ -13,7 +13,7 @@ export default {
   winMode: 'highest_total',
   defaultConfig: { targetScore: 200 },
   configFields: [
-    { key: 'targetScore', label: 'Win Target', type: 'number', min: 50 },
+    { key: 'targetScore', label: 'Win Target', type: 'number', min: 10 },
   ],
 
   validateRound(draft, gameState) {

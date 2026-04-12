@@ -12,7 +12,6 @@ import { renderRow } from '../components/player-row.js';
 import { getGame } from '../games/registry.js';
 import { ACCENT_COLORS } from '../state.js';
 
-let _unsubTab = null;
 let _unsubGames = null;
 let _unsubMeta = null;
 
@@ -26,12 +25,6 @@ export function mount(container, params = {}) {
 
   // Bottom nav
   bottomNav.show('dashboard');
-
-  // Listen for tab changes
-  _unsubTab = state.on('activeTab', (tab) => {
-    if (tab === 'rules') router.navigate('rules', { roomCode });
-    else if (tab === 'scoring') router.navigate('scoring', { roomCode });
-  });
 
   container.innerHTML = `<div id="dash-content" class="p-6 pb-8"></div>`;
 
@@ -53,8 +46,6 @@ export function mount(container, params = {}) {
 }
 
 export function unmount() {
-  if (_unsubTab) _unsubTab();
-  _unsubTab = null;
   if (_unsubGames) _unsubGames();
   _unsubGames = null;
   if (_unsubMeta) _unsubMeta();
@@ -132,7 +123,7 @@ function _render(container, roomCode) {
   let html = '';
 
   // Overtime banner
-  if (game.overtime || game.status === 'overtime') {
+  if (game.status === 'overtime') {
     html += `<div class="overtime-banner mb-4">TIE-BREAKER / OVERTIME</div>`;
   }
 

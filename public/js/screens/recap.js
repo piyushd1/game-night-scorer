@@ -109,7 +109,7 @@ export function mount(container, params = {}) {
         </div>
     `;
 
-    // Winner callout
+    // Winner or abandoned callout
     if (game.winner && game.snapshot[game.winner]) {
       const w = game.snapshot[game.winner];
       html += `
@@ -117,6 +117,14 @@ export function mount(container, params = {}) {
           <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">emoji_events</span>
           <span class="font-headline font-bold text-sm uppercase">${w.name}</span>
           <span class="font-mono text-[10px] text-outline ml-auto">WINNER</span>
+        </div>
+      `;
+    } else if (game.isAbandoned) {
+      html += `
+        <div class="bg-surface-container-high border border-outline-variant p-3 mb-3 flex items-center gap-3">
+          <span class="material-symbols-outlined text-sm text-outline">cancel</span>
+          <span class="font-headline font-bold text-sm uppercase text-outline">INCONCLUSIVE</span>
+          <span class="font-mono text-[10px] text-outline ml-auto">NO WINNER</span>
         </div>
       `;
     }

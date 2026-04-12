@@ -63,6 +63,8 @@ export function computeNightStats(games, players) {
     // Compute game-specific stats
     const gameStats = _computeGameSpecificStats(game, gameModule, rounds, gPlayerIds, snapshot, totals, standings);
 
+    const isAbandoned = game.status === 'abandoned' || (!game.winner && game.status !== 'active' && game.status !== 'overtime');
+
     return {
       gameId: game.gameId,
       type: game.type,
@@ -72,6 +74,7 @@ export function computeNightStats(games, players) {
       winner: game.winner,
       roundCount: rounds.length,
       playerStats: gameStats,
+      isAbandoned,
     };
   }).filter(Boolean);
 

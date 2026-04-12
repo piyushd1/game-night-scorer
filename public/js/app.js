@@ -49,25 +49,23 @@ async function init() {
   // Init shared host menu
   hostMenu.init();
 
-  // Check URL for room code
+  // Start router FIRST (before any navigation)
+  router.init('screen-container');
+
+  // Then check URL for room code and navigate via router
   const urlParams = new URLSearchParams(window.location.search);
   const roomCode = urlParams.get('room');
 
   if (roomCode && fb.isConfigured()) {
-    // Try to join the room from URL
     try {
       const code = await fb.joinRoom(roomCode);
       if (code) {
-        window.location.hash = '#lobby';
-        window._routeParams = { roomCode: code };
+        router.navigate('lobby', { roomCode: code });
       }
     } catch (e) {
       console.warn('Room from URL not found');
     }
   }
-
-  // Start router
-  router.init('screen-container');
 
   // Register PWA service worker
   if ('serviceWorker' in navigator) {
