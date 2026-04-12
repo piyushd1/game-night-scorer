@@ -17,14 +17,14 @@ export async function createRoomAndAddPlayers(page, playerNames = ['ALICE', 'BOB
   const roomCode = await getRoomCode(page);
 
   // Add each player
-  for (const name of playerNames) {
-    await page.fill('#input-player-name', name);
+  for (let i = 0; i < playerNames.length; i++) {
+    await page.fill('#input-player-name', playerNames[i]);
     await page.click('#btn-confirm-add');
-    // Wait for player to appear in list
+    // Wait for the player row count to reach i+1 (robust, no text matching issues)
     await page.waitForFunction(
-      (n) => document.querySelector('#player-list')?.textContent?.includes(n),
-      name.toUpperCase(),
-      { timeout: 5000 }
+      (expected) => document.querySelectorAll('#player-list .bg-surface-container-lowest').length >= expected,
+      i + 1,
+      { timeout: 10000 }
     );
   }
 

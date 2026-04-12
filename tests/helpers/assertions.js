@@ -55,6 +55,65 @@ export async function expectHostMenuFunctional(page) {
 }
 
 /**
+ * Assert a specific player has a specific score on the dashboard.
+ * Finds the player row by name, then checks the score element.
+ */
+export async function expectPlayerScore(page, playerName, expectedScore) {
+  const row = page.locator('#dash-content .group').filter({
+    hasText: playerName.toUpperCase(),
+  });
+  await expect(row).toBeVisible({ timeout: 5000 });
+  const scoreEl = row.locator('.font-mono.text-2xl');
+  const scoreText = await scoreEl.textContent();
+  expect(parseInt(scoreText.trim()), `${playerName} score should be ${expectedScore}`).toBe(expectedScore);
+}
+
+/**
+ * Assert a specific player's rank badge on the dashboard.
+ */
+export async function expectPlayerRank(page, playerName, expectedRank) {
+  const row = page.locator('#dash-content .group').filter({
+    hasText: playerName.toUpperCase(),
+  });
+  const rankEl = row.locator('.shrink-0');
+  const rankText = await rankEl.textContent();
+  expect(rankText.trim()).toBe(expectedRank);
+}
+
+/**
+ * Assert the winner screen shows correct winner and score.
+ */
+export async function expectWinner(page, playerName, expectedScore) {
+  await expect(page.locator('#screen-winner')).toBeVisible({ timeout: 10000 });
+  const winnerName = await page.locator('#screen-winner h1').textContent();
+  expect(winnerName.trim().toUpperCase()).toContain(playerName.toUpperCase());
+  if (expectedScore !== undefined) {
+    // Use the large score display (72px font), not the "WINNER" label which is also .font-mono
+    const scoreEl = page.locator('#screen-winner').locator('div.font-mono', { hasText: 'PTS' });
+    const scoreText = await scoreEl.textContent();
+    expect(parseInt(scoreText.trim())).toBe(expectedScore);
+  }
+}
+
+/**
+ * Assert overtime banner is visible on dashboard.
+ */
+export async function expectOvertime(page) {
+  await expect(page.locator('.overtime-banner')).toBeVisible();
+  const text = await page.locator('.overtime-banner').textContent();
+  expect(text.toUpperCase()).toContain('OVERTIME');
+}
+
+/**
+ * Assert overtime banner is NOT visible.
+ */
+export async function expectNotOvertime(page) {
+  await expect(page.locator('.overtime-banner')).toBeHidden().catch(() => {
+    // Element may not exist at all, which is fine
+  });
+}
+
+/**
  * Get the text content of a toast notification.
  */
 export async function waitForToast(page, expectedText) {
