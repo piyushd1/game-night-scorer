@@ -228,7 +228,9 @@ function _bindFormInteractions(container, gameType, playerIds) {
   }
 }
 
-async function _submitRound(container, roomCode, game, gameModule) {
+async function _submitRound(container, roomCode, _staleGame, gameModule) {
+  // Re-read fresh game state to avoid stale closures (e.g. if undo happened)
+  const game = state.currentGame() || _staleGame;
   const playerIds = game.playerIds || [];
   const totals = game.totals || {};
   const rounds = game.rounds ? Object.values(game.rounds) : [];

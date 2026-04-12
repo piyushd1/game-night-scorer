@@ -13,6 +13,8 @@ import { getGame } from '../games/registry.js';
 import { ACCENT_COLORS } from '../state.js';
 
 let _unsubTab = null;
+let _unsubGames = null;
+let _unsubMeta = null;
 
 export function mount(container, params = {}) {
   const roomCode = params.roomCode || state.get('roomCode');
@@ -35,8 +37,8 @@ export function mount(container, params = {}) {
 
   // Watch for state changes
   const renderHandler = () => _render(container, roomCode);
-  state.on('games', renderHandler);
-  state.on('roomMeta', renderHandler);
+  _unsubGames = state.on('games', renderHandler);
+  _unsubMeta = state.on('roomMeta', renderHandler);
 
   // Ensure room is being watched
   if (!state.get('roomCode')) {
@@ -53,6 +55,10 @@ export function mount(container, params = {}) {
 export function unmount() {
   if (_unsubTab) _unsubTab();
   _unsubTab = null;
+  if (_unsubGames) _unsubGames();
+  _unsubGames = null;
+  if (_unsubMeta) _unsubMeta();
+  _unsubMeta = null;
 }
 
 function _render(container, roomCode) {
