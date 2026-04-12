@@ -108,26 +108,12 @@ function _render(container, roomCode) {
     getProgress = (total) => Math.min(100, Math.round((total / threshold) * 100));
   }
 
-  // Round points per player
+  // Round points per player — use game module's getRoundPoints for accuracy
   const roundPoints = {};
   playerIds.forEach((pid) => { roundPoints[pid] = []; });
   rounds.forEach((rnd) => {
-    const applied = gameModule.applyRound({}, rnd, game);
-    // We need per-player round deltas — compute from entries
     playerIds.forEach((pid) => {
-      const prevTotal = roundPoints[pid].reduce((s, v) => s + v, 0);
-      const currentTotal = totals[pid] || 0;
-      // Simple: just show the entry value
-      if (rnd.entries && rnd.entries[pid]) {
-        const entry = rnd.entries[pid];
-        if (game.type === 'flip7') {
-          roundPoints[pid].push((entry.basePoints || 0) + (entry.flip7 ? 15 : 0));
-        } else if (game.type === 'papayoo') {
-          roundPoints[pid].push(entry.penaltyPoints || 0);
-        } else {
-          roundPoints[pid].push(entry.cardTotal || 0);
-        }
-      }
+      roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
     });
   });
 
@@ -208,8 +194,18 @@ async function _undoRound(roomCode, game, gameModule) {
     newTotals = gameModule.applyRound(newTotals, rnd, game);
   });
 
+  // Re-evaluate end condition to determine correct status/overtime
+  const newRoundCount = allRoundsExceptLast.length;
+  const endResult = gameModule.checkEnd(newTotals, game.config, playerIds, newRoundCount);
+  let prevStatus = 'active';
+  let overtime = false;
+  if (endResult.ended && !endResult.winner) {
+    prevStatus = 'overtime';
+    overtime = true;
+  }
+
   try {
-    await fb.undoLastRound(roomCode, game.gameId, newTotals, 'active');
+    await fb.undoLastRound(roomCode, game.gameId, newTotals, prevStatus, overtime);
     toast.show('Round undone');
   } catch (e) {
     toast.show('Undo failed');

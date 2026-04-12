@@ -35,7 +35,7 @@ export default {
     return newTotals;
   },
 
-  checkEnd(totals, config, playerIds) {
+  checkEnd(totals, config, playerIds, _roundCount) {
     const target = config?.targetScore || 200;
     const maxScore = Math.max(...playerIds.map((id) => totals[id] || 0));
 
@@ -60,6 +60,12 @@ export default {
       s.rank = rank;
     });
     return sorted;
+  },
+
+  getRoundPoints(roundData, playerId) {
+    const entry = roundData.entries?.[playerId];
+    if (!entry) return 0;
+    return (entry.basePoints || 0) + (entry.flip7 ? 15 : 0);
   },
 
   // ── Scoring Form ──

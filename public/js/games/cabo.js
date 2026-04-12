@@ -20,7 +20,7 @@ export default {
 
     const playerIds = gameState.playerIds || [];
     for (const pid of playerIds) {
-      if (!draft.entries[pid] && draft.entries[pid]?.cardTotal === undefined) {
+      if (!draft.entries[pid] || draft.entries[pid].cardTotal === undefined) {
         return { valid: false, error: `Enter card total for all players` };
       }
     }
@@ -54,7 +54,7 @@ export default {
       for (const { pid, cardTotal } of cardTotals) {
         if (pid === callerId) {
           // Caller: 0 if they have the min, else cardTotal + 10
-          if (cardTotal <= minCardTotal) {
+          if (cardTotal === minCardTotal) {
             newTotals[pid] = (newTotals[pid] || 0) + 0;
           } else {
             newTotals[pid] = (newTotals[pid] || 0) + cardTotal + 10;
@@ -75,7 +75,7 @@ export default {
     return newTotals;
   },
 
-  checkEnd(totals, config, playerIds) {
+  checkEnd(totals, config, playerIds, _roundCount) {
     const threshold = config?.lossThreshold || 100;
 
     // Check if anyone is over threshold
@@ -105,6 +105,25 @@ export default {
       s.rank = rank;
     });
     return sorted;
+  },
+
+  getRoundPoints(roundData, playerId) {
+    const entries = roundData.entries || {};
+    const callerId = roundData.callerId;
+    const kamikaze = roundData.kamikaze || false;
+
+    if (kamikaze) {
+      return playerId === callerId ? 0 : 50;
+    }
+
+    const cardTotal = entries[playerId]?.cardTotal || 0;
+    const allCardTotals = Object.values(entries).map((e) => e.cardTotal || 0);
+    const minCardTotal = Math.min(...allCardTotals);
+
+    if (playerId === callerId) {
+      return cardTotal === minCardTotal ? 0 : cardTotal + 10;
+    }
+    return cardTotal;
   },
 
   // ── Scoring Form ──

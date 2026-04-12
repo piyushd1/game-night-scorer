@@ -94,8 +94,13 @@ export function mount(container, params = {}) {
     container.querySelector('#btn-replay')?.addEventListener('click', async () => {
       const players = state.activePlayers();
       const minPlayers = gameModule.minPlayers || 2;
+      const maxPlayers = gameModule.maxPlayers || 20;
       if (players.length < minPlayers) {
         toast(`Need at least ${minPlayers} players to play ${gameModule.label}`);
+        return;
+      }
+      if (players.length > maxPlayers) {
+        toast(`${gameModule.label} supports at most ${maxPlayers} players`);
         return;
       }
       const playerIds = players.map((p) => p.id);

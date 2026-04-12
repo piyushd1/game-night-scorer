@@ -158,12 +158,19 @@ async function _startGame(container, roomCode) {
   const players = state.activePlayers();
   const playerIds = players.map((p) => p.id);
 
-  // Build config from form
+  // Build config from form with validation
   const config = { ...game.defaultConfig };
   if (game.configFields) {
     game.configFields.forEach((f) => {
       const input = container.querySelector(`#config-${f.key}`);
-      if (input) config[f.key] = parseInt(input.value) || game.defaultConfig[f.key];
+      if (input) {
+        const parsed = parseInt(input.value);
+        const min = f.min || 1;
+        if (!isNaN(parsed) && parsed >= min) {
+          config[f.key] = parsed;
+        }
+        // else keep defaultConfig value
+      }
     });
   }
 
