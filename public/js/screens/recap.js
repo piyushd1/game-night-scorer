@@ -20,10 +20,6 @@ export function mount(container, params = {}) {
   document.getElementById('top-bar-back').onclick = () => router.navigate('lobby', { roomCode }, 'back');
   document.getElementById('top-bar-actions').innerHTML = '';
 
-  if (!roomCode) {
-    router.navigate('home');
-    return;
-  }
   const games = state.get('games') || {};
   const players = state.get('players') || {};
   const stats = computeNightStats(games, players);

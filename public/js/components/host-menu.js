@@ -31,8 +31,7 @@ export function init() {
       const roomCode = state.get('roomCode');
 
       if (action === 'new-game') {
-        // The room activeGameId should also be cleared to ensure it goes back to a clean state.
-        fb.updateRoomMeta(roomCode, { status: 'lobby', activeGameId: null });
+        fb.setRoomStatus(roomCode, 'lobby');
         router.navigate('game-select', { roomCode });
       } else if (action === 'lobby') {
         router.navigate('lobby', { roomCode });
@@ -95,7 +94,8 @@ export function renderTopBarActions(roomCode) {
   const leaveBtn = document.getElementById('btn-viewer-leave');
   if (leaveBtn) {
     leaveBtn.addEventListener('click', () => {
-      router.navigate('home');
+      fb.unwatchRoom();
+      router.navigate('home', {}, 'back');
     });
   }
 }

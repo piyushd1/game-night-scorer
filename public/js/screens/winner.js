@@ -17,11 +17,6 @@ export function mount(container, params = {}) {
   bottomNav.hide();
   document.getElementById('top-bar').style.display = 'none';
 
-  if (!roomCode) {
-    router.navigate('home');
-    return;
-  }
-
   const game = state.currentGame();
   if (!game || !game.winner) {
     router.navigate('dashboard', { roomCode });
@@ -103,8 +98,6 @@ export function mount(container, params = {}) {
       const maxPlayers = gameModule.maxPlayers || 20;
       if (players.length < minPlayers) {
         toast(`Need at least ${minPlayers} players to play ${gameModule.label}`);
-        await fb.updateRoomMeta(roomCode, { status: 'lobby', activeGameId: null });
-        router.navigate('lobby', { roomCode });
         return;
       }
       if (players.length > maxPlayers) {
