@@ -32,15 +32,20 @@ export function isConfigured() {
 
 function generateCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no I/O/0/1 for clarity
+  const array = new Uint32Array(6);
+  crypto.getRandomValues(array);
   let code = '';
   for (let i = 0; i < 6; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
+    code += chars[array[i] % chars.length];
   }
   return code;
 }
 
 function generateKey() {
-  return crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 14) + Date.now().toString(36);
+  if (crypto.randomUUID) return crypto.randomUUID();
+  const array = new Uint32Array(4);
+  crypto.getRandomValues(array);
+  return Array.from(array, dec => dec.toString(36)).join('') + Date.now().toString(36);
 }
 
 // ── Create Room ──
@@ -119,7 +124,10 @@ export function unwatchRoom() {
 
 export async function addPlayer(roomCode, name, seatOrder, accentIndex) {
   if (!db) return;
-  const id = `p_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  const randomSuffix = array[0].toString(36).substring(0, 4);
+  const id = `p_${Date.now()}_${randomSuffix}`;
   await db.ref(`rooms/${roomCode}/players/${id}`).set({
     id,
     name: name.toUpperCase(),
