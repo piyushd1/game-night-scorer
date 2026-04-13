@@ -43,9 +43,9 @@ function generateCode() {
 
 function generateKey() {
   if (crypto.randomUUID) return crypto.randomUUID();
-  const array = new Uint32Array(4);
+  const array = new Uint8Array(16);
   crypto.getRandomValues(array);
-  return Array.from(array, dec => dec.toString(36)).join('') + Date.now().toString(36);
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
 }
 
 // ── Create Room ──
