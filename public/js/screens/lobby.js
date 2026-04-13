@@ -63,8 +63,8 @@ export function mount(container, params = {}) {
             autocapitalize="characters"
             class="flex-1 bg-surface-container-lowest border border-outline font-headline font-bold text-sm uppercase py-3 px-4 placeholder:text-outline placeholder:normal-case placeholder:font-normal focus:outline-none focus:border-primary transition-colors"
           >
-          <button id="btn-confirm-add" class="bg-primary text-on-primary px-4 font-headline font-bold text-sm uppercase tracking-widest flex items-center gap-1 hover:opacity-90 transition-opacity shrink-0">
-            <span class="material-symbols-outlined text-lg">add</span>
+          <button id="btn-confirm-add" aria-label="Add player" title="Add player" class="bg-primary text-on-primary px-4 font-headline font-bold text-sm uppercase tracking-widest flex items-center gap-1 hover:opacity-90 transition-opacity shrink-0">
+            <span class="material-symbols-outlined text-lg" aria-hidden="true">add</span>
           </button>
         </div>
       </div>
@@ -87,8 +87,8 @@ export function mount(container, params = {}) {
             <p class="font-headline font-bold text-sm uppercase">Track Tonight's Stats</p>
             <p class="font-mono text-[10px] text-outline mt-0.5">See MVP, per-game breakdowns, and player highlights at the end of the night</p>
           </div>
-          <button id="btn-stats-toggle" class="w-12 h-7 border border-outline bg-surface-container-high transition-all relative shrink-0" data-on="false">
-            <div class="absolute top-[2px] left-[2px] w-[22px] h-[22px] bg-outline transition-transform"></div>
+          <button id="btn-stats-toggle" role="switch" aria-checked="false" aria-label="Track Tonight's Stats" class="w-12 h-7 border border-outline bg-surface-container-high transition-all relative shrink-0" data-on="false">
+            <div class="absolute top-[2px] left-[2px] w-[22px] h-[22px] bg-outline transition-transform" aria-hidden="true"></div>
           </button>
         </div>
       </div>
@@ -159,6 +159,7 @@ function _bindEvents(container, roomCode) {
       const isOn = statsToggle.dataset.on === 'true';
       const newVal = !isOn;
       statsToggle.dataset.on = String(newVal);
+      statsToggle.setAttribute('aria-checked', String(newVal));
       const dot = statsToggle.querySelector('div');
       if (newVal) {
         statsToggle.style.background = '#000';
@@ -294,6 +295,7 @@ function _startWatching(roomCode, container) {
       const toggleBtn = container.querySelector('#btn-stats-toggle');
       if (toggleBtn && toggleBtn.dataset.on !== String(trackStats)) {
         toggleBtn.dataset.on = String(trackStats);
+        toggleBtn.setAttribute('aria-checked', String(trackStats));
         const dot = toggleBtn.querySelector('div');
         if (trackStats) {
           toggleBtn.style.background = '#000';
