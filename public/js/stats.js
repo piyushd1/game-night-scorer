@@ -122,10 +122,22 @@ function _playerAccent(pid, allGames, players) {
 function _computeGameSpecificStats(game, gameModule, rounds, playerIds, snapshot, totals, standings) {
   const stats = {};
 
-  // Bolt Optimization: Replace O(N) array find with O(1) Map lookup
+// Bolt Optimization: Replace O(N) array find with O(1) Map lookup
   const standingsMap = new Map(standings.map(s => [s.playerId, s]));
 
+  // Precompute minCard for cabo rounds to avoid O(P*R) redundant calculations
+  const caboMinCards = new Map();
+  if (game.type === 'cabo') {
+    rounds.forEach((rnd) => {
+      if (!rnd.kamikaze) {
+        const allTotals = Object.entries(rnd.entries || {}).map(([id, e]) => e.cardTotal || 0);
+        caboMinCards.set(rnd, allTotals.length ? Math.min(...allTotals) : 0);
+      }
+    });
+  }
+
   playerIds.forEach((pid) => {
+
     const standing = standingsMap.get(pid);
     const base = {
       playerId: pid,
@@ -200,8 +212,7 @@ function _computeGameSpecificStats(game, gameModule, rounds, playerIds, snapshot
           roundPts = isCaller ? 0 : 50;
           if (isCaller) successfulCabos++;
         } else {
-          const allTotals = Object.entries(rnd.entries).map(([id, e]) => e.cardTotal || 0);
-          const minCard = Math.min(...allTotals);
+          const minCard = caboMinCards.get(rnd);
           if (isCaller) {
             roundPts = (entry.cardTotal || 0) <= minCard ? 0 : (entry.cardTotal || 0) + 10;
             if (roundPts === 0) successfulCabos++;
