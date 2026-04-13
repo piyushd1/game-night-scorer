@@ -55,7 +55,6 @@ function _onHashChange() {
 function _renderScreen(screenId, params = {}) {
   const screen = _screens.get(screenId);
   if (!screen) {
-    console.warn(`Screen "${screenId}" not registered`);
     return;
   }
 
