@@ -44,11 +44,15 @@ export function computeNightStats(games, players) {
     const gPlayerIds = game.playerIds || [];
     const standings = gameModule.deriveStandings(totals, gPlayerIds, gameModule.winMode);
 
+    // Index standings for O(1) lookup
+    const standingsMap = new Map();
+    standings.forEach((s) => standingsMap.set(s.playerId, s));
+
     // Update overall
     gPlayerIds.forEach((pid) => {
       if (!overall[pid]) return;
       overall[pid].gamesPlayed++;
-      const standing = standings.find((s) => s.playerId === pid);
+      const standing = standingsMap.get(pid);
       if (standing) {
         overall[pid].finishes.push(standing.rank);
         if (standing.rank < overall[pid].bestFinish) {
@@ -61,7 +65,7 @@ export function computeNightStats(games, players) {
     });
 
     // Compute game-specific stats
-    const gameStats = _computeGameSpecificStats(game, gameModule, rounds, gPlayerIds, snapshot, totals, standings);
+    const gameStats = _computeGameSpecificStats(game, gameModule, rounds, gPlayerIds, snapshot, totals, standingsMap);
 
     const isAbandoned = game.status === 'abandoned' || (!game.winner && game.status !== 'active' && game.status !== 'overtime');
 
@@ -116,11 +120,11 @@ function _playerAccent(pid, allGames, players) {
   return 0;
 }
 
-function _computeGameSpecificStats(game, gameModule, rounds, playerIds, snapshot, totals, standings) {
+function _computeGameSpecificStats(game, gameModule, rounds, playerIds, snapshot, totals, standingsMap) {
   const stats = {};
 
   playerIds.forEach((pid) => {
-    const standing = standings.find((s) => s.playerId === pid);
+    const standing = standingsMap instanceof Map ? standingsMap.get(pid) : standingsMap[pid];
     const base = {
       playerId: pid,
       name: snapshot[pid]?.name || pid,
