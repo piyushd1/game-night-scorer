@@ -20,12 +20,34 @@ export function computeNightStats(games, players) {
   const playerIds = [...new Set(allGames.flatMap((g) => g.playerIds || []))];
 
   // ── Overall stats per player ──
+  // Pre-compute maps to avoid O(N*G) lookups
+  const playerNames = new Map();
+  const playerAccents = new Map();
+
+  // Populate from players object first
+  if (players) {
+    for (const [pid, p] of Object.entries(players)) {
+      if (p.name !== undefined) playerNames.set(pid, p.name);
+      if (p.accentIndex !== undefined) playerAccents.set(pid, p.accentIndex);
+    }
+  }
+
+  // Populate from game snapshots
+  for (const g of allGames) {
+    if (g.playerSnapshot) {
+      for (const [pid, p] of Object.entries(g.playerSnapshot)) {
+        if (p.name !== undefined && !playerNames.has(pid)) playerNames.set(pid, p.name);
+        if (p.accentIndex !== undefined && !playerAccents.has(pid)) playerAccents.set(pid, p.accentIndex);
+      }
+    }
+  }
+
   const overall = {};
   playerIds.forEach((pid) => {
     overall[pid] = {
       playerId: pid,
-      name: _playerName(pid, allGames, players),
-      accentIndex: _playerAccent(pid, allGames, players),
+      name: playerNames.has(pid) ? playerNames.get(pid) : pid,
+      accentIndex: playerAccents.has(pid) ? playerAccents.get(pid) : 0,
       gamesPlayed: 0,
       gamesWon: 0,
       bestFinish: Infinity,
