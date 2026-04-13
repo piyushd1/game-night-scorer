@@ -86,6 +86,7 @@ export function mount(container) {
 
       router.navigate('lobby', { roomCode, isNew: true });
     } catch (e) {
+      console.error('Create room failed:', e);
       toast.show('Failed to create room');
       btn.disabled = false;
       btn.innerHTML = 'CREATE SESSION <span class="material-symbols-outlined text-lg">arrow_forward</span>';
@@ -126,6 +127,7 @@ export function mount(container) {
 
       router.navigate('lobby', { roomCode: code });
     } catch (e) {
+      console.error('Join failed:', e);
       toast.show('Failed to join room');
       btn.disabled = false;
       btn.innerHTML = 'JOIN ROOM';
