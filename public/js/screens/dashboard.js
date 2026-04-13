@@ -10,7 +10,6 @@ import * as toast from '../components/toast.js';
 import * as hostMenu from '../components/host-menu.js';
 import { renderRow } from '../components/player-row.js';
 import { getGame } from '../games/registry.js';
-import { ACCENT_COLORS } from '../state.js';
 
 let _unsubGames = null;
 let _unsubMeta = null;
