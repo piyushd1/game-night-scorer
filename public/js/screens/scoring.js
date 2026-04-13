@@ -178,11 +178,11 @@ function _bindFormInteractions(container, gameType, playerIds) {
     });
 
     // Live penalty sum
-    container.querySelectorAll('.papayoo-input').forEach((input) => {
+    const papayooInputs = Array.from(container.querySelectorAll('.papayoo-input'));
+    const sumEl = container.querySelector('#penalty-sum');
+    papayooInputs.forEach((input) => {
       input.addEventListener('input', () => {
-        const sum = Array.from(container.querySelectorAll('.papayoo-input'))
-          .reduce((s, el) => s + (parseInt(el.value) || 0), 0);
-        const sumEl = container.querySelector('#penalty-sum');
+        const sum = papayooInputs.reduce((s, el) => s + (parseInt(el.value) || 0), 0);
         if (sumEl) {
           sumEl.textContent = sum;
           sumEl.style.color = sum === 250 ? '#00B85C' : sum > 250 ? '#ba1a1a' : '';
