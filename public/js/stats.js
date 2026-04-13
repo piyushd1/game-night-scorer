@@ -44,11 +44,14 @@ export function computeNightStats(games, players) {
     const gPlayerIds = game.playerIds || [];
     const standings = gameModule.deriveStandings(totals, gPlayerIds, gameModule.winMode);
 
+    // Bolt Optimization: Replace O(N) array find with O(1) Map lookup
+    const standingsMap = new Map(standings.map(s => [s.playerId, s]));
+
     // Update overall
     gPlayerIds.forEach((pid) => {
       if (!overall[pid]) return;
       overall[pid].gamesPlayed++;
-      const standing = standings.find((s) => s.playerId === pid);
+      const standing = standingsMap.get(pid);
       if (standing) {
         overall[pid].finishes.push(standing.rank);
         if (standing.rank < overall[pid].bestFinish) {
@@ -119,8 +122,11 @@ function _playerAccent(pid, allGames, players) {
 function _computeGameSpecificStats(game, gameModule, rounds, playerIds, snapshot, totals, standings) {
   const stats = {};
 
+  // Bolt Optimization: Replace O(N) array find with O(1) Map lookup
+  const standingsMap = new Map(standings.map(s => [s.playerId, s]));
+
   playerIds.forEach((pid) => {
-    const standing = standings.find((s) => s.playerId === pid);
+    const standing = standingsMap.get(pid);
     const base = {
       playerId: pid,
       name: snapshot[pid]?.name || pid,
