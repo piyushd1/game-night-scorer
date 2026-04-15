@@ -147,7 +147,9 @@ function _bindFormInteractions(container, gameType, playerIds) {
     container.querySelectorAll('.flip7-toggle').forEach((btn) => {
       btn.addEventListener('click', () => {
         btn.classList.toggle('active');
-        if (btn.classList.contains('active')) {
+        const isActive = btn.classList.contains('active');
+        btn.setAttribute('aria-pressed', isActive.toString());
+        if (isActive) {
           btn.style.background = '#000';
           btn.style.color = '#fff';
           btn.style.borderColor = '#000';
@@ -213,9 +215,11 @@ function _bindFormInteractions(container, gameType, playerIds) {
     if (kamikazeBtn) {
       kamikazeBtn.addEventListener('click', () => {
         kamikazeBtn.classList.toggle('active');
+        const isActive = kamikazeBtn.classList.contains('active');
+        kamikazeBtn.setAttribute('aria-checked', isActive.toString());
         const dot = kamikazeBtn.querySelector('div');
         const cardSection = container.querySelector('#card-totals-section');
-        if (kamikazeBtn.classList.contains('active')) {
+        if (isActive) {
           kamikazeBtn.style.background = '#000';
           kamikazeBtn.style.borderColor = '#000';
           dot.style.transform = 'translateX(20px)';
