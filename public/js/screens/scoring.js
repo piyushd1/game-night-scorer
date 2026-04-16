@@ -164,9 +164,10 @@ function _bindFormInteractions(container, gameType, playerIds) {
 
   if (gameType === 'papayoo') {
     // Suit picker — single select
-    container.querySelectorAll('.suit-btn').forEach((btn) => {
+    const suitBtns = container.querySelectorAll('.suit-btn');
+    suitBtns.forEach((btn) => {
       btn.addEventListener('click', () => {
-        container.querySelectorAll('.suit-btn').forEach((b) => {
+        suitBtns.forEach((b) => {
           b.classList.remove('active');
           b.style.background = '';
           b.style.borderColor = '';
@@ -195,9 +196,10 @@ function _bindFormInteractions(container, gameType, playerIds) {
 
   if (gameType === 'cabo') {
     // Caller selection — single select
-    container.querySelectorAll('.caller-btn').forEach((btn) => {
+    const callerBtns = container.querySelectorAll('.caller-btn');
+    callerBtns.forEach((btn) => {
       btn.addEventListener('click', () => {
-        container.querySelectorAll('.caller-btn').forEach((b) => {
+        callerBtns.forEach((b) => {
           b.classList.remove('active');
           b.style.background = '';
           b.style.borderColor = '';
