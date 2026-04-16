@@ -99,7 +99,7 @@ export default {
     return { ended: true, winner: null, overtime: true };
   },
 
-  deriveStandings(totals, playerIds, winMode) {
+  deriveStandings(totals, playerIds) {
     const sorted = playerIds
       .map((id) => ({ playerId: id, total: totals[id] || 0 }))
       .sort((a, b) => a.total - b.total); // lowest first
@@ -143,7 +143,7 @@ export default {
             const color = ACCENT_COLORS[p.accentIndex || 0];
             return `
               <button
-                data-caller="${pid}"
+                data-caller="${escapeHTML(pid)}"
                 class="caller-btn px-3 py-2 border border-outline-variant font-headline font-bold text-xs uppercase tracking-widest transition-colors hover:border-primary"
               >${escapeHTML(p.name || pid)}</button>
             `;
@@ -179,7 +179,7 @@ export default {
                 <input
                   type="number"
                   inputmode="numeric"
-                  data-player="${pid}"
+                  data-player="${escapeHTML(pid)}"
                   data-field="cardTotal"
                   aria-label="Score for ${escapeHTML(p.name || pid)}"
                   class="score-input w-16 cabo-input"
@@ -216,7 +216,7 @@ export default {
 
     const entries = {};
     playerIds.forEach((pid) => {
-      const input = container.querySelector(`[data-player="${pid}"][data-field="cardTotal"]`);
+      const input = container.querySelector(`[data-player="${escapeHTML(pid)}"][data-field="cardTotal"]`);
       entries[pid] = {
         cardTotal: parseInt(input?.value) || 0,
       };

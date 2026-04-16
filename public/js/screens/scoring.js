@@ -78,7 +78,7 @@ function _render(container, roomCode) {
   }
 
   // Derive standings for mini scoreboard
-  const standings = gameModule.deriveStandings(totals, playerIds, gameModule.winMode);
+  const standings = gameModule.deriveStandings(totals, playerIds);
 
   container.innerHTML = `
     <div class="p-6 pb-32">
