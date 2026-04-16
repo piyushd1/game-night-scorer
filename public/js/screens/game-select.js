@@ -7,6 +7,7 @@ import * as fb from '../firebase.js';
 import * as router from '../router.js';
 import * as toast from '../components/toast.js';
 import * as bottomNav from '../components/bottom-nav.js';
+import { escapeHTML } from "../utils.js";
 import { getGame, getAllGames } from '../games/registry.js';
 
 let _selectedGame = null;
@@ -43,7 +44,7 @@ export function mount(container, params = {}) {
         ${games.map((g) => {
           const compatible = playerCount >= g.minPlayers && playerCount <= g.maxPlayers;
           return `
-            <button class="game-card w-full text-left bg-surface-container-lowest border border-outline p-6 transition-all ${compatible ? 'hover:bg-surface-container group' : 'opacity-40 cursor-not-allowed'}" data-id="${g.id}" ${!compatible ? 'disabled' : ''}>
+            <button class="game-card w-full text-left bg-surface-container-lowest border border-outline p-6 transition-all ${compatible ? 'hover:bg-surface-container group' : 'opacity-40 cursor-not-allowed'}" data-id="${escapeHTML(g.id)}" ${!compatible ? 'disabled' : ''}>
               <div class="flex justify-between items-start mb-3">
                 <span class="font-mono text-[10px] text-outline tracking-widest uppercase">${g.minPlayers}-${g.maxPlayers} PLAYERS / ${g.winMode === 'highest_total' ? 'HIGHEST WINS' : 'LOWEST WINS'}</span>
                 <div class="game-check w-7 h-7 border-2 border-outline-variant flex items-center justify-center transition-all"></div>

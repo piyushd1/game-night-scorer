@@ -1,3 +1,0 @@
-🎯 **What:** The host key generation logic in `firebase.js` relied on a fallback containing predictable elements (`Date.now()`) when `crypto.randomUUID()` was unavailable.
-⚠️ **Risk:** An attacker could predict the random seed based on `Date.now()`, guess the host key, and hijack an active game room.
-🛡️ **Solution:** Removed the predictable elements and replaced the fallback logic with a purely secure implementation using `crypto.getRandomValues()` that maps 16 bytes of entropy to a 32-character hex string.
