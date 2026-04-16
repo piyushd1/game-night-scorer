@@ -105,15 +105,11 @@ export function computeNightStats(games, players) {
 
   // Determine MVP (most wins, tiebreak: best avg finish)
   const overallList = Object.values(overall);
-
-  // Bolt Optimization: Pre-calculate avgFinish to avoid O(N) operations in sort comparator
-  overallList.forEach(p => {
-    p.avgFinish = p.finishes.length ? p.finishes.reduce((s, v) => s + v, 0) / p.finishes.length : 99;
-  });
-
   overallList.sort((a, b) => {
     if (b.gamesWon !== a.gamesWon) return b.gamesWon - a.gamesWon;
-    return a.avgFinish - b.avgFinish;
+    const avgA = a.finishes.length ? a.finishes.reduce((s, v) => s + v, 0) / a.finishes.length : 99;
+    const avgB = b.finishes.length ? b.finishes.reduce((s, v) => s + v, 0) / b.finishes.length : 99;
+    return avgA - avgB;
   });
 
   const mvpId = overallList.length > 0 && overallList[0].gamesWon > 0 ? overallList[0].playerId : null;
