@@ -1,3 +1,8 @@
-🎯 **What:** The host key generation logic in `firebase.js` relied on a fallback containing predictable elements (`Date.now()`) when `crypto.randomUUID()` was unavailable.
-⚠️ **Risk:** An attacker could predict the random seed based on `Date.now()`, guess the host key, and hijack an active game room.
-🛡️ **Solution:** Removed the predictable elements and replaced the fallback logic with a purely secure implementation using `crypto.getRandomValues()` that maps 16 bytes of entropy to a 32-character hex string.
+🧪 Add tests for get() function in state.js
+
+🎯 What: Added unit tests for the untested `get` function in `public/js/state.js` to ensure reliable retrieval of state properties and safe state cloning.
+📊 Coverage:
+- Retrieval of existing keys.
+- Retrieval of non-existent keys (returns undefined).
+- Shallow copying of the complete state when called without a key.
+✨ Result: Improved codebase reliability by fully covering the `get` function and establishing a testing pattern for `state.js` using `node:test`.
