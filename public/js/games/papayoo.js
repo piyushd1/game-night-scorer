@@ -28,7 +28,7 @@ export default {
     if (!draft.papayooSuit) return { valid: false, error: 'Select the Papayoo suit' };
     if (!draft.entries) return { valid: false, error: 'No scores entered' };
 
-    for (const [pid, e] of Object.entries(draft.entries)) {
+    for (const e of Object.values(draft.entries)) {
       if ((e.penaltyPoints || 0) < 0) return { valid: false, error: 'Penalty points cannot be negative' };
     }
 
