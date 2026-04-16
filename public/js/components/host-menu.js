@@ -121,7 +121,7 @@ async function _endGameWithWinner(roomCode) {
   }
 
   // Compute standings to find if there's a clear leader
-  const standings = gameModule.deriveStandings(totals, playerIds, gameModule.winMode);
+  const standings = gameModule.deriveStandings(totals, playerIds);
   const rank1Players = standings.filter((s) => s.rank === 1);
 
   if (rank1Players.length === 1) {
