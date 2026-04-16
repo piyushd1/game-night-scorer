@@ -1,3 +1,13 @@
-🎯 **What:** The host key generation logic in `firebase.js` relied on a fallback containing predictable elements (`Date.now()`) when `crypto.randomUUID()` was unavailable.
-⚠️ **Risk:** An attacker could predict the random seed based on `Date.now()`, guess the host key, and hijack an active game room.
-🛡️ **Solution:** Removed the predictable elements and replaced the fallback logic with a purely secure implementation using `crypto.getRandomValues()` that maps 16 bytes of entropy to a 32-character hex string.
+🧪 Add missing test coverage for `currentGame` in state.js
+
+🎯 **What:** The `currentGame` function in `public/js/state.js` calculates the currently active game based on the application's global state. This function involves reading multiple state layers and relies on structural logic (`games`, `roomMeta`, `activeGameId`). We were lacking dedicated testing for edge cases to ensure proper graceful fallback (`null`).
+
+📊 **Coverage:** This testing improvement covers the following edge cases comprehensively:
+- Completely uninitialized state (both `games` and `roomMeta` missing/empty).
+- Missing `games` state when `roomMeta` is populated.
+- Missing `roomMeta` state when `games` is populated.
+- `roomMeta` missing the specific `activeGameId` property.
+- `activeGameId` referencing an id that does not exist in `games`.
+- Happy path returning the actual game object correctly.
+
+✨ **Result:** Enhanced test coverage provides structural assurance that the global active game resolution safely falls back to `null` across a wide range of missing or improperly formatted reactive state permutations.
