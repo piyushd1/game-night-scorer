@@ -4,7 +4,6 @@
 
 import { initFirebase } from './firebase.js';
 import * as router from './router.js';
-import * as state from './state.js';
 import * as fb from './firebase.js';
 
 // ── Firebase Config ──
