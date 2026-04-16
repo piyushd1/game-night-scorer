@@ -119,7 +119,7 @@ export default {
                 <input
                   type="number"
                   inputmode="numeric"
-                  data-player="${pid}"
+                  data-player="${escapeHTML(pid)}"
                   data-field="penaltyPoints"
                   aria-label="Score for ${escapeHTML(p.name || pid)}"
                   class="score-input w-16 papayoo-input"
@@ -155,7 +155,7 @@ export default {
 
     const entries = {};
     playerIds.forEach((pid) => {
-      const input = container.querySelector(`[data-player="${pid}"][data-field="penaltyPoints"]`);
+      const input = container.querySelector(`[data-player="${escapeHTML(pid)}"][data-field="penaltyPoints"]`);
       entries[pid] = {
         penaltyPoints: parseInt(input?.value) || 0,
       };
