@@ -10,16 +10,10 @@ import { getGame } from '../games/registry.js';
 export function mount(container, params = {}) {
   const roomCode = params.roomCode || state.get('roomCode');
 
-  if (!roomCode) {
-    router.navigate('home');
-    return;
-  }
-
   const topBar = document.getElementById('top-bar');
   topBar.style.display = 'flex';
   document.getElementById('top-bar-title').textContent = 'RULES';
-  document.getElementById('top-bar-back').classList.remove('hidden');
-  document.getElementById('top-bar-back').onclick = () => router.navigate('lobby', { roomCode });
+  document.getElementById('top-bar-back').classList.add('hidden');
   hostMenu.hide();
   hostMenu.renderTopBarActions(roomCode);
 

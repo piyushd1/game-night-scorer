@@ -20,34 +20,12 @@ export function computeNightStats(games, players) {
   const playerIds = [...new Set(allGames.flatMap((g) => g.playerIds || []))];
 
   // ── Overall stats per player ──
-  // Pre-compute maps to avoid O(N*G) lookups
-  const playerNames = new Map();
-  const playerAccents = new Map();
-
-  // Populate from players object first
-  if (players) {
-    for (const [pid, p] of Object.entries(players)) {
-      if (p.name !== undefined) playerNames.set(pid, p.name);
-      if (p.accentIndex !== undefined) playerAccents.set(pid, p.accentIndex);
-    }
-  }
-
-  // Populate from game snapshots
-  for (const g of allGames) {
-    if (g.playerSnapshot) {
-      for (const [pid, p] of Object.entries(g.playerSnapshot)) {
-        if (p.name !== undefined && !playerNames.has(pid)) playerNames.set(pid, p.name);
-        if (p.accentIndex !== undefined && !playerAccents.has(pid)) playerAccents.set(pid, p.accentIndex);
-      }
-    }
-  }
-
   const overall = {};
   playerIds.forEach((pid) => {
     overall[pid] = {
       playerId: pid,
-      name: playerNames.has(pid) ? playerNames.get(pid) : pid,
-      accentIndex: playerAccents.has(pid) ? playerAccents.get(pid) : 0,
+      name: _playerName(pid, allGames, players),
+      accentIndex: _playerAccent(pid, allGames, players),
       gamesPlayed: 0,
       gamesWon: 0,
       bestFinish: Infinity,
@@ -66,14 +44,11 @@ export function computeNightStats(games, players) {
     const gPlayerIds = game.playerIds || [];
     const standings = gameModule.deriveStandings(totals, gPlayerIds, gameModule.winMode);
 
-    // Bolt Optimization: Replace O(N) array find with O(1) Map lookup
-    const standingsMap = new Map(standings.map(s => [s.playerId, s]));
-
     // Update overall
     gPlayerIds.forEach((pid) => {
       if (!overall[pid]) return;
       overall[pid].gamesPlayed++;
-      const standing = standingsMap.get(pid);
+      const standing = standings.find((s) => s.playerId === pid);
       if (standing) {
         overall[pid].finishes.push(standing.rank);
         if (standing.rank < overall[pid].bestFinish) {
@@ -105,15 +80,11 @@ export function computeNightStats(games, players) {
 
   // Determine MVP (most wins, tiebreak: best avg finish)
   const overallList = Object.values(overall);
-
-  // Bolt Optimization: Pre-calculate average finishes to avoid O(N log N) redundant reduce calls in sort comparator
-  overallList.forEach(p => {
-    p.avgFinish = p.finishes.length ? p.finishes.reduce((s, v) => s + v, 0) / p.finishes.length : 99;
-  });
-
   overallList.sort((a, b) => {
     if (b.gamesWon !== a.gamesWon) return b.gamesWon - a.gamesWon;
-    return a.avgFinish - b.avgFinish;
+    const avgA = a.finishes.length ? a.finishes.reduce((s, v) => s + v, 0) / a.finishes.length : 99;
+    const avgB = b.finishes.length ? b.finishes.reduce((s, v) => s + v, 0) / b.finishes.length : 99;
+    return avgA - avgB;
   });
 
   const mvpId = overallList.length > 0 && overallList[0].gamesWon > 0 ? overallList[0].playerId : null;
@@ -148,23 +119,8 @@ function _playerAccent(pid, allGames, players) {
 function _computeGameSpecificStats(game, gameModule, rounds, playerIds, snapshot, totals, standings) {
   const stats = {};
 
-// Bolt Optimization: Replace O(N) array find with O(1) Map lookup
-  const standingsMap = new Map(standings.map(s => [s.playerId, s]));
-
-  // Precompute minCard for cabo rounds to avoid O(P*R) redundant calculations
-  const caboMinCards = new Map();
-  if (game.type === 'cabo') {
-    rounds.forEach((rnd) => {
-      if (!rnd.kamikaze) {
-        const allTotals = Object.entries(rnd.entries || {}).map(([id, e]) => e.cardTotal || 0);
-        caboMinCards.set(rnd, allTotals.length ? Math.min(...allTotals) : 0);
-      }
-    });
-  }
-
   playerIds.forEach((pid) => {
-
-    const standing = standingsMap.get(pid);
+    const standing = standings.find((s) => s.playerId === pid);
     const base = {
       playerId: pid,
       name: snapshot[pid]?.name || pid,
@@ -238,7 +194,8 @@ function _computeGameSpecificStats(game, gameModule, rounds, playerIds, snapshot
           roundPts = isCaller ? 0 : 50;
           if (isCaller) successfulCabos++;
         } else {
-          const minCard = caboMinCards.get(rnd);
+          const allTotals = Object.entries(rnd.entries).map(([id, e]) => e.cardTotal || 0);
+          const minCard = Math.min(...allTotals);
           if (isCaller) {
             roundPts = (entry.cardTotal || 0) <= minCard ? 0 : (entry.cardTotal || 0) + 10;
             if (roundPts === 0) successfulCabos++;

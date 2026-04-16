@@ -7,6 +7,10 @@ import * as state from './state.js';
 let db = null;
 let _roomUnsub = null;
 
+// Debug callback (set by debug.js in staging)
+let _onFirebaseEvent = null;
+export function setOnFirebaseEvent(fn) { _onFirebaseEvent = fn; }
+
 // ── Init ──
 
 export function initFirebase(config) {
@@ -32,20 +36,15 @@ export function isConfigured() {
 
 function generateCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no I/O/0/1 for clarity
-  const array = new Uint32Array(6);
-  crypto.getRandomValues(array);
   let code = '';
   for (let i = 0; i < 6; i++) {
-    code += chars[array[i] % chars.length];
+    code += chars[Math.floor(Math.random() * chars.length)];
   }
   return code;
 }
 
 function generateKey() {
-  if (crypto.randomUUID) return crypto.randomUUID();
-  const array = new Uint8Array(16);
-  crypto.getRandomValues(array);
-  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+  return crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 14) + Date.now().toString(36);
 }
 
 // ── Create Room ──
@@ -106,6 +105,7 @@ export function watchRoom(roomCode, onUpdate) {
     state.set('games', data.games || {});
     state.set('roomCode', roomCode);
 
+    if (_onFirebaseEvent) _onFirebaseEvent('watchRoom', data);
     onUpdate(data);
   });
 
@@ -123,10 +123,7 @@ export function unwatchRoom() {
 
 export async function addPlayer(roomCode, name, seatOrder, accentIndex) {
   if (!db) return;
-  const array = new Uint32Array(1);
-  crypto.getRandomValues(array);
-  const randomSuffix = array[0].toString(36).substring(0, 4);
-  const id = `p_${Date.now()}_${randomSuffix}`;
+  const id = `p_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
   await db.ref(`rooms/${roomCode}/players/${id}`).set({
     id,
     name: name.toUpperCase(),
@@ -151,7 +148,7 @@ export async function removePlayer(roomCode, playerId) {
 
 export async function createGame(roomCode, type, config, playerIds, playerSnapshot) {
   if (!db) return;
-
+  if (_onFirebaseEvent) _onFirebaseEvent('createGame', { type });
   const gameId = `g_${Date.now()}`;
   const now = Date.now();
 
@@ -182,7 +179,7 @@ export async function createGame(roomCode, type, config, playerIds, playerSnapsh
 
 export async function submitRound(roomCode, gameId, roundData, newTotals, endResult) {
   if (!db) return;
-
+  if (_onFirebaseEvent) _onFirebaseEvent('submitRound', { gameId });
 
   const game = state.get('games')?.[gameId];
   if (!game) return;
@@ -208,15 +205,10 @@ export async function submitRound(roomCode, gameId, roundData, newTotals, endRes
 
 export async function undoLastRound(roomCode, gameId, newTotals, prevStatus, overtime = false) {
   if (!db) return;
-
+  if (_onFirebaseEvent) _onFirebaseEvent('undoLastRound', { gameId });
 
   const game = state.get('games')?.[gameId];
   if (!game || !game.rounds) return;
-
-  // Do not allow undo if game is finished or abandoned.
-  if (game.status === 'finished' || game.status === 'abandoned') {
-    return;
-  }
 
   const roundKeys = Object.keys(game.rounds);
   if (roundKeys.length === 0) return;

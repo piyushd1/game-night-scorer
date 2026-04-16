@@ -92,7 +92,6 @@ export default {
                     inputmode="numeric"
                     data-player="${pid}"
                     data-field="basePoints"
-                    aria-label="Score for ${escapeHTML(p.name || pid)}"
                     class="score-input w-16"
                     placeholder="0"
                     min="0"
@@ -101,8 +100,6 @@ export default {
                   <button
                     data-player="${pid}"
                     data-field="flip7"
-                    aria-pressed="false"
-                    aria-label="Flip 7 for ${escapeHTML(p.name || pid)}"
                     class="flip7-toggle px-2 py-1.5 border font-mono text-[10px] uppercase tracking-widest transition-colors border-outline-variant text-outline hover:border-primary"
                   >F7</button>
                 </div>

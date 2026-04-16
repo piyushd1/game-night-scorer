@@ -63,8 +63,8 @@ export function mount(container, params = {}) {
             autocapitalize="characters"
             class="flex-1 bg-surface-container-lowest border border-outline font-headline font-bold text-sm uppercase py-3 px-4 placeholder:text-outline placeholder:normal-case placeholder:font-normal focus:outline-none focus:border-primary transition-colors"
           >
-          <button id="btn-confirm-add" aria-label="Add player" title="Add player" class="bg-primary text-on-primary px-4 font-headline font-bold text-sm uppercase tracking-widest flex items-center gap-1 hover:opacity-90 transition-opacity shrink-0">
-            <span class="material-symbols-outlined text-lg" aria-hidden="true">add</span>
+          <button id="btn-confirm-add" class="bg-primary text-on-primary px-4 font-headline font-bold text-sm uppercase tracking-widest flex items-center gap-1 hover:opacity-90 transition-opacity shrink-0">
+            <span class="material-symbols-outlined text-lg">add</span>
           </button>
         </div>
       </div>
@@ -87,8 +87,8 @@ export function mount(container, params = {}) {
             <p class="font-headline font-bold text-sm uppercase">Track Tonight's Stats</p>
             <p class="font-mono text-[10px] text-outline mt-0.5">See MVP, per-game breakdowns, and player highlights at the end of the night</p>
           </div>
-          <button id="btn-stats-toggle" role="switch" aria-checked="false" aria-label="Track Tonight's Stats" class="w-12 h-7 border border-outline bg-surface-container-high transition-all relative shrink-0" data-on="false">
-            <div class="absolute top-[2px] left-[2px] w-[22px] h-[22px] bg-outline transition-transform" aria-hidden="true"></div>
+          <button id="btn-stats-toggle" class="w-12 h-7 border border-outline bg-surface-container-high transition-all relative shrink-0" data-on="false">
+            <div class="absolute top-[2px] left-[2px] w-[22px] h-[22px] bg-outline transition-transform"></div>
           </button>
         </div>
       </div>
@@ -159,7 +159,6 @@ function _bindEvents(container, roomCode) {
       const isOn = statsToggle.dataset.on === 'true';
       const newVal = !isOn;
       statsToggle.dataset.on = String(newVal);
-      statsToggle.setAttribute('aria-checked', String(newVal));
       const dot = statsToggle.querySelector('div');
       if (newVal) {
         statsToggle.style.background = '#000';
@@ -200,54 +199,12 @@ async function _addPlayer(container, roomCode) {
   const accentIndex = count % ACCENT_COLORS.length;
 
   try {
-    const newPlayerId = await fb.addPlayer(roomCode, name, count, accentIndex);
+    await fb.addPlayer(roomCode, name, count, accentIndex);
     input.value = '';
     input.focus();
-
-    // If no host player set yet, prompt the host to identify themselves
-    const meta = state.get('roomMeta') || {};
-    if (!meta.hostPlayerId && newPlayerId) {
-      _showHostPrompt(container, roomCode, newPlayerId, nameUpper);
-    }
   } catch (e) {
     toast.show('Failed to add player');
   }
-}
-
-function _showHostPrompt(container, roomCode, playerId, playerName) {
-  // Remove any existing prompt
-  const existing = container.querySelector('#host-prompt');
-  if (existing) existing.remove();
-
-  const playerList = container.querySelector('#player-list');
-  if (!playerList) return;
-
-  const prompt = document.createElement('div');
-  prompt.id = 'host-prompt';
-  prompt.className = 'bg-primary text-on-primary border border-outline p-4 mb-2';
-  prompt.innerHTML = `
-    <p class="font-headline font-bold text-sm uppercase mb-3">Are you ${escapeHTML(playerName)}?</p>
-    <div class="flex gap-2">
-      <button id="host-prompt-yes" class="flex-1 py-2 bg-surface-container-lowest text-primary font-headline font-bold text-xs uppercase tracking-widest hover:bg-surface-container-high transition-colors">
-        YES, THAT'S ME
-      </button>
-      <button id="host-prompt-no" class="flex-1 py-2 border border-white/40 text-white font-headline font-bold text-xs uppercase tracking-widest hover:bg-white/10 transition-colors">
-        NO
-      </button>
-    </div>
-  `;
-
-  playerList.insertAdjacentElement('beforebegin', prompt);
-
-  prompt.querySelector('#host-prompt-yes').addEventListener('click', async () => {
-    await fb.updateRoomMeta(roomCode, { hostPlayerId: playerId });
-    toast.show('You are set as the host player');
-    prompt.remove();
-  });
-
-  prompt.querySelector('#host-prompt-no').addEventListener('click', () => {
-    prompt.remove();
-  });
 }
 
 function _startWatching(roomCode, container) {
@@ -276,12 +233,6 @@ function _startWatching(roomCode, container) {
     // Render player list
     _renderPlayers(container, players, isHost, roomCode);
 
-    // Remove host prompt if host player has been set
-    if (meta.hostPlayerId) {
-      const hostPrompt = container.querySelector('#host-prompt');
-      if (hostPrompt) hostPrompt.remove();
-    }
-
     // Stats tracking
     const trackStats = meta.trackStats || false;
     const games = data.games || {};
@@ -295,7 +246,6 @@ function _startWatching(roomCode, container) {
       const toggleBtn = container.querySelector('#btn-stats-toggle');
       if (toggleBtn && toggleBtn.dataset.on !== String(trackStats)) {
         toggleBtn.dataset.on = String(trackStats);
-        toggleBtn.setAttribute('aria-checked', String(trackStats));
         const dot = toggleBtn.querySelector('div');
         if (trackStats) {
           toggleBtn.style.background = '#000';
@@ -326,10 +276,6 @@ function _startWatching(roomCode, container) {
         btn.querySelector('.material-symbols-outlined')?.remove();
         btn.disabled = false;
         hint.textContent = '';
-      } else if (meta.status === 'lobby') {
-        btn.innerHTML = 'CHOOSE GAME <span class="material-symbols-outlined text-lg">arrow_forward</span>';
-        btn.disabled = activeCount < 2;
-        hint.textContent = activeCount < 2 ? 'ADD AT LEAST 2 PLAYERS' : `${activeCount} PLAYERS READY`;
       } else {
         hint.textContent = activeCount < 2 ? 'ADD AT LEAST 2 PLAYERS' : `${activeCount} PLAYERS READY`;
       }

@@ -21,15 +21,10 @@ export function mount(container, params = {}) {
     return;
   }
 
-  if (!roomCode) {
-    router.navigate('home');
-    return;
-  }
   const topBar = document.getElementById('top-bar');
   topBar.style.display = 'flex';
   document.getElementById('top-bar-title').textContent = 'SCORING';
-  document.getElementById('top-bar-back').classList.remove('hidden');
-  document.getElementById('top-bar-back').onclick = () => router.navigate('lobby', { roomCode });
+  document.getElementById('top-bar-back').classList.add('hidden');
   hostMenu.hide();
   hostMenu.renderTopBarActions(roomCode);
 
@@ -147,9 +142,7 @@ function _bindFormInteractions(container, gameType, playerIds) {
     container.querySelectorAll('.flip7-toggle').forEach((btn) => {
       btn.addEventListener('click', () => {
         btn.classList.toggle('active');
-        const isActive = btn.classList.contains('active');
-        btn.setAttribute('aria-pressed', isActive.toString());
-        if (isActive) {
+        if (btn.classList.contains('active')) {
           btn.style.background = '#000';
           btn.style.color = '#fff';
           btn.style.borderColor = '#000';
@@ -180,11 +173,11 @@ function _bindFormInteractions(container, gameType, playerIds) {
     });
 
     // Live penalty sum
-    const papayooInputs = Array.from(container.querySelectorAll('.papayoo-input'));
-    const sumEl = container.querySelector('#penalty-sum');
-    papayooInputs.forEach((input) => {
+    container.querySelectorAll('.papayoo-input').forEach((input) => {
       input.addEventListener('input', () => {
-        const sum = papayooInputs.reduce((s, el) => s + (parseInt(el.value) || 0), 0);
+        const sum = Array.from(container.querySelectorAll('.papayoo-input'))
+          .reduce((s, el) => s + (parseInt(el.value) || 0), 0);
+        const sumEl = container.querySelector('#penalty-sum');
         if (sumEl) {
           sumEl.textContent = sum;
           sumEl.style.color = sum === 250 ? '#00B85C' : sum > 250 ? '#ba1a1a' : '';
@@ -215,11 +208,9 @@ function _bindFormInteractions(container, gameType, playerIds) {
     if (kamikazeBtn) {
       kamikazeBtn.addEventListener('click', () => {
         kamikazeBtn.classList.toggle('active');
-        const isActive = kamikazeBtn.classList.contains('active');
-        kamikazeBtn.setAttribute('aria-checked', isActive.toString());
         const dot = kamikazeBtn.querySelector('div');
         const cardSection = container.querySelector('#card-totals-section');
-        if (isActive) {
+        if (kamikazeBtn.classList.contains('active')) {
           kamikazeBtn.style.background = '#000';
           kamikazeBtn.style.borderColor = '#000';
           dot.style.transform = 'translateX(20px)';
