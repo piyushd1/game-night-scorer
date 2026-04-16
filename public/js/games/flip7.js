@@ -36,7 +36,7 @@ export default {
     return newTotals;
   },
 
-  checkEnd(totals, config, playerIds, _roundCount) {
+  checkEnd(totals, config, playerIds) {
     const target = config?.targetScore || 200;
     const maxScore = Math.max(...playerIds.map((id) => totals[id] || 0));
 

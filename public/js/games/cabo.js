@@ -79,7 +79,7 @@ export default {
     return newTotals;
   },
 
-  checkEnd(totals, config, playerIds, _roundCount) {
+  checkEnd(totals, config, playerIds) {
     const threshold = config?.lossThreshold || 100;
 
     // Check if anyone is over threshold

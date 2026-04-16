@@ -1,3 +1,7 @@
-🎯 **What:** The host key generation logic in `firebase.js` relied on a fallback containing predictable elements (`Date.now()`) when `crypto.randomUUID()` was unavailable.
-⚠️ **Risk:** An attacker could predict the random seed based on `Date.now()`, guess the host key, and hijack an active game room.
-🛡️ **Solution:** Removed the predictable elements and replaced the fallback logic with a purely secure implementation using `crypto.getRandomValues()` that maps 16 bytes of entropy to a 32-character hex string.
+🎯 **What:** Removed the unused `_roundCount` parameter from the `checkEnd` function in `public/js/games/flip7.js` and `public/js/games/cabo.js`.
+
+💡 **Why:** This parameter was declared but never used in the function body. Removing it improves code clarity, reduces dead code, and standardizes the method signature across game modules where the parameter is unneeded.
+
+✅ **Verification:** Verified that the syntax of the modified files is still valid. Tested that checking the game end condition successfully runs the function correctly.
+
+✨ **Result:** A cleaner codebase with less dead code and reduced complexity.
