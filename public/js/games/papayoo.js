@@ -121,6 +121,7 @@ export default {
                   inputmode="numeric"
                   data-player="${pid}"
                   data-field="penaltyPoints"
+                  aria-label="Score for ${escapeHTML(p.name || pid)}"
                   class="score-input w-16 papayoo-input"
                   placeholder="0"
                   min="0"
