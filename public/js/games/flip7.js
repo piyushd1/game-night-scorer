@@ -51,7 +51,7 @@ export default {
     return { ended: true, winner: null, overtime: true };
   },
 
-  deriveStandings(totals, playerIds, winMode) {
+  deriveStandings(totals, playerIds) {
     const sorted = playerIds
       .map((id) => ({ playerId: id, total: totals[id] || 0 }))
       .sort((a, b) => b.total - a.total); // highest first
@@ -90,7 +90,7 @@ export default {
                   <input
                     type="number"
                     inputmode="numeric"
-                    data-player="${pid}"
+                    data-player="${escapeHTML(pid)}"
                     data-field="basePoints"
                     aria-label="Score for ${escapeHTML(p.name || pid)}"
                     class="score-input w-16"
@@ -99,7 +99,7 @@ export default {
                     value=""
                   >
                   <button
-                    data-player="${pid}"
+                    data-player="${escapeHTML(pid)}"
                     data-field="flip7"
                     aria-pressed="false"
                     aria-label="Flip 7 for ${escapeHTML(p.name || pid)}"
@@ -123,8 +123,8 @@ export default {
   collectDraft(container, playerIds) {
     const entries = {};
     playerIds.forEach((pid) => {
-      const input = container.querySelector(`[data-player="${pid}"][data-field="basePoints"]`);
-      const toggle = container.querySelector(`[data-player="${pid}"][data-field="flip7"]`);
+      const input = container.querySelector(`[data-player="${escapeHTML(pid)}"][data-field="basePoints"]`);
+      const toggle = container.querySelector(`[data-player="${escapeHTML(pid)}"][data-field="flip7"]`);
       entries[pid] = {
         basePoints: parseInt(input?.value) || 0,
         flip7: toggle?.classList.contains('active') || false,

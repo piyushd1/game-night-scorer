@@ -1,7 +1,0 @@
-🎯 **What:** Removed the unused `_roundCount` parameter from the `checkEnd` function in `public/js/games/flip7.js` and `public/js/games/cabo.js`.
-
-💡 **Why:** This parameter was declared but never used in the function body. Removing it improves code clarity, reduces dead code, and standardizes the method signature across game modules where the parameter is unneeded.
-
-✅ **Verification:** Verified that the syntax of the modified files is still valid. Tested that checking the game end condition successfully runs the function correctly.
-
-✨ **Result:** A cleaner codebase with less dead code and reduced complexity.

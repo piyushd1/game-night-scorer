@@ -28,7 +28,7 @@ export default {
     if (!draft.papayooSuit) return { valid: false, error: 'Select the Papayoo suit' };
     if (!draft.entries) return { valid: false, error: 'No scores entered' };
 
-    for (const [pid, e] of Object.entries(draft.entries)) {
+    for (const e of Object.values(draft.entries)) {
       if ((e.penaltyPoints || 0) < 0) return { valid: false, error: 'Penalty points cannot be negative' };
     }
 
@@ -65,7 +65,7 @@ export default {
     return { ended: true, winner: null, overtime: true };
   },
 
-  deriveStandings(totals, playerIds, winMode) {
+  deriveStandings(totals, playerIds) {
     const sorted = playerIds
       .map((id) => ({ playerId: id, total: totals[id] || 0 }))
       .sort((a, b) => a.total - b.total); // lowest first
@@ -119,7 +119,7 @@ export default {
                 <input
                   type="number"
                   inputmode="numeric"
-                  data-player="${pid}"
+                  data-player="${escapeHTML(pid)}"
                   data-field="penaltyPoints"
                   aria-label="Score for ${escapeHTML(p.name || pid)}"
                   class="score-input w-16 papayoo-input"
@@ -155,7 +155,7 @@ export default {
 
     const entries = {};
     playerIds.forEach((pid) => {
-      const input = container.querySelector(`[data-player="${pid}"][data-field="penaltyPoints"]`);
+      const input = container.querySelector(`[data-player="${escapeHTML(pid)}"][data-field="penaltyPoints"]`);
       entries[pid] = {
         penaltyPoints: parseInt(input?.value) || 0,
       };
