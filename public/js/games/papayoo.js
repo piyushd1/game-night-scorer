@@ -65,7 +65,7 @@ export default {
     return { ended: true, winner: null, overtime: true };
   },
 
-  deriveStandings(totals, playerIds, winMode) {
+  deriveStandings(totals, playerIds) {
     const sorted = playerIds
       .map((id) => ({ playerId: id, total: totals[id] || 0 }))
       .sort((a, b) => a.total - b.total); // lowest first

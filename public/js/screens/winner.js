@@ -34,7 +34,7 @@ export function mount(container, params = {}) {
   const isHost = state.isHost();
 
   // Derive standings
-  const standings = gameModule.deriveStandings(totals, game.playerIds, gameModule.winMode);
+  const standings = gameModule.deriveStandings(totals, game.playerIds);
   const winner = snapshot[game.winner] || {};
   const winnerTotal = totals[game.winner] || 0;
   const winnerColor = ACCENT_COLORS[winner.accentIndex || 0];
