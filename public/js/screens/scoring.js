@@ -195,9 +195,10 @@ function _bindFormInteractions(container, gameType, playerIds) {
 
   if (gameType === 'cabo') {
     // Caller selection — single select
-    container.querySelectorAll('.caller-btn').forEach((btn) => {
+    const callerBtns = container.querySelectorAll('.caller-btn');
+    callerBtns.forEach((btn) => {
       btn.addEventListener('click', () => {
-        container.querySelectorAll('.caller-btn').forEach((b) => {
+        callerBtns.forEach((b) => {
           b.classList.remove('active');
           b.style.background = '';
           b.style.borderColor = '';
