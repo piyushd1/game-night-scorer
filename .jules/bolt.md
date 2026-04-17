@@ -4,3 +4,6 @@
 ## 2024-04-14 - [Stats MVP Sort O(N^2) Bottleneck]
 **Learning:** Found redundant array reduce inside sort comparator in `public/js/stats.js` for `overallList`. `a.finishes.reduce` was computed on every comparison, resulting in inefficient sorting.
 **Action:** Always pre-calculate derived metrics (like averages) outside of the `.sort()` comparator to keep the comparator O(1) time complexity.
+## 2026-04-17 - [O(P^2 * R) Bottleneck in Game Scoring Loops]
+**Learning:** Found that calculating O(N) derived values (like `minCardTotal` in Cabo) inside getter functions (`getRoundPoints`) called within nested rendering loops (iterating over rounds and players in `dashboard.js`) causes redundant O(P^2 * R) operations. This was amplified by inefficient `Object.entries().map().map()` intermediate array allocations in `applyRound`.
+**Action:** Use a `WeakMap` to cleanly memoize derived data directly onto immutable state objects (like `roundData`), turning O(N) redundant calculations into O(1) lookups, and prefer `for...in` loops over chained array methods for critical calculation paths to avoid memory allocations.
