@@ -47,10 +47,10 @@ function render() {
   nav.innerHTML = tabs
     .map(
       (tab) => `
-    <div class="nav-item ${tab.id === _activeTab ? 'active' : ''}" data-tab="${tab.id}">
+    <button type="button" class="nav-item ${tab.id === _activeTab ? 'active' : ''}" data-tab="${tab.id}">
       <span class="material-symbols-outlined" ${tab.id === _activeTab ? 'style="font-variation-settings: \'FILL\' 1;"' : ''}>${tab.icon}</span>
       <span>${tab.label}</span>
-    </div>
+    </button>
   `
     )
     .join('');
