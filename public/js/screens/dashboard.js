@@ -13,6 +13,7 @@ import { getGame } from '../games/registry.js';
 
 let _unsubGames = null;
 let _unsubMeta = null;
+let _unsubPlayers = null;
 
 export function mount(container, params = {}) {
   const roomCode = params.roomCode || state.get('roomCode');
@@ -37,6 +38,7 @@ export function mount(container, params = {}) {
   const renderHandler = () => _render(container, roomCode);
   _unsubGames = state.on('games', renderHandler);
   _unsubMeta = state.on('roomMeta', renderHandler);
+  _unsubPlayers = state.on('players', renderHandler);
 
   // Ensure room is being watched
   if (!state.get('roomCode')) {
@@ -55,6 +57,8 @@ export function unmount() {
   _unsubGames = null;
   if (_unsubMeta) _unsubMeta();
   _unsubMeta = null;
+  if (_unsubPlayers) _unsubPlayers();
+  _unsubPlayers = null;
 }
 
 function _render(container, roomCode) {
@@ -147,9 +151,18 @@ function _render(container, roomCode) {
     return;
   }
 
+  // Sort: inactive players drop to the bottom regardless of score,
+  // so active rankings stay visually clear.
+  const playersMap = state.get('players') || {};
+  const isInactive = (pid) => playersMap[pid]?.isActive === false;
+  const orderedStandings = [
+    ...standings.filter((s) => !isInactive(s.playerId)),
+    ...standings.filter((s) => isInactive(s.playerId)),
+  ];
+
   // Scoreboard
   html += `<div class="flex flex-col gap-1">`;
-  standings.forEach((s, i) => {
+  orderedStandings.forEach((s) => {
     const p = snapshot[s.playerId] || {};
     html += renderRow({
       name: p.name || s.playerId,
@@ -160,6 +173,7 @@ function _render(container, roomCode) {
       progressPct: getProgress(s.total),
       isLeader: s.rank === 1,
       winMode: gameModule.winMode,
+      isInactive: isInactive(s.playerId),
     });
   });
   html += `</div>`;

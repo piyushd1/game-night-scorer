@@ -5,6 +5,7 @@
 import { initFirebase } from './firebase.js';
 import * as router from './router.js';
 import * as fb from './firebase.js';
+import * as state from './state.js';
 
 // ── Firebase Config ──
 // Replace with your Firebase project config
@@ -50,6 +51,20 @@ async function init() {
 
   // Start router FIRST (before any navigation)
   router.init('screen-container');
+
+  // Auto-navigate on night-ended / night-resumed status changes
+  state.on('roomMeta', (newMeta, prevMeta) => {
+    if (!newMeta) return;
+    const screen = router.currentScreen();
+    const roomCode = newMeta.roomCode || state.get('roomCode');
+    if (!roomCode) return;
+
+    if (newMeta.status === 'night-ended' && screen !== 'recap') {
+      router.navigate('recap', { roomCode });
+    } else if (prevMeta?.status === 'night-ended' && newMeta.status === 'lobby') {
+      if (screen === 'recap') router.navigate('lobby', { roomCode });
+    }
+  });
 
   // Then check URL for room code and navigate via router
   const urlParams = new URLSearchParams(window.location.search);

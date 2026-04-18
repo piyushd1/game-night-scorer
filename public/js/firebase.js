@@ -262,3 +262,38 @@ export async function submitGameAbandon(roomCode, gameId) {
     finishedAt: Date.now(),
   });
 }
+
+// ── Night Lifecycle ──
+
+export async function endNight(roomCode) {
+  if (!db) return;
+  const now = Date.now();
+  await db.ref(`rooms/${roomCode}/meta`).update({
+    status: 'night-ended',
+    nightEndedAt: now,
+    updatedAt: now,
+  });
+}
+
+export async function startNewNight(roomCode) {
+  if (!db) return;
+  const now = Date.now();
+  const gamesSnap = await db.ref(`rooms/${roomCode}/games`).once('value');
+  const games = gamesSnap.val();
+
+  const updates = {};
+  if (games && Object.keys(games).length > 0) {
+    const archiveKey = gamesSnap.val()?.__archivedAt || now;
+    updates[`rooms/${roomCode}/nights/${archiveKey}`] = {
+      endedAt: now,
+      games,
+    };
+  }
+  updates[`rooms/${roomCode}/games`] = null;
+  updates[`rooms/${roomCode}/meta/status`] = 'lobby';
+  updates[`rooms/${roomCode}/meta/activeGameId`] = null;
+  updates[`rooms/${roomCode}/meta/nightEndedAt`] = null;
+  updates[`rooms/${roomCode}/meta/updatedAt`] = now;
+
+  await db.ref().update(updates);
+}
