@@ -44,13 +44,16 @@ function render() {
   const nav = document.getElementById('bottom-nav');
   const tabs = state.isHost() ? TABS.host : TABS.viewer;
 
+  // Add ARIA attributes to indicate it is a tablist
+  nav.setAttribute('role', 'tablist');
+
   nav.innerHTML = tabs
     .map(
       (tab) => `
-    <div class="nav-item ${tab.id === _activeTab ? 'active' : ''}" data-tab="${tab.id}">
-      <span class="material-symbols-outlined" ${tab.id === _activeTab ? 'style="font-variation-settings: \'FILL\' 1;"' : ''}>${tab.icon}</span>
+    <button type="button" role="tab" aria-selected="${tab.id === _activeTab}" aria-controls="screen-container" id="tab-${tab.id}" class="nav-item ${tab.id === _activeTab ? 'active' : ''}" data-tab="${tab.id}">
+      <span class="material-symbols-outlined" aria-hidden="true" ${tab.id === _activeTab ? 'style="font-variation-settings: \'FILL\' 1;"' : ''}>${tab.icon}</span>
       <span>${tab.label}</span>
-    </div>
+    </button>
   `
     )
     .join('');
