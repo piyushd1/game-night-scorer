@@ -5,6 +5,8 @@
 import { ACCENT_COLORS } from '../state.js';
 import { escapeHTML } from '../utils.js';
 
+const minCardCache = new WeakMap();
+
 export default {
   id: 'cabo',
   label: 'Cabo',
@@ -40,7 +42,7 @@ export default {
 
     if (kamikaze) {
       // Kamikaze: caller gets 0, everyone else gets 50
-      for (const pid of Object.keys(entries)) {
+      for (const pid in entries) {
         if (pid === callerId) {
           newTotals[pid] = (newTotals[pid] || 0) + 0;
         } else {
@@ -48,14 +50,20 @@ export default {
         }
       }
     } else {
-      // Find minimum card total
-      const cardTotals = Object.entries(entries).map(([pid, e]) => ({
-        pid,
-        cardTotal: e.cardTotal || 0,
-      }));
-      const minCardTotal = Math.min(...cardTotals.map((c) => c.cardTotal));
+      // Find minimum card total - Bolt Optimization: Avoid multiple array allocations
+      let minCardTotal = Infinity;
+      for (const pid in entries) {
+        const cardTotal = entries[pid].cardTotal || 0;
+        if (cardTotal < minCardTotal) {
+          minCardTotal = cardTotal;
+        }
+      }
 
-      for (const { pid, cardTotal } of cardTotals) {
+      // Memoize the min card total for getRoundPoints
+      minCardCache.set(roundData, minCardTotal);
+
+      for (const pid in entries) {
+        const cardTotal = entries[pid].cardTotal || 0;
         if (pid === callerId) {
           // Caller: 0 if they have the min, else cardTotal + 10
           if (cardTotal === minCardTotal) {
@@ -121,8 +129,17 @@ export default {
     }
 
     const cardTotal = entries[playerId]?.cardTotal || 0;
-    const allCardTotals = Object.values(entries).map((e) => e.cardTotal || 0);
-    const minCardTotal = Math.min(...allCardTotals);
+
+    // Bolt Optimization: Use memoized min card total or compute efficiently if missing
+    let minCardTotal = minCardCache.get(roundData);
+    if (minCardTotal === undefined) {
+      minCardTotal = Infinity;
+      for (const pid in entries) {
+        const ct = entries[pid].cardTotal || 0;
+        if (ct < minCardTotal) minCardTotal = ct;
+      }
+      minCardCache.set(roundData, minCardTotal);
+    }
 
     if (playerId === callerId) {
       return cardTotal === minCardTotal ? 0 : cardTotal + 10;
