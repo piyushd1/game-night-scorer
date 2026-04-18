@@ -105,6 +105,13 @@ export default {
                     aria-label="Flip 7 for ${escapeHTML(p.name || pid)}"
                     class="flip7-toggle px-2 py-1.5 border font-mono text-[10px] uppercase tracking-widest transition-colors border-outline-variant text-outline hover:border-primary"
                   >F7</button>
+                  <button
+                    type="button"
+                    data-player="${escapeHTML(pid)}"
+                    aria-label="Clear ${escapeHTML(p.name || pid)}'s entry"
+                    title="Clear entry"
+                    class="clear-row-btn p-1 text-outline hover:text-on-surface transition-colors"
+                  ><span class="material-symbols-outlined text-base" aria-hidden="true">backspace</span></button>
                 </div>
               </div>
             </div>
@@ -131,6 +138,23 @@ export default {
       };
     });
     return { entries };
+  },
+
+  clearRow(container, pid) {
+    const input = container.querySelector(`[data-player="${escapeHTML(pid)}"][data-field="basePoints"]`);
+    if (input) input.value = '';
+    const toggle = container.querySelector(`[data-player="${escapeHTML(pid)}"][data-field="flip7"]`);
+    if (toggle) {
+      toggle.classList.remove('active');
+      toggle.setAttribute('aria-pressed', 'false');
+      toggle.style.background = '';
+      toggle.style.color = '';
+      toggle.style.borderColor = '';
+    }
+  },
+
+  resetAll(container, playerIds) {
+    playerIds.forEach((pid) => this.clearRow(container, pid));
   },
 
   rulesHTML: `

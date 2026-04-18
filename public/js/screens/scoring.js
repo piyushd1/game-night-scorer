@@ -105,7 +105,10 @@ function _render(container, roomCode) {
           <p class="font-mono text-[10px] uppercase tracking-widest text-outline">ENTER SCORES</p>
           <h2 class="font-headline font-black text-2xl uppercase tracking-tight">Round ${roundNum}</h2>
         </div>
-        <span class="font-mono text-[10px] border border-outline px-2 py-1 uppercase">${gameModule.label}</span>
+        <div class="flex items-center gap-3">
+          <button id="btn-reset-form" type="button" class="font-mono text-[10px] uppercase tracking-widest text-outline hover:text-on-surface underline-offset-2 hover:underline transition-colors">RESET FORM</button>
+          <span class="font-mono text-[10px] border border-outline px-2 py-1 uppercase">${gameModule.label}</span>
+        </div>
       </div>
 
       <!-- Mini Standings -->
@@ -151,6 +154,19 @@ function _render(container, roomCode) {
 
   // Wire up game-specific interactive elements
   _bindFormInteractions(container, game.type, activePlayerIds);
+
+  // Per-row clear + form-wide reset (edit-in-draft)
+  formEl.querySelectorAll('.clear-row-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const pid = btn.dataset.player;
+      gameModule.clearRow?.(container, pid);
+    });
+  });
+  container.querySelector('#btn-reset-form')?.addEventListener('click', () => {
+    gameModule.resetAll?.(container, activePlayerIds);
+    const errorEl = container.querySelector('#validation-error');
+    if (errorEl) errorEl.style.display = 'none';
+  });
 
   // Submit handler
   container.querySelector('#btn-submit-round').addEventListener('click', () => {

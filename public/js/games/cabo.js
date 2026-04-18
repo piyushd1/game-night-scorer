@@ -204,6 +204,13 @@ export default {
                   min="0"
                   value=""
                 >
+                <button
+                  type="button"
+                  data-player="${escapeHTML(pid)}"
+                  aria-label="Clear ${escapeHTML(p.name || pid)}'s entry"
+                  title="Clear entry"
+                  class="clear-row-btn p-1 text-outline hover:text-on-surface transition-colors"
+                ><span class="material-symbols-outlined text-base" aria-hidden="true">backspace</span></button>
               </div>
             </div>
           `;
@@ -240,6 +247,39 @@ export default {
     });
 
     return { callerId, kamikaze, entries };
+  },
+
+  clearRow(container, pid) {
+    const input = container.querySelector(`[data-player="${escapeHTML(pid)}"][data-field="cardTotal"]`);
+    if (input) input.value = '';
+    // If this player was the caller, unselect the caller button
+    const callerBtn = container.querySelector(`.caller-btn[data-caller="${escapeHTML(pid)}"]`);
+    if (callerBtn?.classList.contains('active')) {
+      callerBtn.classList.remove('active');
+      callerBtn.style.background = '';
+      callerBtn.style.borderColor = '';
+      callerBtn.style.color = '';
+    }
+  },
+
+  resetAll(container, playerIds) {
+    playerIds.forEach((pid) => this.clearRow(container, pid));
+    // Turn kamikaze off and re-enable the card inputs
+    const kamikazeBtn = container.querySelector('#kamikaze-toggle');
+    if (kamikazeBtn?.classList.contains('active')) {
+      kamikazeBtn.classList.remove('active');
+      kamikazeBtn.setAttribute('aria-checked', 'false');
+      kamikazeBtn.style.background = '';
+      kamikazeBtn.style.borderColor = '';
+      const dot = kamikazeBtn.querySelector('div');
+      if (dot) {
+        dot.style.transform = 'translateX(0)';
+        dot.style.background = '';
+      }
+      const cardSection = container.querySelector('#card-totals-section');
+      if (cardSection) cardSection.style.opacity = '1';
+      cardSection?.querySelectorAll('input').forEach((i) => { i.disabled = false; });
+    }
   },
 
   rulesHTML: `
