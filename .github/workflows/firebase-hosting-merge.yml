@@ -11,6 +11,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Stamp service worker version with short SHA
+        # Replaces the __VERSION__ placeholder in sw.js so each deploy produces
+        # a uniquely versioned cache. On the client, an activate handler purges
+        # any cache whose name doesn't match the new VERSION constants.
+        # See docs/CACHING.md for the full strategy.
+        run: |
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          sed -i "s/__VERSION__/${SHORT_SHA}/" public/sw.js
+          echo "Stamped sw.js with VERSION=${SHORT_SHA}"
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
