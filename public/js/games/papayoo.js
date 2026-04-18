@@ -127,6 +127,13 @@ export default {
                   min="0"
                   value=""
                 >
+                <button
+                  type="button"
+                  data-player="${escapeHTML(pid)}"
+                  aria-label="Clear ${escapeHTML(p.name || pid)}'s entry"
+                  title="Clear entry"
+                  class="clear-row-btn p-1 text-outline hover:text-on-surface transition-colors"
+                ><span class="material-symbols-outlined text-base" aria-hidden="true">backspace</span></button>
               </div>
             </div>
           `;
@@ -162,6 +169,26 @@ export default {
     });
 
     return { papayooSuit, entries };
+  },
+
+  clearRow(container, pid) {
+    const input = container.querySelector(`[data-player="${escapeHTML(pid)}"][data-field="penaltyPoints"]`);
+    if (input) {
+      input.value = '';
+      // Trigger the existing input listener so the live sum reflects the change
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  },
+
+  resetAll(container, playerIds) {
+    playerIds.forEach((pid) => this.clearRow(container, pid));
+    // Unselect the Papayoo suit
+    container.querySelectorAll('.suit-btn').forEach((b) => {
+      b.classList.remove('active');
+      b.style.background = '';
+      b.style.borderColor = '';
+      b.style.color = '';
+    });
   },
 
   rulesHTML: `
