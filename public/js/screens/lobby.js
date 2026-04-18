@@ -55,6 +55,7 @@ export function mount(container, params = {}) {
         <div class="flex gap-2 mb-4">
           <input
             id="input-player-name"
+            aria-label="New player name"
             type="text"
             maxlength="12"
             placeholder="Player name..."
