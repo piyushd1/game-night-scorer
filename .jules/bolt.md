@@ -7,3 +7,6 @@
 ## 2026-04-17 - [O(P^2 * R) Bottleneck in Game Scoring Loops]
 **Learning:** Found that calculating O(N) derived values (like `minCardTotal` in Cabo) inside getter functions (`getRoundPoints`) called within nested rendering loops (iterating over rounds and players in `dashboard.js`) causes redundant O(P^2 * R) operations. This was amplified by inefficient `Object.entries().map().map()` intermediate array allocations in `applyRound`.
 **Action:** Use a `WeakMap` to cleanly memoize derived data directly onto immutable state objects (like `roundData`), turning O(N) redundant calculations into O(1) lookups, and prefer `for...in` loops over chained array methods for critical calculation paths to avoid memory allocations.
+## 2024-04-18 - [Object array allocations bottleneck in inner loops]
+**Learning:** Found multiple instances where `Object.keys()`, `Object.values()`, or `Object.entries()` were used to iterate over dictionaries (e.g. `entries`, `players`) inside calculation loops. This creates an intermediate array in memory which causes redundant garbage collection overhead, especially in deeply nested loops like `applyRound` or `stats`.
+**Action:** Always prefer `for...in` loops over `Object.*` methods for iterating over simple dictionary states on performance critical paths to avoid intermediate array allocations.

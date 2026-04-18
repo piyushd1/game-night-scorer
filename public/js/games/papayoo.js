@@ -28,11 +28,13 @@ export default {
     if (!draft.papayooSuit) return { valid: false, error: 'Select the Papayoo suit' };
     if (!draft.entries) return { valid: false, error: 'No scores entered' };
 
-    for (const e of Object.values(draft.entries)) {
-      if ((e.penaltyPoints || 0) < 0) return { valid: false, error: 'Penalty points cannot be negative' };
+    let sum = 0;
+    for (const pid in draft.entries) {
+      const pts = draft.entries[pid].penaltyPoints || 0;
+      if (pts < 0) return { valid: false, error: 'Penalty points cannot be negative' };
+      sum += pts;
     }
 
-    const sum = Object.values(draft.entries).reduce((s, e) => s + (e.penaltyPoints || 0), 0);
     if (sum !== 250) return { valid: false, error: `Penalties must total 250 (currently ${sum})` };
 
     return { valid: true };
@@ -41,8 +43,8 @@ export default {
   applyRound(currentTotals, roundData, gameState) {
     const newTotals = { ...currentTotals };
     const entries = roundData.entries || {};
-    for (const [pid, entry] of Object.entries(entries)) {
-      newTotals[pid] = (newTotals[pid] || 0) + (entry.penaltyPoints || 0);
+    for (const pid in entries) {
+      newTotals[pid] = (newTotals[pid] || 0) + (entries[pid].penaltyPoints || 0);
     }
     return newTotals;
   },

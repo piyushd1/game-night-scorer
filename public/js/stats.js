@@ -26,7 +26,8 @@ export function computeNightStats(games, players) {
 
   // Populate from players object first
   if (players) {
-    for (const [pid, p] of Object.entries(players)) {
+    for (const pid in players) {
+      const p = players[pid];
       if (p.name !== undefined) playerNames.set(pid, p.name);
       if (p.accentIndex !== undefined) playerAccents.set(pid, p.accentIndex);
     }
@@ -35,7 +36,8 @@ export function computeNightStats(games, players) {
   // Populate from game snapshots
   for (const g of allGames) {
     if (g.playerSnapshot) {
-      for (const [pid, p] of Object.entries(g.playerSnapshot)) {
+      for (const pid in g.playerSnapshot) {
+        const p = g.playerSnapshot[pid];
         if (p.name !== undefined && !playerNames.has(pid)) playerNames.set(pid, p.name);
         if (p.accentIndex !== undefined && !playerAccents.has(pid)) playerAccents.set(pid, p.accentIndex);
       }
@@ -156,8 +158,14 @@ function _computeGameSpecificStats(game, gameModule, rounds, playerIds, snapshot
   if (game.type === 'cabo') {
     rounds.forEach((rnd) => {
       if (!rnd.kamikaze) {
-        const allTotals = Object.entries(rnd.entries || {}).map(([id, e]) => e.cardTotal || 0);
-        caboMinCards.set(rnd, allTotals.length ? Math.min(...allTotals) : 0);
+        let minCard = Infinity;
+        let hasEntries = false;
+        for (const id in (rnd.entries || {})) {
+          hasEntries = true;
+          const cardTotal = rnd.entries[id].cardTotal || 0;
+          if (cardTotal < minCard) minCard = cardTotal;
+        }
+        caboMinCards.set(rnd, hasEntries ? minCard : 0);
       }
     });
   }

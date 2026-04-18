@@ -19,7 +19,7 @@ export default {
 
   validateRound(draft, gameState) {
     if (!draft.entries) return { valid: false, error: 'No scores entered' };
-    for (const pid of Object.keys(draft.entries)) {
+    for (const pid in draft.entries) {
       const e = draft.entries[pid];
       if (e.basePoints < 0) return { valid: false, error: `Score for ${pid} cannot be negative` };
     }
@@ -29,7 +29,8 @@ export default {
   applyRound(currentTotals, roundData, gameState) {
     const newTotals = { ...currentTotals };
     const entries = roundData.entries || {};
-    for (const [pid, entry] of Object.entries(entries)) {
+    for (const pid in entries) {
+      const entry = entries[pid];
       const pts = (entry.basePoints || 0) + (entry.flip7 ? 15 : 0);
       newTotals[pid] = (newTotals[pid] || 0) + pts;
     }
