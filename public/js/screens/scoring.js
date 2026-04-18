@@ -62,6 +62,23 @@ function _render(container, roomCode) {
   const roundNum = rounds.length + 1;
   const playerIds = game.playerIds || [];
 
+  // Only render scoring rows for players currently active.
+  // Inactive players keep their past totals and remain eligible for winner (checkEnd uses full playerIds).
+  const playersMap = state.get('players') || {};
+  const activePlayerIds = playerIds.filter((id) => playersMap[id]?.isActive !== false);
+
+  // Blocker: if no one is active, submission is impossible
+  if (activePlayerIds.length === 0) {
+    container.innerHTML = `
+      <div class="p-6 text-center py-20">
+        <span class="material-symbols-outlined text-5xl text-outline mb-4">person_off</span>
+        <p class="font-headline font-bold text-lg uppercase mb-2">No Active Players</p>
+        <p class="font-body text-sm text-on-surface-variant">Reactivate at least one player from Manage Players to continue.</p>
+      </div>
+    `;
+    return;
+  }
+
   // Safety: for round-limited games, block scoring if at the limit (unless overtime)
   if (game.type === 'papayoo') {
     const limit = parseInt(game.config?.roundLimit) || 5;
@@ -128,12 +145,12 @@ function _render(container, roomCode) {
     </div>
   `;
 
-  // Render game-specific form
+  // Render game-specific form — only for active players
   const formEl = container.querySelector('#scorer-form');
-  formEl.innerHTML = gameModule.renderScorer(playerIds, snapshot, totals, game);
+  formEl.innerHTML = gameModule.renderScorer(activePlayerIds, snapshot, totals, game);
 
   // Wire up game-specific interactive elements
-  _bindFormInteractions(container, game.type, playerIds);
+  _bindFormInteractions(container, game.type, activePlayerIds);
 
   // Submit handler
   container.querySelector('#btn-submit-round').addEventListener('click', () => {
@@ -247,8 +264,10 @@ async function _submitRound(container, roomCode, initialGame, gameModule) {
   const totals = game.totals || {};
   const rounds = game.rounds ? Object.values(game.rounds) : [];
 
-  // Collect draft from form
-  const draft = gameModule.collectDraft(container, playerIds);
+  // Collect draft only for currently active players (those are the only rows rendered)
+  const playersMap = state.get('players') || {};
+  const activePlayerIds = playerIds.filter((id) => playersMap[id]?.isActive !== false);
+  const draft = gameModule.collectDraft(container, activePlayerIds);
 
   // Validate
   const validation = gameModule.validateRound(draft, game);

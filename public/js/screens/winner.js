@@ -31,7 +31,7 @@ export function mount(container, params = {}) {
   const gameModule = getGame(game.type);
   const snapshot = game.playerSnapshot || {};
   const totals = game.totals || {};
-  const isHost = state.isHost();
+  const trackStats = state.get('roomMeta')?.trackStats || false;
 
   // Derive standings
   const standings = gameModule.deriveStandings(totals, game.playerIds);
@@ -74,66 +74,68 @@ export function mount(container, params = {}) {
         </div>
       </main>
 
-      <!-- Actions -->
-      ${isHost ? `
-        <footer class="p-6 space-y-3 shrink-0">
-          <button id="btn-replay" class="w-full py-4 bg-surface-container-lowest text-primary font-headline font-extrabold uppercase tracking-widest text-base transition-colors hover:bg-surface-container-high">
-            REPLAY ${gameModule.label.toUpperCase()}
-          </button>
-          <button id="btn-new-game" class="w-full py-4 border border-white/40 text-white font-headline font-extrabold uppercase tracking-widest text-base transition-colors hover:bg-white/10">
-            CHOOSE NEW GAME
-          </button>
-        </footer>
-      ` : `
-        <footer class="p-6 space-y-3">
-          <button id="btn-back-lobby" class="w-full py-4 border border-white/40 text-white font-headline font-extrabold uppercase tracking-widest text-base transition-colors hover:bg-white/10">
-            BACK TO LOBBY
-          </button>
-          <p class="font-mono text-[10px] text-center uppercase tracking-widest opacity-60">Waiting for host...</p>
-        </footer>
-      `}
+      <!-- Actions (same buttons for host and spectators; taps are permission-gated) -->
+      <footer class="p-6 space-y-3 shrink-0">
+        <button id="btn-replay" class="w-full py-4 bg-surface-container-lowest text-primary font-headline font-extrabold uppercase tracking-widest text-base transition-colors hover:bg-surface-container-high">
+          REPLAY ${gameModule.label.toUpperCase()}
+        </button>
+        <button id="btn-new-game" class="w-full py-4 border border-white/40 text-white font-headline font-extrabold uppercase tracking-widest text-base transition-colors hover:bg-white/10">
+          CHOOSE NEW GAME
+        </button>
+        ${trackStats ? `
+        <button id="btn-call-night" class="w-full py-4 border border-white/40 text-white font-headline font-extrabold uppercase tracking-widest text-base transition-colors hover:bg-white/10 flex items-center justify-center gap-2">
+          <span class="material-symbols-outlined text-lg" aria-hidden="true">bedtime</span>
+          CALL IT A NIGHT
+        </button>
+        ` : ''}
+      </footer>
     </div>
   `;
 
-  // Host actions
-  if (isHost) {
-    container.querySelector('#btn-replay')?.addEventListener('click', async () => {
-      const players = state.activePlayers();
-      const minPlayers = gameModule.minPlayers || 2;
-      const maxPlayers = gameModule.maxPlayers || 20;
-      if (players.length < minPlayers) {
-        toast(`Need at least ${minPlayers} players to play ${gameModule.label}`);
-        await fb.updateRoomMeta(roomCode, { status: 'lobby', activeGameId: null });
-        router.navigate('lobby', { roomCode });
-        return;
-      }
-      if (players.length > maxPlayers) {
-        toast(`${gameModule.label} supports at most ${maxPlayers} players`);
-        return;
-      }
-      const playerIds = players.map((p) => p.id);
-      const snapshot = {};
-      players.forEach((p) => {
-        snapshot[p.id] = { name: p.name, accentIndex: p.accentIndex, seatOrder: p.seatOrder };
-      });
+  const guardHost = (fn) => () => {
+    if (!state.isHost()) {
+      toast('Only the host can do that');
+      return;
+    }
+    return fn();
+  };
 
-      try {
-        await fb.createGame(roomCode, game.type, game.config, playerIds, snapshot);
-        router.navigate('dashboard', { roomCode });
-      } catch (e) {
-        console.error('Replay failed:', e);
-      }
-    });
-
-    container.querySelector('#btn-new-game')?.addEventListener('click', async () => {
+  container.querySelector('#btn-replay')?.addEventListener('click', guardHost(async () => {
+    const players = state.activePlayers();
+    const minPlayers = gameModule.minPlayers || 2;
+    const maxPlayers = gameModule.maxPlayers || 20;
+    if (players.length < minPlayers) {
+      toast(`Need at least ${minPlayers} players to play ${gameModule.label}`);
       await fb.updateRoomMeta(roomCode, { status: 'lobby', activeGameId: null });
-      router.navigate('game-select', { roomCode });
-    });
-  } else {
-    container.querySelector('#btn-back-lobby')?.addEventListener('click', () => {
       router.navigate('lobby', { roomCode });
+      return;
+    }
+    if (players.length > maxPlayers) {
+      toast(`${gameModule.label} supports at most ${maxPlayers} players`);
+      return;
+    }
+    const playerIds = players.map((p) => p.id);
+    const snapshot = {};
+    players.forEach((p) => {
+      snapshot[p.id] = { name: p.name, accentIndex: p.accentIndex, seatOrder: p.seatOrder };
     });
-  }
+
+    try {
+      await fb.createGame(roomCode, game.type, game.config, playerIds, snapshot);
+      router.navigate('dashboard', { roomCode });
+    } catch (e) {
+      console.error('Replay failed:', e);
+    }
+  }));
+
+  container.querySelector('#btn-new-game')?.addEventListener('click', guardHost(async () => {
+    await fb.updateRoomMeta(roomCode, { status: 'lobby', activeGameId: null });
+    router.navigate(trackStats ? 'game-select' : 'lobby', { roomCode });
+  }));
+
+  container.querySelector('#btn-call-night')?.addEventListener('click', guardHost(async () => {
+    await fb.endNight(roomCode);
+  }));
 }
 
 export function unmount() {}

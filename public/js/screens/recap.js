@@ -3,22 +3,35 @@
 // ═══════════════════════════════════════════
 
 import * as state from '../state.js';
+import * as fb from '../firebase.js';
 import * as router from '../router.js';
 import * as bottomNav from '../components/bottom-nav.js';
+import * as toast from '../components/toast.js';
 import { computeNightStats } from '../stats.js';
 import { ACCENT_COLORS } from '../state.js';
 import { escapeHTML } from '../utils.js';
 
 export function mount(container, params = {}) {
   const roomCode = params.roomCode || state.get('roomCode');
+  const meta = state.get('roomMeta') || {};
+  const locked = meta.status === 'night-ended';
+  const isHost = state.isHost();
 
   bottomNav.hide();
   const topBar = document.getElementById('top-bar');
   topBar.style.display = 'flex';
-  document.getElementById('top-bar-title').textContent = 'NIGHT RECAP';
-  document.getElementById('top-bar-back').classList.remove('hidden');
-  document.getElementById('top-bar-back').onclick = () => router.navigate('lobby', { roomCode }, 'back');
-  document.getElementById('top-bar-actions').innerHTML = '';
+  document.getElementById('top-bar-title').textContent = locked ? 'NIGHT LOCKED' : 'NIGHT RECAP';
+
+  const backBtn = document.getElementById('top-bar-back');
+  if (locked) {
+    backBtn.classList.add('hidden');
+  } else {
+    backBtn.classList.remove('hidden');
+    backBtn.onclick = () => router.navigate('lobby', { roomCode }, 'back');
+  }
+  document.getElementById('top-bar-actions').innerHTML = locked
+    ? `<span class="font-mono text-[10px] text-outline border border-outline px-2 py-1 flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">lock</span>LOCKED</span>`
+    : '';
 
   if (!roomCode) {
     router.navigate('home');
@@ -36,6 +49,9 @@ export function mount(container, params = {}) {
         <p class="font-body text-sm text-on-surface-variant">Play at least one game to see the night recap.</p>
       </div>
     `;
+    if (locked && isHost) {
+      _renderStartNewNightFooter(container, roomCode);
+    }
     return;
   }
 
@@ -182,21 +198,81 @@ export function mount(container, params = {}) {
     html += `</section>`;
   });
 
-  // ── Back Button ──
-  html += `
-    <div class="mt-8">
-      <button id="btn-back-lobby" class="btn-secondary w-full flex items-center justify-center gap-2">
-        <span class="material-symbols-outlined text-lg">arrow_back</span>
-        BACK TO LOBBY
-      </button>
-    </div>
-  `;
+  // ── Footer Button ──
+  if (locked) {
+    if (isHost) {
+      html += `
+        <div class="mt-8 space-y-3">
+          <button id="btn-start-new-night" class="btn-primary w-full flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-lg">restart_alt</span>
+            START NEW NIGHT
+          </button>
+          <p class="font-mono text-[10px] text-outline text-center uppercase">KEEPS PLAYERS, CLEARS GAMES, UNLOCKS THE ROOM</p>
+        </div>
+      `;
+    } else {
+      html += `
+        <div class="mt-8 text-center">
+          <p class="font-mono text-[10px] text-outline uppercase">Night locked by host</p>
+        </div>
+      `;
+    }
+  } else {
+    html += `
+      <div class="mt-8">
+        <button id="btn-back-lobby" class="btn-secondary w-full flex items-center justify-center gap-2">
+          <span class="material-symbols-outlined text-lg">arrow_back</span>
+          BACK TO LOBBY
+        </button>
+      </div>
+    `;
+  }
 
   html += '</div>';
   container.innerHTML = html;
 
   container.querySelector('#btn-back-lobby')?.addEventListener('click', () => {
     router.navigate('lobby', { roomCode }, 'back');
+  });
+
+  container.querySelector('#btn-start-new-night')?.addEventListener('click', async () => {
+    if (!state.isHost()) {
+      toast.show('Only the host can do that');
+      return;
+    }
+    const confirmed = window.confirm('Start a new night? This archives tonight\u2019s games and clears the scoreboard. Players are kept.');
+    if (!confirmed) return;
+    try {
+      await fb.startNewNight(roomCode);
+    } catch (e) {
+      console.error('Start new night failed:', e);
+      toast.show('Failed to start new night');
+    }
+  });
+}
+
+function _renderStartNewNightFooter(container, roomCode) {
+  const footer = document.createElement('div');
+  footer.className = 'p-6 pb-12';
+  footer.innerHTML = `
+    <button id="btn-start-new-night" class="btn-primary w-full flex items-center justify-center gap-2">
+      <span class="material-symbols-outlined text-lg">restart_alt</span>
+      START NEW NIGHT
+    </button>
+    <p class="font-mono text-[10px] text-outline text-center uppercase mt-2">UNLOCKS THE ROOM FOR A FRESH NIGHT</p>
+  `;
+  container.appendChild(footer);
+  footer.querySelector('#btn-start-new-night')?.addEventListener('click', async () => {
+    if (!state.isHost()) {
+      toast.show('Only the host can do that');
+      return;
+    }
+    try {
+      await fb.startNewNight(roomCode);
+    } catch (e) {
+      console.error('Start new night failed:', e);
+      toast.show('Failed to start new night');
+    }
   });
 }
 

@@ -51,8 +51,8 @@ export function mount(container, params = {}) {
       <div id="host-controls" style="display:none">
         <h2 class="font-headline font-extrabold uppercase text-sm tracking-widest mb-4">PLAYERS</h2>
 
-        <!-- Always-visible inline add -->
-        <div class="flex gap-2 mb-4">
+        <!-- Always-visible inline add (hidden during playing — new players can't join mid-game) -->
+        <div id="add-player-row" class="flex gap-2 mb-4">
           <input
             id="input-player-name"
             type="text"
@@ -109,6 +109,15 @@ export function mount(container, params = {}) {
         </button>
         <p id="start-hint" class="font-mono text-[10px] text-outline text-center mt-2 uppercase">ADD AT LEAST 2 PLAYERS</p>
       </div>
+
+      <!-- Call it a Night (host only, visible after at least 1 finished game, between games) -->
+      <div id="call-night-section" class="mt-3" style="display:none">
+        <button id="btn-call-night" class="w-full bg-surface-container-lowest border border-outline py-3 font-headline font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-surface-container-high transition-colors">
+          <span class="material-symbols-outlined text-sm">bedtime</span>
+          CALL IT A NIGHT
+        </button>
+        <p class="font-mono text-[10px] text-outline text-center mt-2 uppercase">LOCKS THE NIGHT AND SHOWS THE RECAP TO EVERYONE</p>
+      </div>
     </div>
   `;
 
@@ -150,6 +159,22 @@ function _bindEvents(container, roomCode) {
   // Night recap
   container.querySelector('#btn-recap')?.addEventListener('click', () => {
     router.navigate('recap', { roomCode });
+  });
+
+  // Call it a Night — host only, between games
+  container.querySelector('#btn-call-night')?.addEventListener('click', async () => {
+    if (!state.isHost()) {
+      toast.show('Only the host can do that');
+      return;
+    }
+    const confirmed = window.confirm('Call it a night? This locks the room and shows the recap to everyone.');
+    if (!confirmed) return;
+    try {
+      await fb.endNight(roomCode);
+    } catch (e) {
+      console.error('End night failed:', e);
+      toast.show('Failed to end night');
+    }
   });
 
   // Stats tracking toggle
@@ -273,8 +298,11 @@ function _startWatching(roomCode, container) {
       return;
     }
 
-    // Render player list
-    _renderPlayers(container, players, isHost, roomCode);
+    // Render player list (mid-game: hide Add + Remove; Deactivate toggle still available)
+    const isPlaying = meta.status === 'playing';
+    const addRow = container.querySelector('#add-player-row');
+    if (addRow) addRow.style.display = (isHost && !isPlaying) ? 'flex' : 'none';
+    _renderPlayers(container, players, isHost, roomCode, isPlaying);
 
     // Remove host prompt if host player has been set
     if (meta.hostPlayerId) {
@@ -315,6 +343,15 @@ function _startWatching(roomCode, container) {
     const recapSection = container.querySelector('#recap-section');
     if (recapSection) recapSection.style.display = (trackStats && hasPlayedGames) ? 'block' : 'none';
 
+    // Show "Call it a Night" to host only, once at least one game has finished, while in lobby.
+    // Gated on trackStats — without tracking there's no "night" to end.
+    const callNightSection = container.querySelector('#call-night-section');
+    if (callNightSection) {
+      const hasFinishedGame = Object.values(games).some((g) => g.status === 'finished');
+      const show = isHost && trackStats && hasFinishedGame && meta.status === 'lobby';
+      callNightSection.style.display = show ? 'block' : 'none';
+    }
+
     // Enable/disable start
     const activeCount = Object.values(players).filter((p) => p.isActive).length;
     const btn = container.querySelector('#btn-start-game');
@@ -337,7 +374,7 @@ function _startWatching(roomCode, container) {
   });
 }
 
-function _renderPlayers(container, players, isHost, roomCode) {
+function _renderPlayers(container, players, isHost, roomCode, isPlaying = false) {
   const list = container.querySelector('#player-list');
   const sorted = Object.values(players).sort((a, b) => a.seatOrder - b.seatOrder);
   const meta = state.get('roomMeta') || {};
@@ -380,9 +417,11 @@ function _renderPlayers(container, players, isHost, roomCode) {
                 <button class="player-toggle p-1.5 hover:bg-surface-container-high transition-colors" data-id="${escapeHTML(p.id)}" data-active="${p.isActive}" title="${p.isActive ? 'Deactivate' : 'Activate'}" aria-label="${p.isActive ? 'Deactivate' : 'Activate'} ${escapeHTML(p.name)}">
                   <span class="material-symbols-outlined text-sm">${p.isActive ? 'person_off' : 'person_add'}</span>
                 </button>
+                ${isPlaying ? '' : `
                 <button class="player-remove p-1.5 hover:bg-surface-container-high transition-colors" data-id="${escapeHTML(p.id)}" title="Remove" aria-label="Remove ${escapeHTML(p.name)}">
                   <span class="material-symbols-outlined text-sm text-error">close</span>
                 </button>
+                `}
               </div>
             ` : ''}
           </div>
