@@ -256,3 +256,20 @@ input[type="number"] {
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Reset Button Styles for Nav Items ── */
+button.nav-item {
+  background: transparent;
+  border: none;
+  font: inherit;
+  outline: none;
+}
+
+button.nav-item:focus-visible {
+  outline: 2px solid #0046fa;
+  outline-offset: -2px;
+}
+
+button.nav-item.active {
+  border-top: 4px solid #1a1c1b;
+}
