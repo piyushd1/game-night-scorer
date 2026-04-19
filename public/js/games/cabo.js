@@ -21,14 +21,16 @@ export default {
     if (!draft.callerId) return { valid: false, error: 'Select who called Cabo' };
     if (!draft.entries) return { valid: false, error: 'No scores entered' };
 
-    const playerIds = gameState.playerIds || [];
-    for (const pid of playerIds) {
-      if (!draft.entries[pid] || draft.entries[pid].cardTotal === undefined) {
-        return { valid: false, error: `Enter card total for all players` };
-      }
-      if ((draft.entries[pid].cardTotal || 0) < 0) {
-        return { valid: false, error: 'Card totals cannot be negative' };
-      }
+    // Iterate the draft entries (active players only — inactive players aren't
+    // rendered in the form post-P2 and aren't in the draft). The caller must
+    // be among those entries, otherwise scoring is inconsistent.
+    for (const pid of Object.keys(draft.entries)) {
+      const entry = draft.entries[pid];
+      if (!Number.isFinite(entry.cardTotal)) return { valid: false, error: 'Card total must be a number' };
+      if (entry.cardTotal < 0) return { valid: false, error: 'Card totals cannot be negative' };
+    }
+    if (!draft.entries[draft.callerId]) {
+      return { valid: false, error: 'Caller must be one of the active players' };
     }
 
     return { valid: true };

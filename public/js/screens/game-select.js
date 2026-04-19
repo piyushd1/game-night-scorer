@@ -162,20 +162,36 @@ async function _startGame(container, roomCode) {
   const players = state.activePlayers();
   const playerIds = players.map((p) => p.id);
 
-  // Build config from form with validation
+  // Build config from form with validation. Reject invalid input up front with
+  // a toast instead of silently falling back to defaults — otherwise the host
+  // thinks they changed something and a game starts with unexpected settings.
   const config = { ...game.defaultConfig };
+  const CONFIG_MAX = 9999;
   if (game.configFields) {
-    game.configFields.forEach((f) => {
+    for (const f of game.configFields) {
       const input = container.querySelector(`#config-${f.key}`);
-      if (input) {
-        const parsed = parseInt(input.value);
-        const min = f.min || 1;
-        if (!isNaN(parsed) && parsed >= min) {
-          config[f.key] = parsed;
-        }
-        // else keep defaultConfig value
+      if (!input) continue;
+      const raw = input.value.trim();
+      if (raw === '') continue; // empty = accept default
+      const parsed = Number(raw);
+      const min = f.min || 1;
+      if (!Number.isFinite(parsed) || !Number.isInteger(parsed)) {
+        toast.show(`${f.label} must be a whole number`);
+        input.focus();
+        return;
       }
-    });
+      if (parsed < min) {
+        toast.show(`${f.label} must be at least ${min}`);
+        input.focus();
+        return;
+      }
+      if (parsed > CONFIG_MAX) {
+        toast.show(`${f.label} can't exceed ${CONFIG_MAX}`);
+        input.focus();
+        return;
+      }
+      config[f.key] = parsed;
+    }
   }
 
   // Build player snapshot

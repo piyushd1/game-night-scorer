@@ -34,6 +34,15 @@ export function renderRow({
   const leaderBorder = !isInactive && isLeader ? 'border-l-[3px]' : '';
   const dim = isInactive ? 'opacity-50' : '';
 
+  // Guard against NaN/Infinity leaking into the UI. If we ever see one,
+  // render a dash instead so the user isn't staring at 'NaN PTS' — and
+  // leave a console trace so we can track down the source.
+  let displayTotal = total;
+  if (!Number.isFinite(total)) {
+    console.warn('Non-finite total rendered in player row:', { name, total });
+    displayTotal = '—';
+  }
+
   const rankLabel = rank <= 3
     ? ['1ST', '2ND', '3RD'][rank - 1]
     : `${rank}TH`;
@@ -57,7 +66,7 @@ export function renderRow({
           ${rounds.length > 0 ? `<div class="flex gap-1 mt-1 flex-wrap">${roundChips}</div>` : ''}
         </div>
         <div class="text-right shrink-0">
-          <p class="font-mono text-2xl font-bold ${!isInactive && isLeader ? 'text-secondary' : ''}">${total}</p>
+          <p class="font-mono text-2xl font-bold ${!isInactive && isLeader ? 'text-secondary' : ''}">${displayTotal}</p>
         </div>
       </div>
     </div>

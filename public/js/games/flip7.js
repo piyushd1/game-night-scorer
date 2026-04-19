@@ -21,7 +21,8 @@ export default {
     if (!draft.entries) return { valid: false, error: 'No scores entered' };
     for (const pid of Object.keys(draft.entries)) {
       const e = draft.entries[pid];
-      if (e.basePoints < 0) return { valid: false, error: `Score for ${pid} cannot be negative` };
+      if (!Number.isFinite(e.basePoints)) return { valid: false, error: 'Score must be a number' };
+      if (e.basePoints < 0) return { valid: false, error: 'Score cannot be negative' };
     }
     return { valid: true };
   },
