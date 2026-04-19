@@ -11,6 +11,7 @@ export default {
   id: 'cabo',
   label: 'Cabo',
   description: 'Memory card game. Minimize your hand total. Caller risks a penalty if wrong. Lowest wins.',
+  scoringHint: 'Tap who called Cabo, then enter each player\u2019s hand total. Caller scores 0 if lowest, otherwise their hand + 10. Hitting 100 exactly resets to 50. Kamikaze (two 12s + two 13s) gives caller 0, everyone else 50.',
   minPlayers: 2,
   maxPlayers: 4,
   winMode: 'lowest_total',

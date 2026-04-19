@@ -384,7 +384,7 @@ function _renderPlayers(container, players, isHost, roomCode, isPlaying = false)
     list.innerHTML = `
       <div class="text-center py-12">
         <span class="material-symbols-outlined text-4xl text-outline mb-2">group_add</span>
-        <p class="font-body text-sm text-on-surface-variant">${isHost ? 'Add players to get started' : 'Waiting for host to add players...'}</p>
+        <p class="font-body text-sm text-on-surface-variant">${isHost ? 'Add at least 2 players to start a game.<br>Names show up here in the order you add them.' : 'Waiting for the host to add players\u2026'}</p>
       </div>
     `;
     return;

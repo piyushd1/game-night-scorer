@@ -111,6 +111,16 @@ function _render(container, roomCode) {
         </div>
       </div>
 
+      ${gameModule.scoringHint ? `
+      <details class="mb-4 border border-outline-variant bg-surface-container-lowest">
+        <summary class="cursor-pointer select-none px-4 py-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-outline hover:bg-surface-container-high transition-colors list-none">
+          <span class="material-symbols-outlined text-sm" aria-hidden="true">info</span>
+          HOW SCORING WORKS
+        </summary>
+        <p class="px-4 pb-3 pt-1 font-body text-xs leading-relaxed text-on-surface-variant">${escapeHTML(gameModule.scoringHint)}</p>
+      </details>
+      ` : ''}
+
       <!-- Mini Standings -->
       <div class="bg-surface-container-lowest border border-outline mb-6 overflow-hidden">
         <div class="flex items-center justify-between px-4 py-2 bg-surface-container-high border-b border-outline">
@@ -176,12 +186,15 @@ function _render(container, roomCode) {
 
 function _bindFormInteractions(container, gameType, playerIds) {
   if (gameType === 'flip7') {
-    // Flip 7 toggle buttons
+    // Flip 7 toggle buttons. Color flip alone fails colorblind users, so the
+    // label switches between F7 / F7\u2713 in addition to changing background.
     container.querySelectorAll('.flip7-toggle').forEach((btn) => {
       btn.addEventListener('click', () => {
         btn.classList.toggle('active');
         const isActive = btn.classList.contains('active');
         btn.setAttribute('aria-pressed', isActive.toString());
+        const label = btn.querySelector('.flip7-label');
+        if (label) label.textContent = isActive ? 'F7\u2713' : 'F7';
         if (isActive) {
           btn.style.background = '#000';
           btn.style.color = '#fff';

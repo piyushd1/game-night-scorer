@@ -16,6 +16,7 @@ export default {
   id: 'papayoo',
   label: 'Papayoo',
   description: 'Avoid penalty cards, especially the dreaded Papayoo worth 40 points. Lowest score wins.',
+  scoringHint: 'Pick the suit that held the Papayoo this round (the 7 of that suit is worth 40). Then enter each player\u2019s penalty points. The penalties must total exactly 250.',
   minPlayers: 3,
   maxPlayers: 8,
   winMode: 'lowest_total',
