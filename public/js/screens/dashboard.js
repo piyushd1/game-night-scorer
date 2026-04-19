@@ -180,10 +180,16 @@ function _render(container, roomCode) {
 
   // Host actions
   if (isHost) {
+    let undoReason = '';
+    if (rounds.length === 0) undoReason = 'No rounds to undo';
+    else if (game.status === 'finished') undoReason = 'Game is finished';
+    else if (game.status === 'abandoned') undoReason = 'Game was abandoned';
+    const undoDisabled = undoReason !== '';
+    const undoTitle = undoDisabled ? undoReason : 'Undo last round';
     html += `
       <div class="flex gap-2 mt-6">
-        <button id="btn-undo" class="flex-1 bg-surface-container-lowest border border-outline py-3 text-sm font-headline font-bold uppercase tracking-widest flex items-center justify-center gap-1 hover:bg-surface-container-high transition-colors disabled:opacity-30" ${rounds.length === 0 || game.status === 'finished' || game.status === 'abandoned' ? 'disabled' : ''}>
-          <span class="material-symbols-outlined text-sm">undo</span>
+        <button id="btn-undo" title="${undoTitle}" aria-label="${undoTitle}" class="flex-1 bg-surface-container-lowest border border-outline py-3 text-sm font-headline font-bold uppercase tracking-widest flex items-center justify-center gap-1 hover:bg-surface-container-high transition-colors disabled:opacity-30 disabled:cursor-not-allowed" ${undoDisabled ? 'disabled' : ''}>
+          <span class="material-symbols-outlined text-sm" aria-hidden="true">undo</span>
           UNDO
         </button>
       </div>

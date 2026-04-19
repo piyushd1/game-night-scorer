@@ -8,6 +8,7 @@ import * as state from '../state.js';
 import * as fb from '../firebase.js';
 import * as router from '../router.js';
 import * as toast from './toast.js';
+import * as cache from '../cache.js';
 import { getGame } from '../games/registry.js';
 
 let _bound = false;
@@ -40,8 +41,14 @@ export function init() {
         await _endGameWithWinner(roomCode);
         router.navigate('lobby', { roomCode });
       } else if (action === 'home') {
-        fb.unwatchRoom();
-        router.navigate('home', {}, 'back');
+        // Mid-game leave deserves a stronger warning since it strands other clients.
+        const meta = state.get('roomMeta') || {};
+        const midGame = meta.status === 'playing' && meta.activeGameId;
+        const message = midGame
+          ? "You're mid-game. Leaving means the game can't continue from this device. Proceed?"
+          : 'Leave this room?';
+        if (!window.confirm(message)) return;
+        _leaveRoom(roomCode);
       }
     });
   });
@@ -95,9 +102,16 @@ export function renderTopBarActions(roomCode) {
   const leaveBtn = document.getElementById('btn-viewer-leave');
   if (leaveBtn) {
     leaveBtn.addEventListener('click', () => {
-      router.navigate('home');
+      if (!window.confirm('Leave this room?')) return;
+      _leaveRoom(roomCode);
     });
   }
+}
+
+function _leaveRoom(roomCode) {
+  fb.unwatchRoom();
+  if (roomCode) cache.clearCache(roomCode);
+  router.navigate('home', {}, 'back');
 }
 
 async function _endGameWithWinner(roomCode) {

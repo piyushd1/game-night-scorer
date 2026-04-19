@@ -29,7 +29,8 @@ export default {
     if (!draft.entries) return { valid: false, error: 'No scores entered' };
 
     for (const e of Object.values(draft.entries)) {
-      if ((e.penaltyPoints || 0) < 0) return { valid: false, error: 'Penalty points cannot be negative' };
+      if (!Number.isFinite(e.penaltyPoints)) return { valid: false, error: 'Penalty must be a number' };
+      if (e.penaltyPoints < 0) return { valid: false, error: 'Penalty cannot be negative' };
     }
 
     const sum = Object.values(draft.entries).reduce((s, e) => s + (e.penaltyPoints || 0), 0);
