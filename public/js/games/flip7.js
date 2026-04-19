@@ -31,9 +31,13 @@ export default {
   applyRound(currentTotals, roundData, gameState) {
     const newTotals = { ...currentTotals };
     const entries = roundData.entries || {};
-    for (const [pid, entry] of Object.entries(entries)) {
-      const pts = (entry.basePoints || 0) + (entry.flip7 ? 15 : 0);
-      newTotals[pid] = (newTotals[pid] || 0) + pts;
+    // Bolt Optimization: Replace Object.entries with for...in to eliminate intermediate array memory allocations
+    for (const pid in entries) {
+      if (Object.prototype.hasOwnProperty.call(entries, pid)) {
+        const entry = entries[pid];
+        const pts = (entry.basePoints || 0) + (entry.flip7 ? 15 : 0);
+        newTotals[pid] = (newTotals[pid] || 0) + pts;
+      }
     }
     return newTotals;
   },

@@ -43,8 +43,12 @@ export default {
   applyRound(currentTotals, roundData, gameState) {
     const newTotals = { ...currentTotals };
     const entries = roundData.entries || {};
-    for (const [pid, entry] of Object.entries(entries)) {
-      newTotals[pid] = (newTotals[pid] || 0) + (entry.penaltyPoints || 0);
+    // Bolt Optimization: Replace Object.entries with for...in to prevent unnecessary array allocations
+    for (const pid in entries) {
+      if (Object.prototype.hasOwnProperty.call(entries, pid)) {
+        const entry = entries[pid];
+        newTotals[pid] = (newTotals[pid] || 0) + (entry.penaltyPoints || 0);
+      }
     }
     return newTotals;
   },

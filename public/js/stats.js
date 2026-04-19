@@ -156,8 +156,18 @@ function _computeGameSpecificStats(game, gameModule, rounds, playerIds, snapshot
   if (game.type === 'cabo') {
     rounds.forEach((rnd) => {
       if (!rnd.kamikaze) {
-        const allTotals = Object.entries(rnd.entries || {}).map(([id, e]) => e.cardTotal || 0);
-        caboMinCards.set(rnd, allTotals.length ? Math.min(...allTotals) : 0);
+        // Bolt Optimization: Replace Object.entries(...).map() with a for...in loop to eliminate intermediate array allocations
+        let minCard = Infinity;
+        let hasEntries = false;
+        const entries = rnd.entries || {};
+        for (const id in entries) {
+          if (Object.prototype.hasOwnProperty.call(entries, id)) {
+            hasEntries = true;
+            const ct = entries[id].cardTotal || 0;
+            if (ct < minCard) minCard = ct;
+          }
+        }
+        caboMinCards.set(rnd, hasEntries ? minCard : 0);
       }
     });
   }
