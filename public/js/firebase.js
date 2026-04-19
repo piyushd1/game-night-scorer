@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════
 
 import * as state from './state.js';
+import * as cache from './cache.js';
 
 let db = null;
 let _roomUnsub = null;
@@ -105,6 +106,14 @@ export function watchRoom(roomCode, onUpdate) {
     state.set('players', data.players || {});
     state.set('games', data.games || {});
     state.set('roomCode', roomCode);
+
+    // Write-through to localStorage so a cold open can hydrate instantly
+    // before this watcher reconnects. See docs/CACHING.md.
+    cache.writeCache(roomCode, {
+      meta: data.meta,
+      players: data.players,
+      games: data.games,
+    });
 
     onUpdate(data);
   });

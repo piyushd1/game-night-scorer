@@ -6,6 +6,7 @@ import { initFirebase } from './firebase.js';
 import * as router from './router.js';
 import * as fb from './firebase.js';
 import * as state from './state.js';
+import * as cache from './cache.js';
 
 // ── Firebase Config ──
 // Replace with your Firebase project config
@@ -71,10 +72,27 @@ async function init() {
   const roomCode = urlParams.get('room');
 
   if (roomCode && fb.isConfigured()) {
+    // Hydrate from cache first so lobby has state by the time it mounts.
+    // Firebase's watcher will reconcile once it connects — see docs/CACHING.md.
+    const cached = cache.readCache(roomCode);
+    if (cached) {
+      state.set('roomCode', roomCode);
+      state.set('roomMeta', cached.meta || {});
+      state.set('players', cached.players || {});
+      state.set('games', cached.games || {});
+      // Optimistic navigate: render the lobby immediately from cached state.
+      router.navigate('lobby', { roomCode });
+    }
+
     try {
       const code = await fb.joinRoom(roomCode);
       if (code) {
-        router.navigate('lobby', { roomCode: code });
+        // If we didn't optimistically navigate above, do it now.
+        if (!cached) router.navigate('lobby', { roomCode: code });
+      } else if (cached) {
+        // Room no longer exists — drop cached snapshot and go home.
+        cache.clearCache(roomCode);
+        router.navigate('home');
       }
     } catch (e) {
       console.warn('Room from URL not found');

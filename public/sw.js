@@ -30,6 +30,7 @@ const APP_SHELL = [
   '/js/router.js',
   '/js/state.js',
   '/js/firebase.js',
+  '/js/cache.js',
   '/js/stats.js',
   '/js/utils.js',
   // Screens
