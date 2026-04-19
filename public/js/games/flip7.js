@@ -9,6 +9,7 @@ export default {
   id: 'flip7',
   label: 'Flip 7',
   description: 'Flip cards and push your luck. Highest score wins when someone hits the target.',
+  scoringHint: 'Enter each player\u2019s round score. If a player flipped seven different cards (Flip 7), tap the F7 toggle for a +15 bonus. First to the target total wins.',
   minPlayers: 2,
   maxPlayers: 20,
   winMode: 'highest_total',
@@ -100,12 +101,13 @@ export default {
                     value=""
                   >
                   <button
+                    type="button"
                     data-player="${escapeHTML(pid)}"
                     data-field="flip7"
                     aria-pressed="false"
                     aria-label="Flip 7 for ${escapeHTML(p.name || pid)}"
-                    class="flip7-toggle px-2 py-1.5 border font-mono text-[10px] uppercase tracking-widest transition-colors border-outline-variant text-outline hover:border-primary"
-                  >F7</button>
+                    class="flip7-toggle min-w-[44px] min-h-[44px] px-2 border font-mono text-[10px] uppercase tracking-widest transition-colors border-outline-variant text-outline hover:border-primary inline-flex items-center justify-center gap-1"
+                  ><span class="flip7-label">F7</span></button>
                   <button
                     type="button"
                     data-player="${escapeHTML(pid)}"
@@ -151,6 +153,8 @@ export default {
       toggle.style.background = '';
       toggle.style.color = '';
       toggle.style.borderColor = '';
+      const label = toggle.querySelector('.flip7-label');
+      if (label) label.textContent = 'F7';
     }
   },
 

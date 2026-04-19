@@ -42,11 +42,16 @@ export function mount(container, params = {}) {
   const stats = computeNightStats(games, players);
 
   if (!stats) {
+    const trackOn = !!meta.trackStats;
     container.innerHTML = `
       <div class="p-6 text-center py-20">
-        <span class="material-symbols-outlined text-5xl text-outline mb-4">bar_chart</span>
-        <p class="font-headline font-bold text-lg uppercase mb-2">No Games Yet</p>
-        <p class="font-body text-sm text-on-surface-variant">Play at least one game to see the night recap.</p>
+        <span class="material-symbols-outlined text-5xl text-outline mb-4" aria-hidden="true">bar_chart</span>
+        <p class="font-headline font-bold text-lg uppercase mb-2">No Stats Yet</p>
+        <p class="font-body text-sm text-on-surface-variant max-w-xs mx-auto">${
+          trackOn
+            ? 'Play at least one game and the MVP, per-game breakdowns, and player highlights will show up here.'
+            : 'Turn on <span class="font-bold">Track Tonight\u2019s Stats</span> in the Lobby and play at least one game to see MVP, per-game breakdowns, and highlights here.'
+        }</p>
       </div>
     `;
     if (locked && isHost) {
