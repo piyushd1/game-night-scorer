@@ -38,6 +38,7 @@ export function mount(container) {
 
       <!-- Join -->
       <div class="w-full max-w-xs space-y-3">
+        <label for="input-pin" class="sr-only">ROOM PIN</label>
         <input
           id="input-pin"
           aria-label="Room PIN"

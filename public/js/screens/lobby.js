@@ -53,6 +53,7 @@ export function mount(container, params = {}) {
 
         <!-- Always-visible inline add (hidden during playing — new players can't join mid-game) -->
         <div id="add-player-row" class="flex gap-2 mb-4">
+          <label for="input-player-name" class="sr-only">Player name...</label>
           <input
             id="input-player-name"
             type="text"
