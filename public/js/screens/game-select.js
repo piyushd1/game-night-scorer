@@ -139,12 +139,13 @@ function _renderConfig(container) {
       ${game.configFields.map((f) => `
         <div class="flex items-center justify-between py-3 border-b border-outline-variant last:border-0">
           <div>
-            <label class="font-headline font-bold text-sm uppercase block">${f.label}</label>
-            <span class="font-mono text-[9px] text-outline">MIN ${f.min || 1}</span>
+            <label for="config-${f.key}" class="font-headline font-bold text-sm uppercase block">${f.label}</label>
+            <span id="config-desc-${f.key}" class="font-mono text-[9px] text-outline">MIN ${f.min || 1}</span>
           </div>
           <input
             type="number"
             id="config-${f.key}"
+            aria-describedby="config-desc-${f.key}"
             value="${game.defaultConfig[f.key]}"
             min="${f.min || 1}"
             class="w-20 bg-transparent border-0 border-b-2 border-primary font-mono text-lg text-right py-1 px-0 focus:outline-none focus:border-secondary"
