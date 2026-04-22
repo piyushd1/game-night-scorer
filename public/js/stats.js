@@ -4,6 +4,11 @@
 
 import { getGame } from './games/registry.js';
 
+// Bolt Optimization: Memoize O(G*P*R) stats computation
+// Firebase state syncing replaces the entire `games` object on any room update.
+// We memoize by caching based on the games object reference to avoid redundant work on every render.
+const _statsCache = new WeakMap();
+
 /**
  * Compute end-of-night stats from all games in a room.
  * @param {Object} games - All games from rooms/{code}/games
@@ -11,6 +16,13 @@ import { getGame } from './games/registry.js';
  * @returns {Object} { overall, perGame }
  */
 export function computeNightStats(games, players) {
+  if (games && typeof games === 'object') {
+    const cached = _statsCache.get(games);
+    if (cached && cached.playersRef === players) {
+      return cached.result;
+    }
+  }
+
   const allGames = Object.values(games || {}).filter(
     (g) => g.rounds && Object.keys(g.rounds).length > 0
   );
@@ -118,13 +130,19 @@ export function computeNightStats(games, players) {
 
   const mvpId = overallList.length > 0 && overallList[0].gamesWon > 0 ? overallList[0].playerId : null;
 
-  return {
+  const result = {
     totalGames: allGames.length,
     totalRounds: allGames.reduce((s, g) => s + Object.keys(g.rounds || {}).length, 0),
     mvpId,
     overall: overallList,
     perGame,
   };
+
+  if (games && typeof games === 'object') {
+    _statsCache.set(games, { result, playersRef: players });
+  }
+
+  return result;
 }
 
 function _playerName(pid, allGames, players) {

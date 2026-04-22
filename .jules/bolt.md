@@ -7,3 +7,6 @@
 ## 2026-04-17 - [O(P^2 * R) Bottleneck in Game Scoring Loops]
 **Learning:** Found that calculating O(N) derived values (like `minCardTotal` in Cabo) inside getter functions (`getRoundPoints`) called within nested rendering loops (iterating over rounds and players in `dashboard.js`) causes redundant O(P^2 * R) operations. This was amplified by inefficient `Object.entries().map().map()` intermediate array allocations in `applyRound`.
 **Action:** Use a `WeakMap` to cleanly memoize derived data directly onto immutable state objects (like `roundData`), turning O(N) redundant calculations into O(1) lookups, and prefer `for...in` loops over chained array methods for critical calculation paths to avoid memory allocations.
+## 2024-04-21 - [computeNightStats O(G*P*R) Recalculation on Render]
+**Learning:** Found that `computeNightStats` in `public/js/stats.js` runs a heavy O(Games * Players * Rounds) operation every time the Recap screen renders or state updates. Because Firebase state syncing in `public/js/firebase.js` completely replaces the `games` object reference on any update to the room, we can use a WeakMap keyed by the `games` object to safely memoize this expensive calculation.
+**Action:** Use `WeakMap` to memoize expensive derived state computations based on Firebase object references to skip redundant calculation cycles without creating memory leaks.
