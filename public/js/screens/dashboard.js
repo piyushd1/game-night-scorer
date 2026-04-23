@@ -95,7 +95,7 @@ function _render(container, roomCode) {
   hostMenu.renderTopBarActions(roomCode);
 
   // Derive standings
-  const standings = gameModule.deriveStandings(totals, playerIds, gameModule.winMode);
+  const standings = gameModule.deriveStandings(totals, playerIds);
 
   // Progress calculation
   let getProgress;

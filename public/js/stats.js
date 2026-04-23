@@ -64,7 +64,7 @@ export function computeNightStats(games, players) {
     const totals = game.totals || {};
     const rounds = Object.values(game.rounds || {});
     const gPlayerIds = game.playerIds || [];
-    const standings = gameModule.deriveStandings(totals, gPlayerIds, gameModule.winMode);
+    const standings = gameModule.deriveStandings(totals, gPlayerIds);
 
     // Bolt Optimization: Replace O(N) array find with O(1) Map lookup
     const standingsMap = new Map(standings.map(s => [s.playerId, s]));
