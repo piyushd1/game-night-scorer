@@ -90,7 +90,7 @@ export default {
                   <input
                     type="number"
                     inputmode="numeric"
-                    data-player="${pid}"
+                    data-player="${escapeHTML(pid)}"
                     data-field="basePoints"
                     class="score-input w-16"
                     placeholder="0"
@@ -98,7 +98,7 @@ export default {
                     value=""
                   >
                   <button
-                    data-player="${pid}"
+                    data-player="${escapeHTML(pid)}"
                     data-field="flip7"
                     class="flip7-toggle px-2 py-1.5 border font-mono text-[10px] uppercase tracking-widest transition-colors border-outline-variant text-outline hover:border-primary"
                   >F7</button>

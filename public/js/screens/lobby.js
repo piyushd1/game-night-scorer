@@ -374,13 +374,13 @@ function _renderPlayers(container, players, isHost, roomCode) {
             </div>
             ${isHost ? `
               <div class="flex gap-1">
-                <button class="player-set-host p-1.5 hover:bg-surface-container-high transition-colors ${isHostPlayer ? 'opacity-30' : ''}" data-id="${p.id}" title="Set as host player" aria-label="Set ${escapeHTML(p.name)} as host player">
+                <button class="player-set-host p-1.5 hover:bg-surface-container-high transition-colors ${isHostPlayer ? 'opacity-30' : ''}" data-id="${escapeHTML(p.id)}" title="Set as host player" aria-label="Set ${escapeHTML(p.name)} as host player">
                   <span class="material-symbols-outlined text-sm">${isHostPlayer ? 'shield_person' : 'person'}</span>
                 </button>
-                <button class="player-toggle p-1.5 hover:bg-surface-container-high transition-colors" data-id="${p.id}" data-active="${p.isActive}" title="${p.isActive ? 'Deactivate' : 'Activate'}" aria-label="${p.isActive ? 'Deactivate' : 'Activate'} ${escapeHTML(p.name)}">
+                <button class="player-toggle p-1.5 hover:bg-surface-container-high transition-colors" data-id="${escapeHTML(p.id)}" data-active="${p.isActive}" title="${p.isActive ? 'Deactivate' : 'Activate'}" aria-label="${p.isActive ? 'Deactivate' : 'Activate'} ${escapeHTML(p.name)}">
                   <span class="material-symbols-outlined text-sm">${p.isActive ? 'person_off' : 'person_add'}</span>
                 </button>
-                <button class="player-remove p-1.5 hover:bg-surface-container-high transition-colors" data-id="${p.id}" title="Remove" aria-label="Remove ${escapeHTML(p.name)}">
+                <button class="player-remove p-1.5 hover:bg-surface-container-high transition-colors" data-id="${escapeHTML(p.id)}" title="Remove" aria-label="Remove ${escapeHTML(p.name)}">
                   <span class="material-symbols-outlined text-sm text-error">close</span>
                 </button>
               </div>

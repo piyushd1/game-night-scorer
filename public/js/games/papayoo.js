@@ -119,7 +119,7 @@ export default {
                 <input
                   type="number"
                   inputmode="numeric"
-                  data-player="${pid}"
+                  data-player="${escapeHTML(pid)}"
                   data-field="penaltyPoints"
                   class="score-input w-16 papayoo-input"
                   placeholder="0"

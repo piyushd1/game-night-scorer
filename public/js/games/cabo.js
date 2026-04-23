@@ -143,7 +143,7 @@ export default {
             const color = ACCENT_COLORS[p.accentIndex || 0];
             return `
               <button
-                data-caller="${pid}"
+                data-caller="${escapeHTML(pid)}"
                 class="caller-btn px-3 py-2 border border-outline-variant font-headline font-bold text-xs uppercase tracking-widest transition-colors hover:border-primary"
               >${escapeHTML(p.name || pid)}</button>
             `;
@@ -179,7 +179,7 @@ export default {
                 <input
                   type="number"
                   inputmode="numeric"
-                  data-player="${pid}"
+                  data-player="${escapeHTML(pid)}"
                   data-field="cardTotal"
                   class="score-input w-16 cabo-input"
                   placeholder="0"
