@@ -388,9 +388,9 @@ async function run() {
 
     const papInputs = await page.$$('.papayoo-input');
     if (papInputs.length >= 3) {
-      await papInputs[0].fill('80');
-      await papInputs[1].fill('90');
-      await papInputs[2].fill('70');
+      await papInputs[0].fill('0');
+      await papInputs[1].fill('0');
+      await papInputs[2].fill('240');
       await page.waitForTimeout(300);
 
       // Check sum display (should be 240, not 250)
@@ -404,7 +404,7 @@ async function run() {
       log('5.6 Validation: sum must be 250', errText?.includes('250') ? 'PASS' : 'FAIL', errText);
 
       // Fix to 250
-      await papInputs[2].fill('80');
+      await papInputs[2].fill('250');
       await page.waitForTimeout(300);
       const sumText2 = penaltySum ? await penaltySum.textContent() : '0';
       log('5.7 Sum corrected to 250', sumText2 === '250' ? 'PASS' : 'FAIL', `sum=${sumText2}`);
