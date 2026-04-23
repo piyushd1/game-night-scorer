@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+.btn-primary {
+  background: #000000;
+  color: #ffffff;
+  padding: 14px 24px;
+}
+.btn-secondary {
+  background: #ffffff;
+  color: #000000;
+  padding: 14px 24px;
+}
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(198, 198, 198, 0.3); /* a light neutral base */
+  border-top-color: currentColor; /* adapts to text color */
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+</style>
+</head>
+<body style="background: gray;">
+  <button class="btn-primary">
+    <div class="spinner"></div>
+  </button>
+  <button class="btn-secondary">
+    <div class="spinner"></div>
+  </button>
+</body>
+</html>
