@@ -15,6 +15,9 @@ let _unsubGames = null;
 let _unsubMeta = null;
 let _unsubPlayers = null;
 
+// Bolt Optimization: Memoize round points cache outside the function instead of using window
+const _roundPointsCache = new WeakMap();
+
 export function mount(container, params = {}) {
   const roomCode = params.roomCode || state.get('roomCode');
 
@@ -114,14 +117,24 @@ function _render(container, roomCode) {
     getProgress = (total) => Math.min(100, Math.round((total / threshold) * 100));
   }
 
-  // Round points per player — use game module's getRoundPoints for accuracy
-  const roundPoints = {};
-  playerIds.forEach((pid) => { roundPoints[pid] = []; });
-  rounds.forEach((rnd) => {
-    playerIds.forEach((pid) => {
-      roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
+  // Bolt Optimization: Memoize round points calculation to avoid O(P * R) loop on every render
+  let roundPoints = {};
+  const roundsRef = game.rounds || {};
+  const cachedRoundPoints = typeof roundsRef === 'object' ? _roundPointsCache.get(roundsRef) : null;
+
+  if (cachedRoundPoints) {
+    roundPoints = cachedRoundPoints;
+  } else {
+    playerIds.forEach((pid) => { roundPoints[pid] = []; });
+    rounds.forEach((rnd) => {
+      playerIds.forEach((pid) => {
+        roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
+      });
     });
-  });
+    if (typeof roundsRef === 'object') {
+      _roundPointsCache.set(roundsRef, roundPoints);
+    }
+  }
 
 
   let html = '';
