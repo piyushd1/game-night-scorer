@@ -11,6 +11,10 @@ import * as hostMenu from '../components/host-menu.js';
 import { renderRow } from '../components/player-row.js';
 import { getGame } from '../games/registry.js';
 
+// Bolt Optimization: Memoize round points calculation per game.rounds object reference
+// Firebase state replacement guarantees game.rounds reference changes upon any round modification.
+const _roundPointsCache = new WeakMap();
+
 let _unsubGames = null;
 let _unsubMeta = null;
 let _unsubPlayers = null;
@@ -114,14 +118,30 @@ function _render(container, roomCode) {
     getProgress = (total) => Math.min(100, Math.round((total / threshold) * 100));
   }
 
-  // Round points per player — use game module's getRoundPoints for accuracy
-  const roundPoints = {};
-  playerIds.forEach((pid) => { roundPoints[pid] = []; });
-  rounds.forEach((rnd) => {
-    playerIds.forEach((pid) => {
-      roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
+  // Bolt Optimization: Memoize O(R*P) getRoundPoints calculations.
+  // game.rounds object reference replaces completely upon any DB update.
+  let roundPoints = null;
+  if (game.rounds && typeof game.rounds === 'object') {
+    const cached = _roundPointsCache.get(game.rounds);
+    // Also verify playerIds reference to prevent stale mappings if a player is added/removed.
+    if (cached && cached.playerIdsRef === playerIds) {
+      roundPoints = cached.result;
+    }
+  }
+
+  if (!roundPoints) {
+    // Round points per player — use game module's getRoundPoints for accuracy
+    roundPoints = {};
+    playerIds.forEach((pid) => { roundPoints[pid] = []; });
+    rounds.forEach((rnd) => {
+      playerIds.forEach((pid) => {
+        roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
+      });
     });
-  });
+    if (game.rounds && typeof game.rounds === 'object') {
+      _roundPointsCache.set(game.rounds, { result: roundPoints, playerIdsRef: playerIds });
+    }
+  }
 
 
   let html = '';
