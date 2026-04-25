@@ -13,10 +13,20 @@ export default {
   description: 'Memory card game. Minimize your hand total. Caller risks a penalty if wrong. Lowest wins.',
   scoringHint: 'Tap who called Cabo, then enter each player\u2019s hand total. Caller scores 0 if lowest, otherwise their hand + 10. Hitting 100 exactly resets to 50. Kamikaze (two 12s + two 13s) gives caller 0, everyone else 50.',
   minPlayers: 2,
-  maxPlayers: 4,
+  maxPlayers: 10,
   winMode: 'lowest_total',
-  defaultConfig: { lossThreshold: 100 },
-  configFields: [],
+  defaultConfig: { lossThreshold: 100, deckCount: 1 },
+  configFields: [
+    {
+      key: 'deckCount',
+      label: 'Decks',
+      type: 'select',
+      options: [
+        { value: 1, label: '1 deck (2-5 players)' },
+        { value: 2, label: '2 decks (2-10 players)' },
+      ],
+    },
+  ],
 
   validateRound(draft, gameState) {
     if (!draft.callerId) return { valid: false, error: 'Select who called Cabo' };
@@ -300,7 +310,7 @@ export default {
           </div>
           <div class="p-3 bg-surface-container-low border border-outline-variant">
             <p class="font-mono text-[10px] uppercase text-outline mb-1">Players</p>
-            <p class="font-mono text-lg font-bold">2-4</p>
+            <p class="font-mono text-lg font-bold">2-10</p>
           </div>
         </div>
       </div>

@@ -132,26 +132,52 @@ function _renderConfig(container) {
     return;
   }
 
+  const playerCount = state.activePlayers().length;
+
   configEl.style.display = 'block';
   configEl.innerHTML = `
     <div class="bg-surface-container-lowest border border-outline p-4">
       <p class="font-mono text-[10px] uppercase tracking-widest text-outline mb-4">GAME SETTINGS</p>
-      ${game.configFields.map((f) => `
-        <div class="flex items-center justify-between py-3 border-b border-outline-variant last:border-0">
-          <div>
-            <label for="config-${f.key}" class="font-headline font-bold text-sm uppercase block">${f.label}</label>
-            <span id="config-desc-${f.key}" class="font-mono text-[9px] text-outline">MIN ${f.min || 1}</span>
-          </div>
-          <input
-            type="number"
-            id="config-${f.key}"
-            aria-describedby="config-desc-${f.key}"
-            value="${game.defaultConfig[f.key]}"
-            min="${f.min || 1}"
-            class="w-20 bg-transparent border-0 border-b-2 border-primary font-mono text-lg text-right py-1 px-0 focus:outline-none focus:border-secondary"
-          >
-        </div>
-      `).join('')}
+      ${game.configFields.map((f) => _renderConfigField(game, f, playerCount)).join('')}
+    </div>
+  `;
+}
+
+function _renderConfigField(game, f, playerCount) {
+  if (f.type === 'select') {
+    // Cabo: default to 2 decks once player count exceeds the single-deck cap
+    // so the form starts in a valid state for larger rooms.
+    let defaultValue = game.defaultConfig[f.key];
+    if (game.id === 'cabo' && f.key === 'deckCount' && playerCount > 5) {
+      defaultValue = 2;
+    }
+    const optionsHtml = f.options.map((opt) => `
+      <option value="${escapeHTML(String(opt.value))}" ${opt.value === defaultValue ? 'selected' : ''}>${escapeHTML(opt.label)}</option>
+    `).join('');
+    return `
+      <div class="flex items-center justify-between py-3 border-b border-outline-variant last:border-0 gap-3">
+        <label for="config-${f.key}" class="font-headline font-bold text-sm uppercase block">${escapeHTML(f.label)}</label>
+        <select
+          id="config-${f.key}"
+          class="bg-transparent border-0 border-b-2 border-primary font-mono text-sm py-1 px-0 focus:outline-none focus:border-secondary"
+        >${optionsHtml}</select>
+      </div>
+    `;
+  }
+  return `
+    <div class="flex items-center justify-between py-3 border-b border-outline-variant last:border-0">
+      <div>
+        <label for="config-${f.key}" class="font-headline font-bold text-sm uppercase block">${f.label}</label>
+        <span id="config-desc-${f.key}" class="font-mono text-[9px] text-outline">MIN ${f.min || 1}</span>
+      </div>
+      <input
+        type="number"
+        id="config-${f.key}"
+        aria-describedby="config-desc-${f.key}"
+        value="${game.defaultConfig[f.key]}"
+        min="${f.min || 1}"
+        class="w-20 bg-transparent border-0 border-b-2 border-primary font-mono text-lg text-right py-1 px-0 focus:outline-none focus:border-secondary"
+      >
     </div>
   `;
 }
@@ -172,6 +198,10 @@ async function _startGame(container, roomCode) {
     for (const f of game.configFields) {
       const input = container.querySelector(`#config-${f.key}`);
       if (!input) continue;
+      if (f.type === 'select') {
+        config[f.key] = Number(input.value);
+        continue;
+      }
       const raw = input.value.trim();
       if (raw === '') continue; // empty = accept default
       const parsed = Number(raw);
@@ -193,6 +223,13 @@ async function _startGame(container, roomCode) {
       }
       config[f.key] = parsed;
     }
+  }
+
+  if (game.id === 'cabo' && config.deckCount === 1 && playerIds.length > 5) {
+    toast.show('1 deck supports up to 5 players. Choose 2 decks for 6+.');
+    const sel = container.querySelector('#config-deckCount');
+    if (sel) sel.focus();
+    return;
   }
 
   // Build player snapshot
