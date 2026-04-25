@@ -1,3 +1,6 @@
 ## 2026-04-18 - Semantic Tabs for Bottom Navigation
 **Learning:** Interactive elements like bottom navigation tabs should use semantic `<button>` elements with `role='tab'` instead of `<div>` to ensure screen readers properly announce them as interactive tabs rather than generic text blocks. Sighted keyboard users also need visible focus indicators, so when resetting native button styles with `outline: none`, a `:focus-visible` fallback must be provided.
 **Action:** When implementing custom navigation or tab components, ensure the container has `role="tablist"`, items use `<button>` tags with `role="tab"` and `aria-selected` attributes, non-semantic icons have `aria-hidden="true"`, and focus states are clearly visible via `:focus-visible`.
+## 2024-05-24 - Pure Decorative Icons Must Include aria-hidden="true"
+**Learning:** When using text-based icon fonts like `material-symbols-outlined`, screen readers may attempt to read the ligature text (e.g., "arrow_forward", "check", "person_off") out loud to the user. This causes confusion when the icon is purely decorative or accompanied by visible text.
+**Action:** Always add `aria-hidden="true"` to purely decorative icon font elements to ensure a clean, intuitive experience for screen reader users.
