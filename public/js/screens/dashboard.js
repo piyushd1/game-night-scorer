@@ -15,6 +15,10 @@ let _unsubGames = null;
 let _unsubMeta = null;
 let _unsubPlayers = null;
 
+// Bolt Optimization: Memoize expensive round points calculation per game object reference
+// This avoids O(P*R) recalculations on every dashboard re-render caused by unrelated state changes (like players or roomMeta).
+const _dashboardCache = new WeakMap();
+
 export function mount(container, params = {}) {
   const roomCode = params.roomCode || state.get('roomCode');
 
@@ -98,8 +102,31 @@ function _render(container, roomCode) {
   hostMenu.hide();
   hostMenu.renderTopBarActions(roomCode);
 
-  // Derive standings
-  const standings = gameModule.deriveStandings(totals, playerIds);
+  // Bolt Optimization: Retrieve or compute cached standings and round points
+  let standings, roundPoints;
+  const cached = game ? _dashboardCache.get(game) : null;
+  const playersRef = state.get('players');
+
+  if (cached && cached.playersRef === playersRef) {
+    standings = cached.standings;
+    roundPoints = cached.roundPoints;
+  } else {
+    // Derive standings
+    standings = gameModule.deriveStandings(totals, playerIds);
+
+    // Round points per player — use game module's getRoundPoints for accuracy
+    roundPoints = {};
+    playerIds.forEach((pid) => { roundPoints[pid] = []; });
+    rounds.forEach((rnd) => {
+      playerIds.forEach((pid) => {
+        roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
+      });
+    });
+
+    if (game) {
+      _dashboardCache.set(game, { standings, roundPoints, playersRef });
+    }
+  }
 
   // Progress calculation
   let getProgress;
@@ -113,15 +140,6 @@ function _render(container, roomCode) {
     const threshold = game.config?.lossThreshold || 100;
     getProgress = (total) => Math.min(100, Math.round((total / threshold) * 100));
   }
-
-  // Round points per player — use game module's getRoundPoints for accuracy
-  const roundPoints = {};
-  playerIds.forEach((pid) => { roundPoints[pid] = []; });
-  rounds.forEach((rnd) => {
-    playerIds.forEach((pid) => {
-      roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
-    });
-  });
 
 
   let html = '';
