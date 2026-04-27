@@ -15,6 +15,11 @@ let _unsubGames = null;
 let _unsubMeta = null;
 let _unsubPlayers = null;
 
+// Bolt Optimization: Memoize round points calculation.
+// Calculating derived points inside the nested rendering loops on every state
+// change causes redundant O(P * R) operations.
+const _roundPointsCache = new WeakMap();
+
 export function mount(container, params = {}) {
   const roomCode = params.roomCode || state.get('roomCode');
 
@@ -115,13 +120,27 @@ function _render(container, roomCode) {
   }
 
   // Round points per player — use game module's getRoundPoints for accuracy
-  const roundPoints = {};
-  playerIds.forEach((pid) => { roundPoints[pid] = []; });
-  rounds.forEach((rnd) => {
-    playerIds.forEach((pid) => {
-      roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
+  let roundPoints = {};
+
+  if (game.rounds && typeof game.rounds === 'object') {
+    const cached = _roundPointsCache.get(game.rounds);
+    if (cached && cached.playerIdsRef === playerIds) {
+      roundPoints = cached.result;
+    }
+  }
+
+  if (Object.keys(roundPoints).length === 0) {
+    playerIds.forEach((pid) => { roundPoints[pid] = []; });
+    rounds.forEach((rnd) => {
+      playerIds.forEach((pid) => {
+        roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
+      });
     });
-  });
+
+    if (game.rounds && typeof game.rounds === 'object') {
+      _roundPointsCache.set(game.rounds, { result: roundPoints, playerIdsRef: playerIds });
+    }
+  }
 
 
   let html = '';
