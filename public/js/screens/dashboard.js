@@ -11,6 +11,12 @@ import * as hostMenu from '../components/host-menu.js';
 import { renderRow } from '../components/player-row.js';
 import { getGame } from '../games/registry.js';
 
+// Bolt Optimization: Memoize O(R*P) round points calculation
+// The dashboard re-renders frequently on Firebase state syncs.
+// We cache the roundPoints calculation based on the game.rounds object reference
+// and the specific player list to avoid redundant array allocations and lookups.
+const _roundPointsCache = new WeakMap();
+
 let _unsubGames = null;
 let _unsubMeta = null;
 let _unsubPlayers = null;
@@ -115,13 +121,30 @@ function _render(container, roomCode) {
   }
 
   // Round points per player — use game module's getRoundPoints for accuracy
-  const roundPoints = {};
-  playerIds.forEach((pid) => { roundPoints[pid] = []; });
-  rounds.forEach((rnd) => {
-    playerIds.forEach((pid) => {
-      roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
+  let roundPoints = {};
+  let cacheHit = false;
+
+  if (game.rounds && typeof game.rounds === 'object') {
+    const cached = _roundPointsCache.get(game.rounds);
+    // Ensure player list hasn't changed (strict equality on array ref)
+    if (cached && cached.playerIds === playerIds) {
+      roundPoints = cached.result;
+      cacheHit = true;
+    }
+  }
+
+  if (!cacheHit) {
+    playerIds.forEach((pid) => { roundPoints[pid] = []; });
+    rounds.forEach((rnd) => {
+      playerIds.forEach((pid) => {
+        roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
+      });
     });
-  });
+
+    if (game.rounds && typeof game.rounds === 'object') {
+      _roundPointsCache.set(game.rounds, { result: roundPoints, playerIds });
+    }
+  }
 
 
   let html = '';
