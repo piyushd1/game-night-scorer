@@ -11,6 +11,9 @@ import * as hostMenu from '../components/host-menu.js';
 import { renderRow } from '../components/player-row.js';
 import { getGame } from '../games/registry.js';
 
+// Bolt Optimization: Cache round points to prevent O(P^2 * R) recalculations on every render.
+const _roundPointsCache = new WeakMap();
+
 let _unsubGames = null;
 let _unsubMeta = null;
 let _unsubPlayers = null;
@@ -115,13 +118,38 @@ function _render(container, roomCode) {
   }
 
   // Round points per player — use game module's getRoundPoints for accuracy
-  const roundPoints = {};
-  playerIds.forEach((pid) => { roundPoints[pid] = []; });
-  rounds.forEach((rnd) => {
-    playerIds.forEach((pid) => {
-      roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
+  let roundPoints = {};
+  const cacheKey = game.rounds; // The Firebase object reference replaces on update
+  if (cacheKey && typeof cacheKey === 'object') {
+    const cached = _roundPointsCache.get(cacheKey);
+    // The playerIds list can change reference over time, so we check equality
+    // but avoid expensive JSON.stringify on every frame by checking reference or length first.
+    let isSamePlayers = false;
+    if (cached) {
+      if (cached.playerIds === playerIds) {
+        isSamePlayers = true;
+      } else if (cached.playerIds.length === playerIds.length) {
+        isSamePlayers = cached.playerIds.every((id, i) => id === playerIds[i]);
+      }
+    }
+
+    if (isSamePlayers) {
+      roundPoints = cached.result;
+    }
+  }
+
+  if (Object.keys(roundPoints).length === 0) {
+    playerIds.forEach((pid) => { roundPoints[pid] = []; });
+    rounds.forEach((rnd) => {
+      playerIds.forEach((pid) => {
+        roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
+      });
     });
-  });
+
+    if (cacheKey && typeof cacheKey === 'object') {
+      _roundPointsCache.set(cacheKey, { result: roundPoints, playerIds });
+    }
+  }
 
 
   let html = '';
