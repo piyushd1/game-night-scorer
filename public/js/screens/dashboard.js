@@ -11,6 +11,13 @@ import * as hostMenu from '../components/host-menu.js';
 import { renderRow } from '../components/player-row.js';
 import { getGame } from '../games/registry.js';
 
+// Bolt Optimization: Memoize O(P*R) round points calculation
+// The dashboard re-renders frequently (e.g. on any player or room update).
+// Recomputing round points requires traversing every round and every player,
+// which gets expensive as the game progresses. We cache the result keyed
+// to the `game.rounds` object, verifying `playerIds` for strict equality.
+const _roundPointsCache = new WeakMap();
+
 let _unsubGames = null;
 let _unsubMeta = null;
 let _unsubPlayers = null;
@@ -115,13 +122,31 @@ function _render(container, roomCode) {
   }
 
   // Round points per player — use game module's getRoundPoints for accuracy
-  const roundPoints = {};
-  playerIds.forEach((pid) => { roundPoints[pid] = []; });
-  rounds.forEach((rnd) => {
-    playerIds.forEach((pid) => {
-      roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
+  let roundPoints = null;
+
+  if (game.rounds) {
+    const cached = _roundPointsCache.get(game.rounds);
+    if (cached && cached.playerIds === playerIds) {
+      roundPoints = cached.result;
+    }
+  }
+
+  if (!roundPoints) {
+    roundPoints = {};
+    playerIds.forEach((pid) => { roundPoints[pid] = []; });
+    rounds.forEach((rnd) => {
+      playerIds.forEach((pid) => {
+        roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
+      });
     });
-  });
+
+    if (game.rounds) {
+      _roundPointsCache.set(game.rounds, {
+        result: roundPoints,
+        playerIds,
+      });
+    }
+  }
 
 
   let html = '';
