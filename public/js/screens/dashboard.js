@@ -11,6 +11,9 @@ import * as hostMenu from '../components/host-menu.js';
 import { renderRow } from '../components/player-row.js';
 import { getGame } from '../games/registry.js';
 
+// Bolt Optimization: Memoize O(R*P) round points calculation
+const _roundPointsCache = new WeakMap();
+
 let _unsubGames = null;
 let _unsubMeta = null;
 let _unsubPlayers = null;
@@ -115,13 +118,27 @@ function _render(container, roomCode) {
   }
 
   // Round points per player — use game module's getRoundPoints for accuracy
-  const roundPoints = {};
-  playerIds.forEach((pid) => { roundPoints[pid] = []; });
-  rounds.forEach((rnd) => {
-    playerIds.forEach((pid) => {
-      roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
+  // Bolt Optimization: Memoize round points to avoid O(R*P) recalculations on every render.
+  let roundPoints = {};
+  const cacheKey = game.rounds;
+  if (cacheKey && typeof cacheKey === 'object') {
+    const cached = _roundPointsCache.get(cacheKey);
+    if (cached && cached.playerIds === playerIds) {
+      roundPoints = cached.result;
+    }
+  }
+
+  if (Object.keys(roundPoints).length === 0) {
+    playerIds.forEach((pid) => { roundPoints[pid] = []; });
+    rounds.forEach((rnd) => {
+      playerIds.forEach((pid) => {
+        roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
+      });
     });
-  });
+    if (cacheKey && typeof cacheKey === 'object') {
+      _roundPointsCache.set(cacheKey, { result: roundPoints, playerIds });
+    }
+  }
 
 
   let html = '';
