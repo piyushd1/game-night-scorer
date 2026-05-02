@@ -51,7 +51,7 @@ function render() {
     .map(
       (tab) => `
     <button type="button" role="tab" aria-selected="${tab.id === _activeTab}" aria-controls="screen-container" id="tab-${tab.id}" class="nav-item ${tab.id === _activeTab ? 'active' : ''}" data-tab="${tab.id}">
-      <span class="material-symbols-outlined" aria-hidden="true" ${tab.id === _activeTab ? 'style="font-variation-settings: \'FILL\' 1;"' : ''}>${tab.icon}</span>
+      <span aria-hidden="true" class="material-symbols-outlined" ${tab.id === _activeTab ? 'style="font-variation-settings: \'FILL\' 1;"' : ''}>${tab.icon}</span>
       <span>${tab.label}</span>
     </button>
   `

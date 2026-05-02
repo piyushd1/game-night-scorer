@@ -97,7 +97,7 @@ export default {
               data-suit="${suit.id}"
               class="suit-btn flex flex-col items-center gap-1 p-3 border border-outline-variant hover:border-primary transition-colors"
             >
-              <span class="material-symbols-outlined text-xl">${suit.icon}</span>
+              <span aria-hidden="true" class="material-symbols-outlined text-xl">${suit.icon}</span>
               <span class="font-mono text-[9px] uppercase">${suit.label}</span>
             </button>
           `).join('')}
@@ -135,7 +135,7 @@ export default {
                   aria-label="Clear ${escapeHTML(p.name || pid)}'s entry"
                   title="Clear entry"
                   class="clear-row-btn p-1 text-outline hover:text-on-surface transition-colors"
-                ><span class="material-symbols-outlined text-base" aria-hidden="true">backspace</span></button>
+                ><span aria-hidden="true" class="material-symbols-outlined text-base">backspace</span></button>
               </div>
             </div>
           `;

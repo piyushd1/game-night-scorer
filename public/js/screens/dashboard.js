@@ -73,7 +73,7 @@ function _render(container, roomCode) {
     document.getElementById('top-bar-title').textContent = 'GAME NIGHT';
     content.innerHTML = `
       <div class="text-center py-20">
-        <span class="material-symbols-outlined text-5xl text-outline mb-4">casino</span>
+        <span aria-hidden="true" class="material-symbols-outlined text-5xl text-outline mb-4">casino</span>
         <p class="font-headline font-bold text-lg uppercase mb-2">No Active Game</p>
         <p class="font-body text-sm text-on-surface-variant">
           ${isHost ? 'Go back to the lobby to start a game.' : 'Waiting for the host to start a game...'}
@@ -189,7 +189,7 @@ function _render(container, roomCode) {
     html += `
       <div class="flex gap-2 mt-6">
         <button id="btn-undo" title="${undoTitle}" aria-label="${undoTitle}" class="flex-1 bg-surface-container-lowest border border-outline py-3 text-sm font-headline font-bold uppercase tracking-widest flex items-center justify-center gap-1 hover:bg-surface-container-high transition-colors disabled:opacity-30 disabled:cursor-not-allowed" ${undoDisabled ? 'disabled' : ''}>
-          <span class="material-symbols-outlined text-sm" aria-hidden="true">undo</span>
+          <span aria-hidden="true" class="material-symbols-outlined text-sm">undo</span>
           UNDO
         </button>
       </div>
