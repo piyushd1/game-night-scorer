@@ -118,12 +118,13 @@ export default {
                   <p class="font-headline font-extrabold text-sm uppercase truncate">${escapeHTML(p.name || pid)}</p>
                   <p class="font-mono text-[10px] text-outline">${currentTotal} PTS</p>
                 </div>
+                <label for="score-papayoo-${escapeHTML(pid)}" class="sr-only">Score for ${escapeHTML(p.name || pid)}</label>
                 <input
+                  id="score-papayoo-${escapeHTML(pid)}"
                   type="number"
                   inputmode="numeric"
                   data-player="${escapeHTML(pid)}"
                   data-field="penaltyPoints"
-                  aria-label="Score for ${escapeHTML(p.name || pid)}"
                   class="score-input w-16 papayoo-input"
                   placeholder="0"
                   min="0"

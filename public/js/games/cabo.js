@@ -184,10 +184,10 @@ export default {
       <!-- Kamikaze Toggle -->
       <div class="bg-surface-container-lowest border border-outline p-4 mb-4 flex items-center justify-between">
         <div>
-          <p class="font-headline font-bold text-sm uppercase">Kamikaze</p>
-          <p class="font-mono text-[10px] text-outline">Two 12s + Two 13s = 0 pts, others get 50</p>
+          <p id="kamikaze-label" class="font-headline font-bold text-sm uppercase">Kamikaze</p>
+          <p id="kamikaze-desc" class="font-mono text-[10px] text-outline">Two 12s + Two 13s = 0 pts, others get 50</p>
         </div>
-        <button id="kamikaze-toggle" role="switch" aria-checked="false" aria-label="Kamikaze toggle" class="w-12 h-7 border border-outline bg-surface-container-high transition-colors relative">
+        <button id="kamikaze-toggle" role="switch" aria-checked="false" aria-labelledby="kamikaze-label" aria-describedby="kamikaze-desc" class="w-12 h-7 border border-outline bg-surface-container-high transition-colors relative">
           <div class="absolute top-0.5 left-0.5 w-5.5 h-5.5 bg-outline transition-transform" style="width:22px;height:22px"></div>
         </button>
       </div>
@@ -206,12 +206,13 @@ export default {
                   <p class="font-headline font-extrabold text-sm uppercase truncate">${escapeHTML(p.name || pid)}</p>
                   <p class="font-mono text-[10px] text-outline">${currentTotal} PTS${currentTotal === 50 ? ' (RESET)' : ''}</p>
                 </div>
+                <label for="score-cabo-${escapeHTML(pid)}" class="sr-only">Score for ${escapeHTML(p.name || pid)}</label>
                 <input
+                  id="score-cabo-${escapeHTML(pid)}"
                   type="number"
                   inputmode="numeric"
                   data-player="${escapeHTML(pid)}"
                   data-field="cardTotal"
-                  aria-label="Score for ${escapeHTML(p.name || pid)}"
                   class="score-input w-16 cabo-input"
                   placeholder="0"
                   min="0"

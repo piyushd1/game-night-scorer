@@ -85,10 +85,10 @@ export function mount(container, params = {}) {
       <div id="stats-toggle-section" class="mt-6" style="display:none">
         <div class="bg-surface-container-lowest border border-outline p-4 flex items-center justify-between">
           <div class="flex-1 mr-4">
-            <p class="font-headline font-bold text-sm uppercase">Track Tonight's Stats</p>
-            <p class="font-mono text-[10px] text-outline mt-0.5">See MVP, per-game breakdowns, and player highlights at the end of the night</p>
+            <p id="stats-toggle-label" class="font-headline font-bold text-sm uppercase">Track Tonight's Stats</p>
+            <p id="stats-toggle-desc" class="font-mono text-[10px] text-outline mt-0.5">See MVP, per-game breakdowns, and player highlights at the end of the night</p>
           </div>
-          <button id="btn-stats-toggle" role="switch" aria-checked="false" aria-label="Track Tonight's Stats" class="w-12 h-7 border border-outline bg-surface-container-high transition-all relative shrink-0" data-on="false">
+          <button id="btn-stats-toggle" role="switch" aria-checked="false" aria-labelledby="stats-toggle-label" aria-describedby="stats-toggle-desc" class="w-12 h-7 border border-outline bg-surface-container-high transition-all relative shrink-0" data-on="false">
             <div class="absolute top-[2px] left-[2px] w-[22px] h-[22px] bg-outline transition-transform" aria-hidden="true"></div>
           </button>
         </div>

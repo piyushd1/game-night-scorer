@@ -89,12 +89,13 @@ export default {
                   <p class="font-mono text-[10px] text-outline">${currentTotal} PTS</p>
                 </div>
                 <div class="flex items-center gap-2">
+                  <label for="score-flip7-${escapeHTML(pid)}" class="sr-only">Score for ${escapeHTML(p.name || pid)}</label>
                   <input
+                    id="score-flip7-${escapeHTML(pid)}"
                     type="number"
                     inputmode="numeric"
                     data-player="${escapeHTML(pid)}"
                     data-field="basePoints"
-                    aria-label="Score for ${escapeHTML(p.name || pid)}"
                     class="score-input w-16"
                     placeholder="0"
                     min="0"
