@@ -15,6 +15,12 @@ let _unsubGames = null;
 let _unsubMeta = null;
 let _unsubPlayers = null;
 
+// Bolt Optimization: Memoize round points calculation
+// Dashboard re-renders on any state change. We cache round points keyed by
+// the game.rounds object reference to avoid O(Rounds * Players) work on
+// every render unless the rounds or players have changed.
+const _roundPointsCache = new WeakMap();
+
 export function mount(container, params = {}) {
   const roomCode = params.roomCode || state.get('roomCode');
 
@@ -115,13 +121,26 @@ function _render(container, roomCode) {
   }
 
   // Round points per player — use game module's getRoundPoints for accuracy
-  const roundPoints = {};
-  playerIds.forEach((pid) => { roundPoints[pid] = []; });
-  rounds.forEach((rnd) => {
-    playerIds.forEach((pid) => {
-      roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
+  let roundPoints = null;
+  if (game.rounds && typeof game.rounds === 'object') {
+    const cached = _roundPointsCache.get(game.rounds);
+    if (cached && cached.playerIdsRef === playerIds) {
+      roundPoints = cached.result;
+    }
+  }
+
+  if (!roundPoints) {
+    roundPoints = {};
+    playerIds.forEach((pid) => { roundPoints[pid] = []; });
+    rounds.forEach((rnd) => {
+      playerIds.forEach((pid) => {
+        roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
+      });
     });
-  });
+    if (game.rounds && typeof game.rounds === 'object') {
+      _roundPointsCache.set(game.rounds, { result: roundPoints, playerIdsRef: playerIds });
+    }
+  }
 
 
   let html = '';
