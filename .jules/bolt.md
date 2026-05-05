@@ -10,3 +10,6 @@
 ## 2024-04-21 - [computeNightStats O(G*P*R) Recalculation on Render]
 **Learning:** Found that `computeNightStats` in `public/js/stats.js` runs a heavy O(Games * Players * Rounds) operation every time the Recap screen renders or state updates. Because Firebase state syncing in `public/js/firebase.js` completely replaces the `games` object reference on any update to the room, we can use a WeakMap keyed by the `games` object to safely memoize this expensive calculation.
 **Action:** Use `WeakMap` to memoize expensive derived state computations based on Firebase object references to skip redundant calculation cycles without creating memory leaks.
+## 2024-05-05 - [dashboard.js roundPoints O(R*P) Recalculation on Render]
+**Learning:** Found that `roundPoints` computation in `public/js/screens/dashboard.js` scales O(R * P). Because Firebase state syncing triggers multiple synchronous re-renders of the dashboard on each state update, this calculation was needlessly repeated for the exact same data during rapid sync phases.
+**Action:** Use a `WeakMap` keyed by the state object reference (`game.rounds`) and match `playerIds.join(',')` to ensure cache validity. This memoizes derived component state, safely skipping redundant computations during rapid synchronous re-renders without causing memory leaks.
