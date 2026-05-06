@@ -1,0 +1,319 @@
+# Instincts generated from https://github.com/piyushd1/game-night-scorer
+# Generated: 2026-05-06T21:39:43.993Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: game-night-scorer-commit-conventional
+trigger: "when writing a commit message"
+confidence: 0.85
+domain: git
+source: repo-analysis
+source_repo: https://github.com/piyushd1/game-night-scorer
+---
+
+# Game Night Scorer Commit Conventional
+
+## Action
+
+Use conventional commit format with prefixes: perf
+
+## Evidence
+
+- 1 commits analyzed
+- Detected conventional commit pattern
+- Examples: perf: memoize round points calculation in dashboard
+
+---
+id: game-night-scorer-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/piyushd1/game-night-scorer
+---
+
+# Game Night Scorer Commit Length
+
+## Action
+
+Write moderate-length commit messages (~51 characters)
+
+## Evidence
+
+- Average commit message length: 51 chars
+- Based on 1 commits
+
+---
+id: game-night-scorer-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/piyushd1/game-night-scorer
+---
+
+# Game Night Scorer Naming Files
+
+## Action
+
+Use camelCase naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: camelCase
+
+---
+id: game-night-scorer-import-relative
+trigger: "when importing modules"
+confidence: 0.75
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/piyushd1/game-night-scorer
+---
+
+# Game Night Scorer Import Relative
+
+## Action
+
+Use relative imports for project files
+
+## Evidence
+
+- Import analysis shows relative import pattern
+- Example: import { x } from '../lib/x'
+
+---
+id: game-night-scorer-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/piyushd1/game-night-scorer
+---
+
+# Game Night Scorer Export Style
+
+## Action
+
+Prefer named exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: named
+
+---
+id: game-night-scorer-test-separate
+trigger: "when writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/piyushd1/game-night-scorer
+---
+
+# Game Night Scorer Test Separate
+
+## Action
+
+Place tests in the tests/ or __tests__/ directory, mirroring src structure
+
+## Evidence
+
+- Separate test directory pattern detected
+- Tests live in dedicated test folders
+
+---
+id: game-night-scorer-instinct-file-naming
+trigger: "When creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: piyushd1/game-night-scorer
+---
+
+# Game Night Scorer Instinct File Naming
+
+## Action
+
+Name the file using camelCase
+
+## Evidence
+
+- Pattern in namingConventions.files
+
+---
+id: game-night-scorer-instinct-function-naming
+trigger: "When defining a new function"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: piyushd1/game-night-scorer
+---
+
+# Game Night Scorer Instinct Function Naming
+
+## Action
+
+Name the function using camelCase
+
+## Evidence
+
+- Pattern in namingConventions.functions
+
+---
+id: game-night-scorer-instinct-class-naming
+trigger: "When creating a new class"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: piyushd1/game-night-scorer
+---
+
+# Game Night Scorer Instinct Class Naming
+
+## Action
+
+Name the class using PascalCase
+
+## Evidence
+
+- Pattern in namingConventions.classes
+
+---
+id: game-night-scorer-instinct-constant-naming
+trigger: "When declaring a constant"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: piyushd1/game-night-scorer
+---
+
+# Game Night Scorer Instinct Constant Naming
+
+## Action
+
+Name the constant using SCREAMING_SNAKE_CASE
+
+## Evidence
+
+- Pattern in namingConventions.constants
+
+---
+id: game-night-scorer-instinct-import-style
+trigger: "When importing modules"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: piyushd1/game-night-scorer
+---
+
+# Game Night Scorer Instinct Import Style
+
+## Action
+
+Use relative import paths
+
+## Evidence
+
+- Pattern in importStyle
+
+---
+id: game-night-scorer-instinct-export-style
+trigger: "When exporting functions or variables"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: piyushd1/game-night-scorer
+---
+
+# Game Night Scorer Instinct Export Style
+
+## Action
+
+Use named exports
+
+## Evidence
+
+- Pattern in exportStyle
+
+---
+id: game-night-scorer-instinct-error-handling
+trigger: "When handling potential errors in code"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: piyushd1/game-night-scorer
+---
+
+# Game Night Scorer Instinct Error Handling
+
+## Action
+
+Use try-catch blocks for error handling
+
+## Evidence
+
+- Pattern in errorHandling.style
+
+---
+id: game-night-scorer-instinct-commit-format
+trigger: "When making a git commit"
+confidence: 0.8
+domain: git
+source: repo-analysis
+source_repo: piyushd1/game-night-scorer
+---
+
+# Game Night Scorer Instinct Commit Format
+
+## Action
+
+Use the conventional commit format, e.g., 'perf: ...'
+
+## Evidence
+
+- Pattern in commits.type
+- Seen in commit 'perf: memoize round points calculation in dashboard'
+
+---
+id: game-night-scorer-instinct-commit-prefix
+trigger: "When committing performance improvements"
+confidence: 0.9
+domain: git
+source: repo-analysis
+source_repo: piyushd1/game-night-scorer
+---
+
+# Game Night Scorer Instinct Commit Prefix
+
+## Action
+
+Prefix the commit message with 'perf:'
+
+## Evidence
+
+- Pattern in commits.prefixes
+- Seen in commit 'perf: memoize round points calculation in dashboard'
+
+---
+id: game-night-scorer-instinct-test-location
+trigger: "When adding new tests"
+confidence: 0.7
+domain: testing
+source: repo-analysis
+source_repo: piyushd1/game-night-scorer
+---
+
+# Game Night Scorer Instinct Test Location
+
+## Action
+
+Place test files in a separate folder from source code
+
+## Evidence
+
+- Pattern in architecture.folderStructure.testLocation
+
