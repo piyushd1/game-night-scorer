@@ -12,6 +12,7 @@ import * as cache from '../cache.js';
 import { getGame } from '../games/registry.js';
 
 let _bound = false;
+let _lastFocus = null;
 
 export function init() {
   if (_bound) return;
@@ -23,6 +24,13 @@ export function init() {
 
   // Close on backdrop click
   backdrop.addEventListener('click', hide);
+
+  // Close on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && overlay.style.display !== 'none') {
+      hide();
+    }
+  });
 
   // Bind menu actions
   overlay.querySelectorAll('.host-menu-action').forEach((btn) => {
@@ -67,12 +75,23 @@ export function toggle() {
 export function show() {
   init();
   const overlay = document.getElementById('host-menu-overlay');
-  if (overlay) overlay.style.display = 'block';
+  if (overlay) {
+    _lastFocus = document.activeElement;
+    overlay.style.display = 'block';
+    const firstAction = overlay.querySelector('.host-menu-action');
+    if (firstAction) firstAction.focus();
+  }
 }
 
 export function hide() {
   const overlay = document.getElementById('host-menu-overlay');
-  if (overlay) overlay.style.display = 'none';
+  if (overlay) {
+    overlay.style.display = 'none';
+    if (_lastFocus) {
+      _lastFocus.focus();
+      _lastFocus = null;
+    }
+  }
 }
 
 /**
