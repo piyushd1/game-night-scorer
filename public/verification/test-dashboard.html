@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard Test</title>
+  <link rel="stylesheet" href="/css/app.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  <div id="top-bar" style="display:none;">
+    <div id="top-bar-back" class="hidden">Back</div>
+    <div id="top-bar-title">Title</div>
+  </div>
+  <div id="screen-container"></div>
+  <div id="nav-dashboard"></div>
+
+  <script type="module">
+    import * as state from '/js/state.js';
+    import { mount } from '/js/screens/dashboard.js';
+
+    // We mock document.getElementById for elements that might be missing
+    const originalGetElementById = document.getElementById.bind(document);
+    document.getElementById = function(id) {
+        let el = originalGetElementById(id);
+        if (!el) {
+            el = document.createElement('div');
+            el.id = id;
+            document.body.appendChild(el);
+        }
+        return el;
+    };
+
+    state.set('roomCode', 'TEST01');
+    state.set('roomMeta', { status: 'active', activeGameId: 'game1' });
+    state.set('players', {
+        'p1': { name: 'Alice', isActive: true, seatOrder: 1, accentIndex: 0 },
+        'p2': { name: 'Bob', isActive: true, seatOrder: 2, accentIndex: 1 }
+    });
+    state.set('games', {
+        'game1': {
+            gameId: 'game1',
+            type: 'cabo',
+            status: 'active',
+            playerIds: ['p1', 'p2'],
+            playerSnapshot: {
+                'p1': { name: 'Alice', accentIndex: 0 },
+                'p2': { name: 'Bob', accentIndex: 1 }
+            },
+            totals: { 'p1': 10, 'p2': 15 },
+            rounds: {
+                'r1': {
+                    entries: {
+                        'p1': { cardTotal: 10 },
+                        'p2': { cardTotal: 15 }
+                    }
+                }
+            }
+        }
+    });
+
+    const container = document.getElementById('screen-container');
+    mount(container, { roomCode: 'TEST01' });
+  </script>
+</body>
+</html>
