@@ -11,6 +11,9 @@ import * as hostMenu from '../components/host-menu.js';
 import { renderRow } from '../components/player-row.js';
 import { getGame } from '../games/registry.js';
 
+// Bolt Optimization: Memoize O(R*P) calculation
+const _roundPointsCache = new WeakMap();
+
 let _unsubGames = null;
 let _unsubMeta = null;
 let _unsubPlayers = null;
@@ -114,14 +117,29 @@ function _render(container, roomCode) {
     getProgress = (total) => Math.min(100, Math.round((total / threshold) * 100));
   }
 
-  // Round points per player — use game module's getRoundPoints for accuracy
-  const roundPoints = {};
-  playerIds.forEach((pid) => { roundPoints[pid] = []; });
-  rounds.forEach((rnd) => {
-    playerIds.forEach((pid) => {
-      roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
+  // Bolt Optimization: Avoid O(R*P) recalculation on every render.
+  // game.rounds is recreated when Firebase updates, so it's safe to use as a cache key.
+  // We use playerIds.join(',') to prevent reference-equality cache misses caused by dynamic array generation during render cycles.
+  let roundPoints = {};
+  const cacheKey = game.rounds;
+  if (cacheKey && typeof cacheKey === 'object') {
+    const cached = _roundPointsCache.get(cacheKey);
+    if (cached && cached.playerIds === playerIds.join(',')) {
+      roundPoints = cached.result;
+    }
+  }
+
+  if (Object.keys(roundPoints).length === 0) {
+    playerIds.forEach((pid) => { roundPoints[pid] = []; });
+    rounds.forEach((rnd) => {
+      playerIds.forEach((pid) => {
+        roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
+      });
     });
-  });
+    if (cacheKey && typeof cacheKey === 'object') {
+      _roundPointsCache.set(cacheKey, { result: roundPoints, playerIds: playerIds.join(',') });
+    }
+  }
 
 
   let html = '';
