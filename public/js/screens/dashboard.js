@@ -15,6 +15,10 @@ let _unsubGames = null;
 let _unsubMeta = null;
 let _unsubPlayers = null;
 
+// Bolt Optimization: Memoize round points array creation to avoid O(P*R) recalculation
+// and array reallocations on every render.
+const _roundPointsCache = new WeakMap();
+
 export function mount(container, params = {}) {
   const roomCode = params.roomCode || state.get('roomCode');
 
@@ -115,13 +119,27 @@ function _render(container, roomCode) {
   }
 
   // Round points per player — use game module's getRoundPoints for accuracy
-  const roundPoints = {};
-  playerIds.forEach((pid) => { roundPoints[pid] = []; });
-  rounds.forEach((rnd) => {
-    playerIds.forEach((pid) => {
-      roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
-    });
-  });
+  // Bolt Optimization: Memoize this O(R*P) calculation. Firebase updates replace the game
+  // object, but if game.rounds object reference is stable for rapid UI renders (e.g., player
+  // state changes), this prevents expensive redundant array allocations.
+  let roundPoints = {};
+  const playerIdsKey = playerIds.join(',');
+  if (game.rounds) {
+    const cached = _roundPointsCache.get(game.rounds);
+    if (cached && cached.playerIdsKey === playerIdsKey) {
+      roundPoints = cached.roundPoints;
+    } else {
+      playerIds.forEach((pid) => { roundPoints[pid] = []; });
+      rounds.forEach((rnd) => {
+        playerIds.forEach((pid) => {
+          roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
+        });
+      });
+      _roundPointsCache.set(game.rounds, { roundPoints, playerIdsKey });
+    }
+  } else {
+    playerIds.forEach((pid) => { roundPoints[pid] = []; });
+  }
 
 
   let html = '';
