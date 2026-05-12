@@ -8,8 +8,12 @@ import * as router from '../router.js';
 import * as bottomNav from '../components/bottom-nav.js';
 import * as toast from '../components/toast.js';
 import * as hostMenu from '../components/host-menu.js';
-import { renderRow } from '../components/player-row.js';
-import { getGame } from '../games/registry.js';
+import { renderRow } from '../components/player-row.js';import { getGame } from '../games/registry.js';
+
+// Bolt Optimization: Memoize heavy O(P*R) dashboard derived state
+// Keys off the immutable `game` object from Firebase. Stores a reference to `playersMap`
+// to ensure cache invalidates correctly if players state updates independently.
+const _dashboardCache = new WeakMap();
 
 let _unsubGames = null;
 let _unsubMeta = null;
@@ -93,36 +97,56 @@ function _render(container, roomCode) {
 
   // Title
   document.getElementById('top-bar-title').textContent = gameModule.label.toUpperCase();
-
   // Top bar actions — shared host menu component
   hostMenu.hide();
   hostMenu.renderTopBarActions(roomCode);
 
-  // Derive standings
-  const standings = gameModule.deriveStandings(totals, playerIds);
+  const playersMap = state.get('players') || {};
+  const isInactive = (pid) => playersMap[pid]?.isActive === false;
 
-  // Progress calculation
-  let getProgress;
-  if (gameModule.winMode === 'highest_total') {
-    const target = game.config?.targetScore || 200;
-    getProgress = (total) => Math.min(100, Math.round((total / target) * 100));
-  } else if (game.type === 'papayoo') {
-    const roundLimit = game.config?.roundLimit || 5;
-    getProgress = () => Math.min(100, Math.round((rounds.length / roundLimit) * 100));
+  let viewData;
+  const cached = _dashboardCache.get(game);
+
+  if (cached && cached.playersRef === playersMap) {
+    viewData = cached.result;
   } else {
-    const threshold = game.config?.lossThreshold || 100;
-    getProgress = (total) => Math.min(100, Math.round((total / threshold) * 100));
+    // Derive standings
+    const standings = gameModule.deriveStandings(totals, playerIds);
+
+    // Progress calculation
+    let getProgress;
+    if (gameModule.winMode === 'highest_total') {
+      const target = game.config?.targetScore || 200;
+      getProgress = (total) => Math.min(100, Math.round((total / target) * 100));
+    } else if (game.type === 'papayoo') {
+      const roundLimit = game.config?.roundLimit || 5;
+      getProgress = () => Math.min(100, Math.round((rounds.length / roundLimit) * 100));
+    } else {
+      const threshold = game.config?.lossThreshold || 100;
+      getProgress = (total) => Math.min(100, Math.round((total / threshold) * 100));
+    }
+
+    // Round points per player — use game module's getRoundPoints for accuracy
+    const roundPoints = {};
+    playerIds.forEach((pid) => { roundPoints[pid] = []; });
+    rounds.forEach((rnd) => {
+      playerIds.forEach((pid) => {
+        roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
+      });
+    });
+
+    // Sort: inactive players drop to the bottom regardless of score,
+    // so active rankings stay visually clear.
+    const orderedStandings = [
+      ...standings.filter((s) => !isInactive(s.playerId)),
+      ...standings.filter((s) => isInactive(s.playerId)),
+    ];
+
+    viewData = { getProgress, roundPoints, orderedStandings };
+    _dashboardCache.set(game, { result: viewData, playersRef: playersMap });
   }
 
-  // Round points per player — use game module's getRoundPoints for accuracy
-  const roundPoints = {};
-  playerIds.forEach((pid) => { roundPoints[pid] = []; });
-  rounds.forEach((rnd) => {
-    playerIds.forEach((pid) => {
-      roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
-    });
-  });
-
+  const { getProgress, roundPoints, orderedStandings } = viewData;
 
   let html = '';
 
@@ -150,15 +174,6 @@ function _render(container, roomCode) {
     router.navigate('winner', { roomCode });
     return;
   }
-
-  // Sort: inactive players drop to the bottom regardless of score,
-  // so active rankings stay visually clear.
-  const playersMap = state.get('players') || {};
-  const isInactive = (pid) => playersMap[pid]?.isActive === false;
-  const orderedStandings = [
-    ...standings.filter((s) => !isInactive(s.playerId)),
-    ...standings.filter((s) => isInactive(s.playerId)),
-  ];
 
   // Scoreboard
   html += `<div class="flex flex-col gap-1">`;

@@ -10,3 +10,6 @@
 ## 2024-04-21 - [computeNightStats O(G*P*R) Recalculation on Render]
 **Learning:** Found that `computeNightStats` in `public/js/stats.js` runs a heavy O(Games * Players * Rounds) operation every time the Recap screen renders or state updates. Because Firebase state syncing in `public/js/firebase.js` completely replaces the `games` object reference on any update to the room, we can use a WeakMap keyed by the `games` object to safely memoize this expensive calculation.
 **Action:** Use `WeakMap` to memoize expensive derived state computations based on Firebase object references to skip redundant calculation cycles without creating memory leaks.
+## 2024-05-12 - [Redundant O(P*R) Re-Renders in Sync Multi-State Stores]
+**Learning:** Found that when `app.js` listens to multiple state segments (`games`, `roomMeta`, `players`) synchronously updated by `firebase.js`, rapid successive synchronous DOM renders are triggered for complex screens like the dashboard.
+**Action:** Use a `WeakMap` bound to the main immutable object (e.g. `games[id]`) alongside reference checks for secondary states (e.g. `playersRef`) to cleanly memoize heavy derivation paths and bypass redundant processing during multi-event render storms.
