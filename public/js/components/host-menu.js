@@ -24,6 +24,14 @@ export function init() {
   // Close on backdrop click
   backdrop.addEventListener('click', hide);
 
+  // Close on escape key and handle focus return
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && overlay.style.display !== 'none') {
+      hide();
+      document.getElementById('btn-host-menu-trigger')?.focus();
+    }
+  });
+
   // Bind menu actions
   overlay.querySelectorAll('.host-menu-action').forEach((btn) => {
     btn.addEventListener('click', async () => {
@@ -67,7 +75,12 @@ export function toggle() {
 export function show() {
   init();
   const overlay = document.getElementById('host-menu-overlay');
-  if (overlay) overlay.style.display = 'block';
+  if (overlay) {
+    overlay.style.display = 'block';
+    requestAnimationFrame(() => {
+      overlay.querySelector('.host-menu-action')?.focus();
+    });
+  }
 }
 
 export function hide() {
