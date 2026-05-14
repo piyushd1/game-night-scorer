@@ -15,6 +15,10 @@ let _unsubGames = null;
 let _unsubMeta = null;
 let _unsubPlayers = null;
 
+// Bolt Optimization: Memoize O(P^2 * R) derivations
+// Firebase syncs trigger multiple synchronous renders.
+const _dashboardCache = new WeakMap();
+
 export function mount(container, params = {}) {
   const roomCode = params.roomCode || state.get('roomCode');
 
@@ -98,9 +102,6 @@ function _render(container, roomCode) {
   hostMenu.hide();
   hostMenu.renderTopBarActions(roomCode);
 
-  // Derive standings
-  const standings = gameModule.deriveStandings(totals, playerIds);
-
   // Progress calculation
   let getProgress;
   if (gameModule.winMode === 'highest_total') {
@@ -114,15 +115,35 @@ function _render(container, roomCode) {
     getProgress = (total) => Math.min(100, Math.round((total / threshold) * 100));
   }
 
-  // Round points per player — use game module's getRoundPoints for accuracy
-  const roundPoints = {};
-  playerIds.forEach((pid) => { roundPoints[pid] = []; });
-  rounds.forEach((rnd) => {
-    playerIds.forEach((pid) => {
-      roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
-    });
-  });
+  // Bolt Optimization: check cache for expensive round points & standings calculations
+  let standings, roundPoints;
+  const playersMap = state.get('players');
+  const cached = _dashboardCache.get(game);
 
+  // Note: Firebase watcher entirely replaces the `game` object (part of state `games`)
+  // so object identity checking is sufficient for cache invalidation for the game state itself.
+  // We also check playersMap to ensure we recalculate if player state changes (like names).
+  if (cached && cached.playersRef === playersMap) {
+    standings = cached.standings;
+    roundPoints = cached.roundPoints;
+  } else {
+    // Derive standings
+    standings = gameModule.deriveStandings(totals, playerIds);
+
+    // Round points per player — use game module's getRoundPoints for accuracy
+    roundPoints = {};
+    playerIds.forEach((pid) => { roundPoints[pid] = []; });
+    rounds.forEach((rnd) => {
+      playerIds.forEach((pid) => {
+        roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
+      });
+    });
+
+    // game must be an object here to be used as WeakMap key. Firebase objects are standard plain objects.
+    if (typeof game === 'object' && game !== null) {
+      _dashboardCache.set(game, { standings, roundPoints, playersRef: playersMap });
+    }
+  }
 
   let html = '';
 

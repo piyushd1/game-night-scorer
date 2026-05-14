@@ -10,3 +10,7 @@
 ## 2024-04-21 - [computeNightStats O(G*P*R) Recalculation on Render]
 **Learning:** Found that `computeNightStats` in `public/js/stats.js` runs a heavy O(Games * Players * Rounds) operation every time the Recap screen renders or state updates. Because Firebase state syncing in `public/js/firebase.js` completely replaces the `games` object reference on any update to the room, we can use a WeakMap keyed by the `games` object to safely memoize this expensive calculation.
 **Action:** Use `WeakMap` to memoize expensive derived state computations based on Firebase object references to skip redundant calculation cycles without creating memory leaks.
+
+## 2026-05-14 - [WeakMap Cache Invalidation Dependencies]
+**Learning:** When using `WeakMap` to memoize expensive computations derived from a mutable state object (like `game`), using just the object identity as the cache key is insufficient if the output also depends on external state that changes independently (like `playersMap` containing updated names). This leads to stale cache bugs where the UI won't update when the external state changes.
+**Action:** Always verify secondary data dependencies alongside the primary object reference when implementing caching. E.g. check `if (cached && cached.playersRef === playersMap)` before a cache hit.
