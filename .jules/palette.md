@@ -1,3 +1,7 @@
 ## 2026-04-18 - Semantic Tabs for Bottom Navigation
 **Learning:** Interactive elements like bottom navigation tabs should use semantic `<button>` elements with `role='tab'` instead of `<div>` to ensure screen readers properly announce them as interactive tabs rather than generic text blocks. Sighted keyboard users also need visible focus indicators, so when resetting native button styles with `outline: none`, a `:focus-visible` fallback must be provided.
 **Action:** When implementing custom navigation or tab components, ensure the container has `role="tablist"`, items use `<button>` tags with `role="tab"` and `aria-selected` attributes, non-semantic icons have `aria-hidden="true"`, and focus states are clearly visible via `:focus-visible`.
+
+## 2026-04-18 - Accessible Dialogs for Custom Overlays
+**Learning:** Custom overlay menus (like the host menu) must be treated as proper dialogs for screen reader and keyboard accessibility. Without `role="dialog"`, screen readers do not announce the context change. Without managing focus, keyboard users are left navigating elements beneath the visible overlay or stranded at the end of the document.
+**Action:** When implementing custom overlays or modals, always include `role="dialog"` and `aria-modal="true"`. Use JavaScript to save the `document.activeElement` before opening, shift focus to the first interactive element within the dialog using `requestAnimationFrame`, and restore focus to the saved element when the dialog is closed. Provide an `Escape` key listener to dismiss the overlay.
