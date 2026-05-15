@@ -10,3 +10,6 @@
 ## 2024-04-21 - [computeNightStats O(G*P*R) Recalculation on Render]
 **Learning:** Found that `computeNightStats` in `public/js/stats.js` runs a heavy O(Games * Players * Rounds) operation every time the Recap screen renders or state updates. Because Firebase state syncing in `public/js/firebase.js` completely replaces the `games` object reference on any update to the room, we can use a WeakMap keyed by the `games` object to safely memoize this expensive calculation.
 **Action:** Use `WeakMap` to memoize expensive derived state computations based on Firebase object references to skip redundant calculation cycles without creating memory leaks.
+## 2024-05-15 - [isHost Synchronous IO Bottleneck]
+**Learning:** Found that `isHost()` in `public/js/state.js` repeatedly called `localStorage.getItem` synchronously. Since `isHost()` is evaluated frequently in hot rendering loops across many UI components (e.g., when Firebase sync triggers state updates or the router navigates), this synchronous IO blocks the main thread.
+**Action:** Always memoize synchronous `localStorage` reads when the key depends on relatively stable variables (like `roomCode`) inside functions that are called frequently during UI rendering cycles.

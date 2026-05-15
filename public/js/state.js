@@ -37,12 +37,27 @@ function _emit(key, value, prev) {
 
 // ── Convenience getters ──
 
+let _cachedHostRoomCode = null;
+let _cachedHostKey = null;
+
+// Helper to clear cache if host key gets set after initial read
+export function clearHostCache() {
+  _cachedHostRoomCode = null;
+  _cachedHostKey = null;
+}
+
 export function isHost() {
   const roomCode = get('roomCode');
   if (!roomCode) return false;
-  const storedKey = localStorage.getItem(`gns_host_${roomCode}`);
+
+  // Bolt Optimization: Memoize localStorage read to avoid synchronous IO blocking hot render paths
+  if (_cachedHostRoomCode !== roomCode) {
+    _cachedHostRoomCode = roomCode;
+    _cachedHostKey = localStorage.getItem(`gns_host_${roomCode}`);
+  }
+
   const meta = get('roomMeta');
-  return storedKey && meta && storedKey === meta.hostKey;
+  return _cachedHostKey && meta && _cachedHostKey === meta.hostKey;
 }
 
 export function currentGame() {
