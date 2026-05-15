@@ -318,7 +318,7 @@ async function _submitRound(container, roomCode, initialGame, gameModule) {
 
   const btn = container.querySelector('#btn-submit-round');
   btn.disabled = true;
-  btn.innerHTML = '<div class="spinner mx-auto"></div>';
+  btn.innerHTML = '<span class="sr-only">Loading...</span><div class="spinner mx-auto"></div>';
 
   try {
     await fb.submitRound(roomCode, game.gameId, draft, newTotals, endResult.ended ? endResult : null);

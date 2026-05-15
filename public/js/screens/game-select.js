@@ -240,7 +240,7 @@ async function _startGame(container, roomCode) {
 
   const btn = container.querySelector('#btn-start');
   btn.disabled = true;
-  btn.innerHTML = '<div class="spinner mx-auto"></div>';
+  btn.innerHTML = '<span class="sr-only">Loading...</span><div class="spinner mx-auto"></div>';
 
   try {
     await fb.createGame(roomCode, _selectedGame, config, playerIds, snapshot);
