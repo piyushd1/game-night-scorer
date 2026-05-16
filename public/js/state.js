@@ -37,10 +37,23 @@ function _emit(key, value, prev) {
 
 // ── Convenience getters ──
 
+// Bolt Optimization: Cache localStorage reads to avoid synchronous disk I/O on every UI render cycle.
+const _hostKeyCache = new Map();
+
+export function clearHostCache(roomCode) {
+  _hostKeyCache.delete(roomCode);
+}
+
 export function isHost() {
   const roomCode = get('roomCode');
   if (!roomCode) return false;
-  const storedKey = localStorage.getItem(`gns_host_${roomCode}`);
+
+  let storedKey = _hostKeyCache.get(roomCode);
+  if (storedKey === undefined) {
+    storedKey = localStorage.getItem(`gns_host_${roomCode}`);
+    _hostKeyCache.set(roomCode, storedKey);
+  }
+
   const meta = get('roomMeta');
   return storedKey && meta && storedKey === meta.hostKey;
 }
