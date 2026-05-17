@@ -37,10 +37,29 @@ function _emit(key, value, prev) {
 
 // ── Convenience getters ──
 
+// Memoize the synchronous localStorage read for isHost to avoid blocking the main
+// thread during rapid, synchronized UI render cycles. This reduces an expensive
+// O(I/O) lookup into an O(1) in-memory check per invocation per room.
+const _hostCache = new Map();
+
+export function clearHostCache(roomCode) {
+  if (roomCode) {
+    _hostCache.delete(roomCode);
+  } else {
+    _hostCache.clear();
+  }
+}
+
 export function isHost() {
   const roomCode = get('roomCode');
   if (!roomCode) return false;
-  const storedKey = localStorage.getItem(`gns_host_${roomCode}`);
+
+  if (!_hostCache.has(roomCode)) {
+    const storedKey = localStorage.getItem(`gns_host_${roomCode}`);
+    _hostCache.set(roomCode, storedKey);
+  }
+
+  const storedKey = _hostCache.get(roomCode);
   const meta = get('roomMeta');
   return storedKey && meta && storedKey === meta.hostKey;
 }
