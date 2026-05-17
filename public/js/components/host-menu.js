@@ -22,7 +22,21 @@ export function init() {
   if (!overlay || !backdrop) return;
 
   // Close on backdrop click
-  backdrop.addEventListener('click', hide);
+  backdrop.addEventListener('click', () => {
+    hide();
+    const trigger = document.getElementById('btn-host-menu-trigger');
+    if (trigger) trigger.focus();
+  });
+
+  // Handle Escape key
+  document.addEventListener('keydown', (e) => {
+    const overlay = document.getElementById('host-menu-overlay');
+    if (overlay && overlay.style.display !== 'none' && e.key === 'Escape') {
+      hide();
+      const trigger = document.getElementById('btn-host-menu-trigger');
+      if (trigger) trigger.focus();
+    }
+  });
 
   // Bind menu actions
   overlay.querySelectorAll('.host-menu-action').forEach((btn) => {
@@ -67,7 +81,13 @@ export function toggle() {
 export function show() {
   init();
   const overlay = document.getElementById('host-menu-overlay');
-  if (overlay) overlay.style.display = 'block';
+  if (overlay) {
+    overlay.style.display = 'block';
+    requestAnimationFrame(() => {
+      const firstAction = overlay.querySelector('.host-menu-action');
+      if (firstAction) firstAction.focus();
+    });
+  }
 }
 
 export function hide() {
