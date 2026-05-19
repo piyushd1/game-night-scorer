@@ -71,6 +71,7 @@ export async function createRoom() {
 
   // Store host key locally
   localStorage.setItem(`gns_host_${roomCode}`, hostKey);
+  state.clearHostCache();
 
   return roomCode;
 }

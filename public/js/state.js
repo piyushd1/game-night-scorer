@@ -37,12 +37,32 @@ function _emit(key, value, prev) {
 
 // ── Convenience getters ──
 
+let _lastIsHostRoom = null;
+let _lastIsHostMetaKey = null;
+let _cachedIsHost = false;
+
+export function clearHostCache() {
+  _lastIsHostRoom = null;
+}
+
 export function isHost() {
   const roomCode = get('roomCode');
   if (!roomCode) return false;
-  const storedKey = localStorage.getItem(`gns_host_${roomCode}`);
+
   const meta = get('roomMeta');
-  return storedKey && meta && storedKey === meta.hostKey;
+  const metaKey = meta ? meta.hostKey : null;
+
+  if (_lastIsHostRoom === roomCode && _lastIsHostMetaKey === metaKey) {
+    return _cachedIsHost;
+  }
+
+  const storedKey = localStorage.getItem(`gns_host_${roomCode}`);
+  _cachedIsHost = !!(storedKey && meta && storedKey === meta.hostKey);
+
+  _lastIsHostRoom = roomCode;
+  _lastIsHostMetaKey = metaKey;
+
+  return _cachedIsHost;
 }
 
 export function currentGame() {
