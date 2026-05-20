@@ -37,10 +37,21 @@ function _emit(key, value, prev) {
 
 // ── Convenience getters ──
 
+// Cache localStorage read to prevent blocking synchronous I/O during rapid UI renders
+const _hostKeyCache = {};
+
+export function clearHostCache(roomCode) {
+  delete _hostKeyCache[roomCode];
+}
+
 export function isHost() {
   const roomCode = get('roomCode');
   if (!roomCode) return false;
-  const storedKey = localStorage.getItem(`gns_host_${roomCode}`);
+
+  if (_hostKeyCache[roomCode] === undefined) {
+    _hostKeyCache[roomCode] = localStorage.getItem(`gns_host_${roomCode}`);
+  }
+  const storedKey = _hostKeyCache[roomCode];
   const meta = get('roomMeta');
   return storedKey && meta && storedKey === meta.hostKey;
 }
