@@ -37,10 +37,25 @@ function _emit(key, value, prev) {
 
 // ── Convenience getters ──
 
+// Bolt Optimization: Memoize synchronous localStorage reads
+// isHost() is called frequently during UI rendering cycles. Caching this value
+// prevents redundant synchronous disk access, which improves rendering performance.
+const _hostCache = new Map();
+
+export function clearHostCache(roomCode) {
+  _hostCache.delete(roomCode);
+}
+
 export function isHost() {
   const roomCode = get('roomCode');
   if (!roomCode) return false;
-  const storedKey = localStorage.getItem(`gns_host_${roomCode}`);
+
+  let storedKey = _hostCache.get(roomCode);
+  if (storedKey === undefined) {
+    storedKey = localStorage.getItem(`gns_host_${roomCode}`);
+    _hostCache.set(roomCode, storedKey);
+  }
+
   const meta = get('roomMeta');
   return storedKey && meta && storedKey === meta.hostKey;
 }

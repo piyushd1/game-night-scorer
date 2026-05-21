@@ -35,8 +35,7 @@ export default {
     // Iterate the draft entries (active players only — inactive players aren't
     // rendered in the form post-P2 and aren't in the draft). The caller must
     // be among those entries, otherwise scoring is inconsistent.
-    for (const pid of Object.keys(draft.entries)) {
-      const entry = draft.entries[pid];
+    for (const entry of Object.values(draft.entries)) {
       if (!Number.isFinite(entry.cardTotal)) return { valid: false, error: 'Card total must be a number' };
       if (entry.cardTotal < 0) return { valid: false, error: 'Card totals cannot be negative' };
     }
@@ -55,7 +54,7 @@ export default {
 
     if (kamikaze) {
       // Kamikaze: caller gets 0, everyone else gets 50
-      for (const pid in entries) {
+      for (const pid of Object.keys(entries)) {
         if (pid === callerId) {
           newTotals[pid] = (newTotals[pid] || 0) + 0;
         } else {
@@ -65,8 +64,8 @@ export default {
     } else {
       // Find minimum card total - Bolt Optimization: Avoid multiple array allocations
       let minCardTotal = Infinity;
-      for (const pid in entries) {
-        const cardTotal = entries[pid].cardTotal || 0;
+      for (const entry of Object.values(entries)) {
+        const cardTotal = entry.cardTotal || 0;
         if (cardTotal < minCardTotal) {
           minCardTotal = cardTotal;
         }
@@ -75,8 +74,8 @@ export default {
       // Memoize the min card total for getRoundPoints
       minCardCache.set(roundData, minCardTotal);
 
-      for (const pid in entries) {
-        const cardTotal = entries[pid].cardTotal || 0;
+      for (const [pid, entry] of Object.entries(entries)) {
+        const cardTotal = entry.cardTotal || 0;
         if (pid === callerId) {
           // Caller: 0 if they have the min, else cardTotal + 10
           if (cardTotal === minCardTotal) {
@@ -147,8 +146,8 @@ export default {
     let minCardTotal = minCardCache.get(roundData);
     if (minCardTotal === undefined) {
       minCardTotal = Infinity;
-      for (const pid in entries) {
-        const ct = entries[pid].cardTotal || 0;
+      for (const entry of Object.values(entries)) {
+        const ct = entry.cardTotal || 0;
         if (ct < minCardTotal) minCardTotal = ct;
       }
       minCardCache.set(roundData, minCardTotal);

@@ -14,3 +14,9 @@
 ## 2024-05-02 - Layout Refactor: Fix Screen Scrolling and Sizing
 **Learning:** Overlapping uses of `min-h-[100dvh]` on both the `#app` wrapper and inner screens (`home.js`, `winner.js`), combined with static `.screen` padding (`padding-bottom: 80px`), caused redundant vertical scrollbars on layout components designed to fit perfectly into the viewport.
 **Action:** Changed `#app` to strictly `h-[100dvh]`, gave `.screen` a dynamic padding override `.no-nav` that disables the 80px bottom space when the router evaluates `bottom-nav` visibility, and converted internal screens to use `h-full` to respect the active container bounds.
+## 2024-04-28 - [Memoizing roundPoints in Dashboard]
+**Learning:** Found that `roundPoints` computation in `public/js/screens/dashboard.js` iterates over all rounds and players on every render. Because the dashboard re-renders frequently due to Firebase state syncs, this O(R*P) calculation causes unnecessary work and object allocation.
+**Action:** Use a `WeakMap` keyed by the Firebase `game.rounds` object reference (storing both the result and a strict-equality check on the `playerIds` array) to memoize the computation. This prevents stale cache bugs when different state trees update asynchronously while avoiding redundant O(R*P) work on every render.
+## 2024-05-18 - [isHost Synchronous localStorage Reads]
+**Learning:** Found that `isHost()` in `public/js/state.js` reads `localStorage` synchronously. Because this function is called frequently during UI rendering cycles (e.g., in `recap.js`, `dashboard.js`), reading from disk repeatedly blocks the main thread unnecessarily.
+**Action:** Always memoize synchronous `localStorage` reads in hot paths to prevent micro-stutters during UI rendering.
