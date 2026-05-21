@@ -145,24 +145,6 @@ export function computeNightStats(games, players) {
   return result;
 }
 
-function _playerName(pid, allGames, players) {
-  // Check players store first
-  if (players?.[pid]?.name) return players[pid].name;
-  // Fallback to snapshot from any game
-  for (const g of allGames) {
-    if (g.playerSnapshot?.[pid]?.name) return g.playerSnapshot[pid].name;
-  }
-  return pid;
-}
-
-function _playerAccent(pid, allGames, players) {
-  if (players?.[pid]?.accentIndex !== undefined) return players[pid].accentIndex;
-  for (const g of allGames) {
-    if (g.playerSnapshot?.[pid]?.accentIndex !== undefined) return g.playerSnapshot[pid].accentIndex;
-  }
-  return 0;
-}
-
 function _computeGameSpecificStats(game, gameModule, rounds, playerIds, snapshot, totals, standings) {
   const stats = {};
 
