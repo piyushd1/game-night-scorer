@@ -34,8 +34,8 @@ export function isConfigured() {
 
 function generateCode() {
   // 4-letter word + 2 digits (e.g. GAME42). Easier to share verbally
-  // than a random 6-char alphanumeric. Namespace is ~99,900 codes; createRoom
-  // handles collisions by retrying.
+  // than a random 6-char alphanumeric. createRoom handles collisions by
+  // retrying — namespace is ~96k codes.
   const array = new Uint32Array(2);
   crypto.getRandomValues(array);
   const word = WORDS[array[0] % WORDS.length];
