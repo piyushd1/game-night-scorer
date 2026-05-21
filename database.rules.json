@@ -1,0 +1,18 @@
+{
+  "rules": {
+    "rooms": {
+      "$roomCode": {
+        ".read": "$roomCode.matches(/^[A-HJ-NP-Z2-9]{6}$/)",
+        ".write": "$roomCode.matches(/^[A-HJ-NP-Z2-9]{6}$/)",
+        "meta": {
+          "hostKey": {
+            ".validate": "newData.isString() && (!data.exists() || newData.val() === data.val())"
+          },
+          "roomCode": {
+            ".validate": "newData.val() === $roomCode"
+          }
+        }
+      }
+    }
+  }
+}
