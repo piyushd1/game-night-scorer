@@ -76,7 +76,7 @@ export function mount(container) {
 
     const btn = container.querySelector('#btn-create');
     btn.disabled = true;
-    btn.innerHTML = '<div class="spinner mx-auto"></div>';
+    btn.innerHTML = '<div class="spinner mx-auto"></div><span class="sr-only">Loading...</span>';
 
     try {
       const roomCode = await fb.createRoom();
@@ -110,7 +110,7 @@ export function mount(container) {
 
     const btn = container.querySelector('#btn-join');
     btn.disabled = true;
-    btn.innerHTML = '<div class="spinner mx-auto"></div>';
+    btn.innerHTML = '<div class="spinner mx-auto"></div><span class="sr-only">Loading...</span>';
 
     try {
       const code = await fb.joinRoom(pin);
