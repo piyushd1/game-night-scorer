@@ -41,9 +41,6 @@ export function mount(container, params = {}) {
 
   container.innerHTML = `
     <div class="p-6 pb-32">
-      <!-- Current game card (shown when a game is active) -->
-      <div id="current-game-card" class="mb-6"></div>
-
       <!-- Room Code -->
       <div class="bg-surface-container-lowest border border-outline p-6 mb-6">
         <p class="font-mono text-[10px] uppercase tracking-widest text-outline mb-2">LOBBY PIN</p>
@@ -60,18 +57,21 @@ export function mount(container, params = {}) {
         </div>
       </div>
 
+      <!-- Current game card (shown when a game is active) -->
+      <div id="current-game-card" class="mb-6"></div>
+
       <!-- Host-only: Add Player -->
       <div id="host-controls" style="display:none">
         <h2 class="font-headline font-extrabold uppercase text-sm tracking-widest mb-4">PLAYERS</h2>
 
         <!-- Always-visible inline add. Mid-game adds are allowed; the new player joins the next game. -->
         <div id="add-player-row" class="flex gap-2 mb-2">
-          <label for="input-player-name" class="sr-only">Player name...</label>
+          <label for="input-player-name" class="sr-only">Add player</label>
           <input
             id="input-player-name"
             type="text"
             maxlength="12"
-            placeholder="Player name..."
+            placeholder="Add player"
             autocomplete="off"
             autocorrect="off"
             autocapitalize="characters"
@@ -316,9 +316,10 @@ function _startWatching(roomCode, container) {
     const addRow = container.querySelector('#add-player-row');
     if (addRow) addRow.style.display = isHost ? 'flex' : 'none';
     _renderPlayers(container, players, isHost, roomCode, isPlaying);
+    _showSuggestions(container, roomCode);
 
     // Stats tracking
-    const trackStats = meta.trackStats || false;
+    const trackStats = meta.trackStats !== false;
     const games = data.games || {};
     const hasPlayedGames = Object.values(games).some((g) => g.rounds && Object.keys(g.rounds).length > 0);
 
@@ -466,7 +467,7 @@ function _showSuggestions(container, roomCode) {
   if (!input || !suggestionsEl) return;
 
   const existing = new Set(Object.values(state.get('players') || {}).map((p) => p.name));
-  const matches = _getKnownNames().filter((n) => !existing.has(n)).slice(0, 7);
+  const matches = _getKnownNames().filter((n) => !existing.has(n)).slice(0, 10);
 
   if (matches.length === 0) {
     suggestionsEl.innerHTML = '';

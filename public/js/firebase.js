@@ -75,6 +75,7 @@ export async function createRoom() {
     hostKey,
     status: 'lobby',
     activeGameId: null,
+    trackStats: true,
     createdAt: now,
     updatedAt: now,
   };
