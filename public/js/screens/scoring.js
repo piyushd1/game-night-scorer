@@ -326,8 +326,20 @@ async function _submitRound(container, roomCode, initialGame, gameModule) {
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner mx-auto"></div>';
 
+  // Firebase RTDB silently queues writes when offline — the await hangs until
+  // reconnected. Watch connection state so the user knows to wait, not retry.
+  fb.watchConnection((connected) => {
+    if (!btn.isConnected) return; // btn removed from DOM (navigated away)
+    if (!connected) {
+      btn.innerHTML = '<span class="font-mono text-[10px] uppercase tracking-widest">Waiting for connection…</span>';
+    } else {
+      btn.innerHTML = '<div class="spinner mx-auto"></div>';
+    }
+  });
+
   try {
-    await fb.submitRound(roomCode, game.gameId, draft, newTotals, endResult.ended ? endResult : null);
+    await fb.submitRound(roomCode, game.gameId, rounds.length, draft, newTotals, endResult.ended ? endResult : null);
+    fb.unwatchConnection();
 
     if (endResult.ended && endResult.winner) {
       router.navigate('winner', { roomCode });
@@ -340,6 +352,7 @@ async function _submitRound(container, roomCode, initialGame, gameModule) {
       router.navigate('dashboard', { roomCode });
     }
   } catch (e) {
+    fb.unwatchConnection();
     console.error('Submit round failed:', e);
     toast.show('Submit failed');
     btn.disabled = false;

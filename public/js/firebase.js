@@ -8,6 +8,7 @@ import { WORDS } from './wordlist.js';
 
 let db = null;
 let _roomUnsub = null;
+let _connUnsub = null;
 
 // ── Init ──
 
@@ -28,6 +29,10 @@ export function initFirebase(config) {
 
 export function isConfigured() {
   return db !== null;
+}
+
+export function isWatchingRoom() {
+  return _roomUnsub !== null;
 }
 
 // ── Room Code Generation ──
@@ -142,6 +147,23 @@ export function unwatchRoom() {
   }
 }
 
+// ── Connection State ──
+
+export function watchConnection(cb) {
+  if (!db) return;
+  unwatchConnection();
+  const ref = db.ref('.info/connected');
+  const handler = ref.on('value', (snap) => cb(snap.val() === true));
+  _connUnsub = () => ref.off('value', handler);
+}
+
+export function unwatchConnection() {
+  if (_connUnsub) {
+    _connUnsub();
+    _connUnsub = null;
+  }
+}
+
 // ── Player Management ──
 
 export async function addPlayer(roomCode, name, seatOrder, accentIndex) {
@@ -203,14 +225,9 @@ export async function createGame(roomCode, type, config, playerIds, playerSnapsh
   return gameId;
 }
 
-export async function submitRound(roomCode, gameId, roundData, newTotals, endResult) {
-  if (!db) return;
+export async function submitRound(roomCode, gameId, roundIndex, roundData, newTotals, endResult) {
+  if (!db) throw new Error('Firebase not initialized');
 
-
-  const game = state.get('games')?.[gameId];
-  if (!game) return;
-
-  const roundIndex = Object.keys(game.rounds || {}).length;
   const updates = {};
 
   updates[`rooms/${roomCode}/games/${gameId}/rounds/${roundIndex}`] = roundData;

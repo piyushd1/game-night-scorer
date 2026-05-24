@@ -104,7 +104,9 @@ export function mount(container, params = {}) {
   if (!state.get('roomCode')) {
     state.set('roomCode', roomCode);
   }
-  if (!state.get('roomMeta')) {
+  // Guard on the actual watcher, not roomMeta — cache hydration sets roomMeta on
+  // page load which would otherwise skip watchRoom entirely after a refresh.
+  if (!fb.isWatchingRoom()) {
     fb.watchRoom(roomCode, () => {});
   }
 
@@ -477,13 +479,13 @@ function _renderFlip7HostRow(standing, playerData, roundHistory) {
   const color = ACCENT_COLORS[playerData.accentIndex || 0];
   const name = escapeHTML(playerData.name || pid);
   const rankLabel = rank <= 3 ? ['1ST', '2ND', '3RD'][rank - 1] : `${rank}TH`;
-  const bgClass = rank % 2 === 0 ? 'bg-surface-container-lowest' : 'bg-surface-container-high/20';
+  const bgClass = 'bg-surface-container-lowest';
 
   const draft = _flip7Draft[pid];
   const hasDraft = draft && (draft.numbers.size > 0 || draft.actions.size > 0 || draft.x2);
 
   const roundChips = roundHistory.map((pts) =>
-    `<span class="inline-block font-mono text-[9px] bg-surface-container-low border border-outline-variant px-1 py-0.5 text-outline">${pts >= 0 ? '+' : ''}${pts}</span>`
+    `<span class="inline-block font-mono text-sm bg-surface-container-low border border-outline-variant px-1.5 py-0.5 text-on-surface">${pts >= 0 ? '+' : ''}${pts}</span>`
   ).join('');
 
   let draftChip = '';
@@ -875,7 +877,7 @@ async function _confirmFlip7Round(container, roomCode, initialGame, gameModule) 
   if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner mx-auto"></div>'; }
 
   try {
-    await fb.submitRound(roomCode, game.gameId, draft, newTotals, endResult.ended ? endResult : null);
+    await fb.submitRound(roomCode, game.gameId, rounds.length, draft, newTotals, endResult.ended ? endResult : null);
 
     if (endResult.ended && endResult.winner) {
       router.navigate('winner', { roomCode });
