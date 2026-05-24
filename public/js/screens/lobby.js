@@ -85,12 +85,7 @@ export function mount(container, params = {}) {
       </div>
 
       <!-- Viewer label -->
-      <div id="viewer-label" class="mb-4" style="display:none">
-        <div class="bg-surface-container-high border border-outline p-4 text-center">
-          <p class="font-mono text-[10px] uppercase tracking-widest text-outline">SPECTATOR MODE</p>
-          <p class="font-body text-sm text-on-surface-variant mt-1">Waiting for the host to start a game...</p>
-        </div>
-      </div>
+      <div id="viewer-label" class="mb-4" style="display:none"></div>
 
       <!-- Player List -->
       <div id="player-list" class="flex flex-col gap-1"></div>
@@ -282,14 +277,28 @@ function _startWatching(roomCode, container) {
 
     // Show/hide host controls
     container.querySelector('#host-controls').style.display = isHost ? 'block' : 'none';
-    container.querySelector('#viewer-label').style.display = isHost ? 'none' : 'block';
-    container.querySelector('#start-section').style.display = isHost ? 'block' : 'none';
-
-    // If game is active and viewer just joined, go to dashboard
-    if (!isHost && meta.status === 'playing' && meta.activeGameId) {
-      router.navigate('dashboard', { roomCode });
-      return;
+    const viewerLabelEl = container.querySelector('#viewer-label');
+    if (viewerLabelEl) {
+      if (isHost) {
+        viewerLabelEl.style.display = 'none';
+      } else {
+        viewerLabelEl.style.display = 'block';
+        const isPlaying = meta.status === 'playing' && meta.activeGameId;
+        viewerLabelEl.innerHTML = isPlaying
+          ? `<button id="btn-go-to-game" class="btn-primary w-full flex items-center justify-center gap-2">
+               <span aria-hidden="true" class="material-symbols-outlined text-lg">sports_esports</span>
+               GO TO GAME
+             </button>`
+          : `<div class="bg-surface-container-high border border-outline p-4 text-center">
+               <p class="font-mono text-[10px] uppercase tracking-widest text-outline">SPECTATOR MODE</p>
+               <p class="font-body text-sm text-on-surface-variant mt-1">Waiting for the host to start a game...</p>
+             </div>`;
+        viewerLabelEl.querySelector('#btn-go-to-game')?.addEventListener('click', () => {
+          router.navigate('dashboard', { roomCode });
+        });
+      }
     }
+    container.querySelector('#start-section').style.display = isHost ? 'block' : 'none';
 
     // Current game card
     const gameCardEl = container.querySelector('#current-game-card');
