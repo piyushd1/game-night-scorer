@@ -215,6 +215,7 @@ export async function submitRound(roomCode, gameId, roundData, newTotals, endRes
 
   updates[`rooms/${roomCode}/games/${gameId}/rounds/${roundIndex}`] = roundData;
   updates[`rooms/${roomCode}/games/${gameId}/totals`] = newTotals;
+  updates[`rooms/${roomCode}/games/${gameId}/liveTotals`] = null; // clear live preview on commit
   updates[`rooms/${roomCode}/meta/updatedAt`] = Date.now();
 
   if (endResult) {
@@ -258,6 +259,20 @@ export async function undoLastRound(roomCode, gameId, newTotals, prevStatus, ove
   await db.ref().update(updates);
 }
 
+export async function updateLiveTotals(roomCode, gameId, liveTotals) {
+  if (!db) return;
+  await db.ref(`rooms/${roomCode}/games/${gameId}/liveTotals`).set(liveTotals);
+}
+
+export async function adjustTotals(roomCode, gameId, newTotals) {
+  if (!db) return;
+  await db.ref().update({
+    [`rooms/${roomCode}/games/${gameId}/totals`]: newTotals,
+    [`rooms/${roomCode}/games/${gameId}/liveTotals`]: null,
+    [`rooms/${roomCode}/meta/updatedAt`]: Date.now(),
+  });
+}
+
 export async function setRoomStatus(roomCode, status) {
   if (!db) return;
   await db.ref(`rooms/${roomCode}/meta`).update({ status, updatedAt: Date.now() });
@@ -284,6 +299,19 @@ export async function submitGameAbandon(roomCode, gameId) {
     winner: null,
     finishedAt: Date.now(),
   });
+}
+
+export async function patchLastRoundMulti(roomCode, gameId, roundKey, pidEntries, newTotals) {
+  if (!db) return;
+  const updates = {
+    [`rooms/${roomCode}/games/${gameId}/totals`]: newTotals,
+    [`rooms/${roomCode}/games/${gameId}/liveTotals`]: null,
+    [`rooms/${roomCode}/meta/updatedAt`]: Date.now(),
+  };
+  Object.entries(pidEntries).forEach(([pid, entry]) => {
+    updates[`rooms/${roomCode}/games/${gameId}/rounds/${roundKey}/entries/${pid}`] = entry;
+  });
+  await db.ref().update(updates);
 }
 
 // ── Night Lifecycle ──

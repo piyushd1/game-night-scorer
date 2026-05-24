@@ -32,6 +32,12 @@ let _flip7DrawerPlayerId = null; // Which player's drawer is currently open
 let _flip7Grayscale = false; // false = colour (default); true = grayscale (toggle hidden for now)
 let _flip7DragMode = false; // Drag-to-rearrange mode for the card grid
 
+// Edit scores overlay (body-level, survives _render() calls)
+let _editScoresEl = null;
+let _editScoresMode = false; // When true, tapping a player row opens adjust drawer instead of card drawer
+let _editAdjustments = {}; // { [pid]: newEntry } — buffered until SAVE is clicked
+let _editLastRoundKey = null; // round key captured when edit mode is entered
+
 // Grayscale spritesheet: converted once via canvas, reused across all drawer opens.
 let _flip7SpriteSrc = '/images/flip7-cards.png';
 
@@ -72,12 +78,18 @@ export function mount(container, params = {}) {
   // Kick off grayscale spritesheet conversion as early as possible
   _initGrayscaleSprite();
 
-  // Create the Flip 7 card drawer overlay (body-level so _render() can't overwrite it)
+  // Create body-level overlays so _render() can't overwrite them
   _flip7DrawerEl = document.createElement('div');
   _flip7DrawerEl.id = 'flip7-card-drawer';
   _flip7DrawerEl.className = 'fixed inset-0 z-50 flex items-end';
   _flip7DrawerEl.style.display = 'none';
   document.body.appendChild(_flip7DrawerEl);
+
+  _editScoresEl = document.createElement('div');
+  _editScoresEl.id = 'edit-scores-overlay';
+  _editScoresEl.className = 'fixed inset-0 z-50 flex items-end';
+  _editScoresEl.style.display = 'none';
+  document.body.appendChild(_editScoresEl);
 
   // Watch for state changes
   const renderHandler = () => _render(container, roomCode);
@@ -105,15 +117,22 @@ export function unmount() {
   if (_unsubPlayers) _unsubPlayers();
   _unsubPlayers = null;
 
-  // Remove the Flip 7 drawer from the DOM (restore scroll if it was open)
+  // Remove body-level overlays and restore scroll
   if (_flip7DrawerEl) {
     _flip7DrawerEl.remove();
     _flip7DrawerEl = null;
-    document.body.style.overflow = '';
   }
+  if (_editScoresEl) {
+    _editScoresEl.remove();
+    _editScoresEl = null;
+  }
+  document.body.style.overflow = '';
   _flip7Draft = {};
   _flip7RoundCount = -1;
   _flip7DrawerPlayerId = null;
+  _editScoresMode = false;
+  _editAdjustments = {};
+  _editLastRoundKey = null;
 }
 
 function _render(container, roomCode) {
@@ -146,6 +165,22 @@ function _render(container, roomCode) {
   const rounds = game.rounds ? Object.values(game.rounds) : [];
   const playerIds = game.playerIds || [];
 
+  // For Flip 7, show live totals (committed + in-progress draft) if the host
+  // has pushed any scores mid-round. Falls back to committed totals.
+  let displayTotals = (game.type === 'flip7' && game.liveTotals) ? game.liveTotals : totals;
+
+  // While in edit mode with buffered adjustments, show preview totals locally
+  if (_editScoresMode && rounds.length > 0 && Object.keys(_editAdjustments).length > 0) {
+    const patchedRounds = rounds.map((rnd, i) =>
+      i === rounds.length - 1
+        ? { ...rnd, entries: { ...(rnd.entries || {}), ..._editAdjustments } }
+        : rnd
+    );
+    let preview = Object.fromEntries(playerIds.map((id) => [id, 0]));
+    patchedRounds.forEach((rnd) => { preview = gameModule.applyRound(preview, rnd, game); });
+    displayTotals = preview;
+  }
+
   // Title
   document.getElementById('top-bar-title').textContent = gameModule.label.toUpperCase();
 
@@ -153,8 +188,8 @@ function _render(container, roomCode) {
   hostMenu.hide();
   hostMenu.renderTopBarActions(roomCode);
 
-  // Derive standings
-  const standings = gameModule.deriveStandings(totals, playerIds);
+  // Derive standings from live totals so the leaderboard reflects in-progress scores
+  const standings = gameModule.deriveStandings(displayTotals, playerIds);
 
   // Progress calculation
   let getProgress;
@@ -276,17 +311,29 @@ function _render(container, roomCode) {
     if (isFlip7Host) {
       html += `
         <div class="flex gap-2 mt-6">
-          <button id="btn-undo" title="${undoTitle}" aria-label="${undoTitle}"
-            class="bg-surface-container-lowest border border-outline py-3 px-4 text-sm font-headline font-bold uppercase tracking-widest flex items-center justify-center gap-1 hover:bg-surface-container-high transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-            ${undoDisabled ? 'disabled' : ''}>
-            <span class="material-symbols-outlined text-sm" aria-hidden="true">undo</span>
-            UNDO
-          </button>
-          <button id="btn-confirm-round"
-            class="flex-1 btn-primary flex items-center justify-center gap-2">
-            CONFIRM ROUND
-            <span class="material-symbols-outlined text-lg" aria-hidden="true">check</span>
-          </button>
+          ${_editScoresMode ? `
+            <button id="btn-edit-cancel"
+              class="flex-1 bg-surface-container-lowest border border-outline py-3 font-headline font-bold text-sm uppercase tracking-widest flex items-center justify-center transition-colors hover:bg-surface-container-high">
+              CANCEL
+            </button>
+            <button id="btn-edit-save"
+              class="flex-1 btn-primary flex items-center justify-center gap-2">
+              SAVE
+              <span class="material-symbols-outlined text-lg" aria-hidden="true">check</span>
+            </button>
+          ` : `
+            <button id="btn-edit-scores"
+              aria-label="Edit scores" title="Edit scores"
+              class="shrink-0 border border-outline flex items-center justify-center transition-colors"
+              style="width:3.25rem;">
+              <span class="material-symbols-outlined text-lg" aria-hidden="true">edit</span>
+            </button>
+            <button id="btn-confirm-round"
+              class="flex-1 btn-primary flex items-center justify-center gap-2">
+              CONFIRM ROUND
+              <span class="material-symbols-outlined text-lg" aria-hidden="true">check</span>
+            </button>
+          `}
         </div>
       `;
     } else {
@@ -310,10 +357,62 @@ function _render(container, roomCode) {
     content.querySelector('#btn-undo')?.addEventListener('click', () => _undoRound(roomCode, game, gameModule));
 
     if (isFlip7Host) {
-      // Open drawer when a player row is tapped
+      content.querySelector('#btn-edit-scores')?.addEventListener('click', () => {
+        if (rounds.length === 0) {
+          toast.show('No rounds to edit yet');
+          return;
+        }
+        const roundKeys = game.rounds ? Object.keys(game.rounds) : [];
+        _editLastRoundKey = roundKeys[roundKeys.length - 1] || null;
+        _editAdjustments = {};
+        _editScoresMode = true;
+        _render(container, roomCode);
+      });
+
+      const exitEditMode = () => {
+        _editAdjustments = {};
+        _editScoresMode = false;
+        _render(container, roomCode);
+      };
+      content.querySelector('#btn-edit-cancel')?.addEventListener('click', exitEditMode);
+
+      content.querySelector('#btn-edit-save')?.addEventListener('click', async () => {
+        if (Object.keys(_editAdjustments).length === 0) { exitEditMode(); return; }
+        const patchedRounds = rounds.map((rnd, i) =>
+          i === rounds.length - 1
+            ? { ...rnd, entries: { ...(rnd.entries || {}), ..._editAdjustments } }
+            : rnd
+        );
+        let newTotals = Object.fromEntries(playerIds.map((id) => [id, 0]));
+        patchedRounds.forEach((rnd) => { newTotals = gameModule.applyRound(newTotals, rnd, game); });
+        const saveBtn = content.querySelector('#btn-edit-save');
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<div class="spinner mx-auto"></div>';
+        // Snapshot and clear state before the await — the Firebase listener will fire
+        // during the write and call _render(); it must see the cleared state so it
+        // renders the normal button row, not a second edit-mode render.
+        const pendingAdjustments = { ..._editAdjustments };
+        _editAdjustments = {};
+        _editScoresMode = false;
+        try {
+          await fb.patchLastRoundMulti(roomCode, game.gameId, _editLastRoundKey, pendingAdjustments, newTotals);
+        } catch (e) {
+          console.error('Save failed:', e);
+          toast.show('Save failed');
+          _editAdjustments = pendingAdjustments;
+          _editScoresMode = true;
+          _render(container, roomCode);
+        }
+      });
+
+      // Open card drawer or adjust drawer depending on mode
       content.querySelectorAll('.flip7-player-row').forEach((btn) => {
         btn.addEventListener('click', () => {
-          _openFlip7Drawer(container, roomCode, btn.dataset.playerId, snapshot, game);
+          if (_editScoresMode) {
+            _openAdjustDrawer(container, roomCode, game, btn.dataset.playerId, snapshot);
+          } else {
+            _openFlip7Drawer(container, roomCode, btn.dataset.playerId, snapshot, game);
+          }
         });
       });
 
@@ -363,12 +462,11 @@ function _renderFlip7HostRow(standing, playerData, roundHistory) {
           <div class="flex gap-1 mt-1 flex-wrap items-center">
             ${roundChips}
             ${draftChip}
-            ${!hasDraft ? `<span class="font-mono text-[9px] text-outline">TAP TO SCORE</span>` : ''}
+            ${_editScoresMode ? `<span class="font-mono text-[9px] text-outline">TAP TO EDIT</span>` : (!hasDraft ? `<span class="font-mono text-[9px] text-outline">TAP TO SCORE</span>` : '')}
           </div>
         </div>
-        <div class="text-right shrink-0 flex items-center gap-2">
+        <div class="text-right shrink-0">
           <p class="font-mono text-2xl font-bold ${rank === 1 ? 'text-secondary' : ''}">${total}</p>
-          <span class="material-symbols-outlined text-sm text-outline-variant" aria-hidden="true">edit</span>
         </div>
       </div>
     </button>
@@ -385,6 +483,30 @@ function _computeFlip7Score(draft) {
   const actionSum = actions.reduce((s, n) => s + n, 0);
   const subtotal = (numberSum + actionSum) * (draft.x2 ? 2 : 1);
   return { basePoints: subtotal, flip7: numbers.length === 7 };
+}
+
+// ── Flip 7 live totals ──
+
+async function _pushLiveTotals(roomCode, game) {
+  const playerIds = game.playerIds || [];
+  const committedTotals = game.totals || {};
+  const playersMap = state.get('players') || {};
+  const liveTotals = {};
+  playerIds.forEach((pid) => {
+    const committed = committedTotals[pid] || 0;
+    if (playersMap[pid]?.isActive === false) {
+      liveTotals[pid] = committed;
+    } else {
+      const draft = _flip7Draft[pid];
+      if (draft) {
+        const { basePoints, flip7 } = _computeFlip7Score(draft);
+        liveTotals[pid] = committed + basePoints + (flip7 ? 15 : 0);
+      } else {
+        liveTotals[pid] = committed;
+      }
+    }
+  });
+  await fb.updateLiveTotals(roomCode, game.gameId, liveTotals);
 }
 
 // ── Flip 7 card drawer ──
@@ -556,6 +678,8 @@ function _bindDrawerEvents(container, roomCode, playerId) {
   if (!draft) return;
 
   _flip7DrawerEl.querySelector('#flip7-drawer-backdrop')?.addEventListener('click', () => {
+    const game = state.currentGame();
+    if (game) _pushLiveTotals(roomCode, game).catch(() => {});
     _closeFlip7Drawer();
     _render(container, roomCode);
   });
@@ -720,6 +844,103 @@ async function _confirmFlip7Round(container, roomCode, initialGame, gameModule) 
       btn.innerHTML = 'CONFIRM ROUND <span aria-hidden="true" class="material-symbols-outlined text-lg">check</span>';
     }
   }
+}
+
+// ── Single-player score adjust drawer ──
+
+function _openAdjustDrawer(container, roomCode, game, pid, snapshot) {
+  if (!_editScoresEl) return;
+
+  const rounds = game.rounds ? Object.values(game.rounds) : [];
+  if (rounds.length === 0) {
+    toast.show('No rounds to edit yet');
+    return;
+  }
+
+  const lastRound = rounds[rounds.length - 1];
+  // Use already-buffered adjustment for this player if they've been edited this session
+  const currentEntry = _editAdjustments[pid] || lastRound.entries?.[pid] || { basePoints: 0, flip7: false };
+  const currentRoundPts = (currentEntry.basePoints || 0) + (currentEntry.flip7 ? 15 : 0);
+
+  const p = snapshot[pid] || {};
+  const color = ACCENT_COLORS[p.accentIndex || 0];
+  const name = escapeHTML(p.name || pid);
+  const total = (game.totals || {})[pid] || 0;
+
+  _editScoresEl.innerHTML = `
+    <div id="adjust-backdrop" class="absolute inset-0 bg-black/50"></div>
+    <div class="relative w-full bg-surface-container-lowest border-t-2 border-outline">
+      <div class="h-[3px]" style="background:${color}"></div>
+      <div class="flex justify-center pt-3 pb-1">
+        <div class="w-10 h-1 rounded-full bg-outline-variant"></div>
+      </div>
+      <div class="px-4 pb-3 border-b border-outline-variant">
+        <p class="font-headline font-bold text-base uppercase">${name}</p>
+        <p class="font-mono text-[10px] text-outline">${total} PTS TOTAL · LAST ROUND: ${currentRoundPts >= 0 ? '+' : ''}${currentRoundPts}</p>
+      </div>
+      <div class="p-4 flex items-center gap-3">
+        <div class="flex font-mono text-xs uppercase shrink-0">
+          <button type="button" id="adj-add-btn"
+            class="px-4 py-2 border border-outline transition-colors"
+            style="background:#000;color:#fff;border-color:#000">+ADD</button>
+          <button type="button" id="adj-sub-btn"
+            class="px-4 py-2 border border-outline border-l-0 text-outline transition-colors">−SUB</button>
+        </div>
+        <input type="number" id="adj-amount-input" inputmode="numeric"
+          class="score-input flex-1" placeholder="0" min="0">
+      </div>
+      <div class="px-4 pb-6 flex gap-2">
+        <button id="adj-cancel-btn" class="flex-1 bg-surface-container-lowest border border-outline py-3 font-mono text-xs uppercase tracking-widest hover:bg-surface-container-high transition-colors">CANCEL</button>
+        <button id="adj-apply-btn" class="flex-1 btn-primary">APPLY</button>
+      </div>
+    </div>
+  `;
+
+  _editScoresEl.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  setTimeout(() => _editScoresEl.querySelector('#adj-amount-input')?.focus(), 50);
+
+  let isAdd = true;
+  const addBtn = _editScoresEl.querySelector('#adj-add-btn');
+  const subBtn = _editScoresEl.querySelector('#adj-sub-btn');
+
+  const setOp = (add) => {
+    isAdd = add;
+    addBtn.style.background = add ? '#000' : '';
+    addBtn.style.color = add ? '#fff' : '';
+    addBtn.style.borderColor = add ? '#000' : '';
+    subBtn.style.background = add ? '' : '#000';
+    subBtn.style.color = add ? '' : '#fff';
+    subBtn.style.borderColor = add ? '' : '#000';
+  };
+
+  addBtn.addEventListener('click', () => setOp(true));
+  subBtn.addEventListener('click', () => setOp(false));
+
+  _editScoresEl.querySelector('#adjust-backdrop')?.addEventListener('click', _closeAdjustDrawer);
+  _editScoresEl.querySelector('#adj-cancel-btn')?.addEventListener('click', _closeAdjustDrawer);
+
+  _editScoresEl.querySelector('#adj-apply-btn')?.addEventListener('click', () => {
+    const amount = parseInt(_editScoresEl.querySelector('#adj-amount-input')?.value) || 0;
+    if (amount === 0) { _closeAdjustDrawer(); return; }
+
+    const adjustment = isAdd ? amount : -amount;
+    const newBasePoints = Math.max(0, (currentEntry.basePoints || 0) + adjustment);
+    const newEntry = { ...currentEntry, basePoints: newBasePoints };
+
+    // Buffer the adjustment — written to Firebase only when SAVE is clicked
+    _editAdjustments[pid] = newEntry;
+    _closeAdjustDrawer();
+    _render(container, roomCode);
+  });
+}
+
+function _closeAdjustDrawer() {
+  if (!_editScoresEl) return;
+  _editScoresEl.style.display = 'none';
+  _editScoresEl.innerHTML = '';
+  document.body.style.overflow = '';
 }
 
 // ── Undo last round ──
