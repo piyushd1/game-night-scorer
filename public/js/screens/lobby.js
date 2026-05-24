@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════
 
 import * as state from '../state.js';
+import { getGame } from '../games/registry.js';
 import * as fb from '../firebase.js';
 import * as router from '../router.js';
 import * as toast from '../components/toast.js';
@@ -40,6 +41,9 @@ export function mount(container, params = {}) {
 
   container.innerHTML = `
     <div class="p-6 pb-32">
+      <!-- Current game card (shown when a game is active) -->
+      <div id="current-game-card" class="mb-6"></div>
+
       <!-- Room Code -->
       <div class="bg-surface-container-lowest border border-outline p-6 mb-6">
         <p class="font-mono text-[10px] uppercase tracking-widest text-outline mb-2">LOBBY PIN</p>
@@ -61,7 +65,7 @@ export function mount(container, params = {}) {
         <h2 class="font-headline font-extrabold uppercase text-sm tracking-widest mb-4">PLAYERS</h2>
 
         <!-- Always-visible inline add. Mid-game adds are allowed; the new player joins the next game. -->
-        <div id="add-player-row" class="flex gap-2 mb-4">
+        <div id="add-player-row" class="flex gap-2 mb-2">
           <label for="input-player-name" class="sr-only">Player name...</label>
           <input
             id="input-player-name"
@@ -77,6 +81,7 @@ export function mount(container, params = {}) {
             <span class="material-symbols-outlined text-lg" aria-hidden="true">add</span>
           </button>
         </div>
+        <div id="name-suggestions" class="mb-4"></div>
       </div>
 
       <!-- Viewer label -->
@@ -158,9 +163,11 @@ function _bindEvents(container, roomCode) {
 
   // Add player — inline always-visible
   container.querySelector('#btn-confirm-add')?.addEventListener('click', () => _addPlayer(container, roomCode));
-  container.querySelector('#input-player-name')?.addEventListener('keydown', (e) => {
+  const nameInput = container.querySelector('#input-player-name');
+  nameInput?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') _addPlayer(container, roomCode);
   });
+  _showSuggestions(container, roomCode);
 
   // Start game
   container.querySelector('#btn-start-game')?.addEventListener('click', () => {
@@ -242,8 +249,10 @@ async function _addPlayer(container, roomCode) {
 
   try {
     const newPlayerId = await fb.addPlayer(roomCode, name, count, accentIndex);
+    _savePlayerName(nameUpper);
     input.value = '';
     input.focus();
+    _showSuggestions(container, roomCode);
 
     // If a game is in progress, add the player to that game too
     const meta = state.get('roomMeta') || {};
@@ -280,6 +289,24 @@ function _startWatching(roomCode, container) {
     if (!isHost && meta.status === 'playing' && meta.activeGameId) {
       router.navigate('dashboard', { roomCode });
       return;
+    }
+
+    // Current game card
+    const gameCardEl = container.querySelector('#current-game-card');
+    if (gameCardEl) {
+      const activeGame = state.currentGame();
+      const gameDef = activeGame ? getGame(activeGame.type) : null;
+      if (gameDef && meta.status === 'playing') {
+        gameCardEl.innerHTML = `
+          <div class="bg-surface-container-lowest border border-outline p-6">
+            <span class="font-mono text-[10px] text-outline tracking-widest uppercase block mb-3">${gameDef.minPlayers}–${gameDef.maxPlayers} PLAYERS / ${gameDef.winMode === 'highest_total' ? 'HIGHEST WINS' : 'LOWEST WINS'}</span>
+            <h3 class="font-headline font-black text-3xl uppercase tracking-tighter mb-2">${escapeHTML(gameDef.label)}</h3>
+            <p class="text-on-surface-variant text-sm leading-relaxed">${escapeHTML(gameDef.description)}</p>
+          </div>
+        `;
+      } else {
+        gameCardEl.innerHTML = '';
+      }
     }
 
     // Render player list. Mid-game: Add is allowed (new player joins the
@@ -417,4 +444,48 @@ function _renderPlayers(container, players, isHost, roomCode, isPlaying = false)
       });
     });
   }
+}
+
+// ── Player name memory ──
+
+const _NAMES_KEY = 'gns_player_names';
+
+function _getKnownNames() {
+  try { return JSON.parse(localStorage.getItem(_NAMES_KEY) || '[]'); } catch { return []; }
+}
+
+function _savePlayerName(name) {
+  const names = _getKnownNames().filter((n) => n !== name);
+  names.unshift(name);
+  localStorage.setItem(_NAMES_KEY, JSON.stringify(names.slice(0, 30)));
+}
+
+function _showSuggestions(container, roomCode) {
+  const input = container.querySelector('#input-player-name');
+  const suggestionsEl = container.querySelector('#name-suggestions');
+  if (!input || !suggestionsEl) return;
+
+  const existing = new Set(Object.values(state.get('players') || {}).map((p) => p.name));
+  const matches = _getKnownNames().filter((n) => !existing.has(n)).slice(0, 7);
+
+  if (matches.length === 0) {
+    suggestionsEl.innerHTML = '';
+    return;
+  }
+
+  suggestionsEl.innerHTML = `
+    <span class="font-mono text-[10px] uppercase tracking-widest text-outline self-center mr-1">Quick add:</span>
+    ${matches.map((n) => `
+      <button class="suggestion-chip font-mono text-[10px] uppercase tracking-widest border border-outline px-2 py-1 hover:bg-surface-container-high transition-colors">
+        ${escapeHTML(n)}
+      </button>
+    `).join('')}
+  `;
+
+  suggestionsEl.querySelectorAll('.suggestion-chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      input.value = chip.textContent.trim();
+      _addPlayer(container, roomCode);
+    });
+  });
 }
