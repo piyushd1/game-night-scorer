@@ -421,6 +421,7 @@ function _render(container, roomCode) {
       const exitEditMode = () => {
         _editAdjustments = {};
         _editScoresMode = false;
+        _editLastRoundKey = null;
         _render(container, roomCode);
       };
       content.querySelector('#btn-edit-cancel')?.addEventListener('click', exitEditMode);
