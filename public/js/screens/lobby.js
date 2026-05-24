@@ -247,7 +247,7 @@ async function _addPlayer(container, roomCode) {
     if (meta.status === 'playing' && meta.activeGameId && newPlayerId) {
       const game = state.currentGame();
       if (game) {
-        await fb.addPlayerToGame(roomCode, meta.activeGameId, newPlayerId, nameUpper, game.playerIds || []);
+        await fb.addPlayerToGame(roomCode, meta.activeGameId, newPlayerId, nameUpper, accentIndex, game.playerIds || []);
       }
     }
   } catch (e) {
