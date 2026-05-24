@@ -162,17 +162,21 @@ function _render(container, roomCode) {
 
   const snapshot = game.playerSnapshot || {};
   const totals = game.totals || {};
+  const roundKeys = game.rounds ? Object.keys(game.rounds) : [];
   const rounds = game.rounds ? Object.values(game.rounds) : [];
   const playerIds = game.playerIds || [];
+
+  // Index of the round currently selected for editing (-1 when not in edit mode)
+  const editingRoundIndex = _editScoresMode ? roundKeys.indexOf(_editLastRoundKey) : -1;
 
   // For Flip 7, show live totals (committed + in-progress draft) if the host
   // has pushed any scores mid-round. Falls back to committed totals.
   let displayTotals = (game.type === 'flip7' && game.liveTotals) ? game.liveTotals : totals;
 
   // While in edit mode with buffered adjustments, show preview totals locally
-  if (_editScoresMode && rounds.length > 0 && Object.keys(_editAdjustments).length > 0) {
+  if (_editScoresMode && editingRoundIndex >= 0 && Object.keys(_editAdjustments).length > 0) {
     const patchedRounds = rounds.map((rnd, i) =>
-      i === rounds.length - 1
+      i === editingRoundIndex
         ? { ...rnd, entries: { ...(rnd.entries || {}), ..._editAdjustments } }
         : rnd
     );
@@ -230,6 +234,21 @@ function _render(container, roomCode) {
     }
   }
 
+  // In edit mode, overlay buffered adjustments onto the display round points so
+  // the chip for the edited round shows the pending value before SAVE is clicked.
+  let displayRoundPoints = roundPoints;
+  if (_editScoresMode && editingRoundIndex >= 0 && Object.keys(_editAdjustments).length > 0) {
+    displayRoundPoints = {};
+    playerIds.forEach((pid) => {
+      const chips = [...(roundPoints[pid] || [])];
+      if (_editAdjustments[pid]) {
+        const e = _editAdjustments[pid];
+        chips[editingRoundIndex] = (e.basePoints || 0) + (e.flip7 ? 15 : 0);
+      }
+      displayRoundPoints[pid] = chips;
+    });
+  }
+
   // Clear Flip 7 draft when the round count changes (undo or fresh mount after submit)
   if (game.type === 'flip7' && rounds.length !== _flip7RoundCount) {
     _flip7Draft = {};
@@ -250,9 +269,9 @@ function _render(container, roomCode) {
   html += `
     <div class="flex justify-between items-end mb-4">
       <div>
-        <p class="font-mono text-[10px] uppercase tracking-widest text-outline">ROUND</p>
-        <p class="font-mono text-xl font-bold">${rounds.length}${game.type === 'papayoo' ? `/${game.config?.roundLimit || 5}` : ''}</p>
-        ${isFlip7Host ? `<p class="font-mono text-[10px] text-outline mt-0.5">Tap a player to score</p>` : ''}
+        <p class="font-mono text-[10px] uppercase tracking-widest text-outline">${_editScoresMode ? 'EDITING' : 'ROUND'}</p>
+        <p class="font-mono text-xl font-bold">${_editScoresMode ? `RD ${editingRoundIndex + 1}` : `${rounds.length + 1}${game.type === 'papayoo' ? `/${game.config?.roundLimit || 5}` : ''}`}</p>
+        ${isFlip7Host ? `<p class="font-mono text-[10px] text-outline mt-0.5">${_editScoresMode ? 'Tap a player to edit' : 'Tap a player to score'}</p>` : ''}
       </div>
       <div class="text-right">
         <p class="font-mono text-[10px] uppercase tracking-widest text-outline">${gameModule.winMode === 'highest_total' ? 'TARGET' : game.type === 'cabo' ? 'BUST AT' : 'ROUNDS'}</p>
@@ -282,14 +301,14 @@ function _render(container, roomCode) {
     const p = snapshot[s.playerId] || {};
     if (isFlip7Host && !isInactive(s.playerId)) {
       // Tappable row for active players — host enters cards via drawer
-      html += _renderFlip7HostRow(s, p, roundPoints[s.playerId] || []);
+      html += _renderFlip7HostRow(s, p, displayRoundPoints[s.playerId] || []);
     } else {
       html += renderRow({
         name: p.name || s.playerId,
         total: s.total,
         accentIndex: p.accentIndex || 0,
         rank: s.rank,
-        rounds: roundPoints[s.playerId] || [],
+        rounds: displayRoundPoints[s.playerId] || [],
         progressPct: getProgress(s.total),
         isLeader: s.rank === 1,
         winMode: gameModule.winMode,
@@ -309,6 +328,13 @@ function _render(container, roomCode) {
     const undoTitle = undoDisabled ? undoReason : 'Undo last round';
 
     if (isFlip7Host) {
+      const roundDropdownItems = roundKeys.map((key, i) => `
+        <button type="button" data-round-key="${key}"
+          class="round-dropdown-item w-full text-left px-3 py-2 font-mono text-[10px] uppercase tracking-widest hover:bg-surface-container-high transition-colors ${key === _editLastRoundKey ? 'text-on-surface font-bold' : 'text-outline'}">
+          Round ${i + 1}
+        </button>
+      `).join('');
+
       html += `
         <div class="flex gap-2 mt-6">
           ${_editScoresMode ? `
@@ -322,12 +348,16 @@ function _render(container, roomCode) {
               <span class="material-symbols-outlined text-lg" aria-hidden="true">check</span>
             </button>
           ` : `
-            <button id="btn-edit-scores"
-              aria-label="Edit scores" title="Edit scores"
-              class="shrink-0 border border-outline flex items-center justify-center transition-colors"
-              style="width:3.25rem;">
-              <span class="material-symbols-outlined text-lg" aria-hidden="true">edit</span>
-            </button>
+            <div class="relative shrink-0">
+              <button id="btn-edit-scores" aria-label="Edit scores" title="Edit scores"
+                class="border border-outline flex items-center justify-center transition-colors hover:bg-surface-container-high disabled:opacity-30 disabled:cursor-not-allowed"
+                style="width:3.25rem;height:100%;" ${rounds.length === 0 ? 'disabled' : ''}>
+                <span class="material-symbols-outlined text-lg" aria-hidden="true">edit</span>
+              </button>
+              <div id="round-dropdown" class="absolute bottom-full left-0 mb-1 bg-surface-container-lowest border border-outline z-20 min-w-[6rem] shadow-md" style="display:none">
+                ${roundDropdownItems}
+              </div>
+            </div>
             <button id="btn-confirm-round"
               class="flex-1 btn-primary flex items-center justify-center gap-2">
               CONFIRM ROUND
@@ -357,17 +387,32 @@ function _render(container, roomCode) {
     content.querySelector('#btn-undo')?.addEventListener('click', () => _undoRound(roomCode, game, gameModule));
 
     if (isFlip7Host) {
-      content.querySelector('#btn-edit-scores')?.addEventListener('click', () => {
-        if (rounds.length === 0) {
-          toast.show('No rounds to edit yet');
-          return;
-        }
-        const roundKeys = game.rounds ? Object.keys(game.rounds) : [];
-        _editLastRoundKey = roundKeys[roundKeys.length - 1] || null;
-        _editAdjustments = {};
-        _editScoresMode = true;
-        _render(container, roomCode);
-      });
+      // Pencil button opens round dropdown
+      const dropdownEl = content.querySelector('#round-dropdown');
+      const pencilBtn = content.querySelector('#btn-edit-scores');
+      if (pencilBtn && dropdownEl) {
+        pencilBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const open = dropdownEl.style.display !== 'none';
+          dropdownEl.style.display = open ? 'none' : 'block';
+          if (!open) {
+            document.addEventListener('click', function closeDropdown() {
+              dropdownEl.style.display = 'none';
+              document.removeEventListener('click', closeDropdown);
+            });
+          }
+        });
+        dropdownEl.querySelectorAll('.round-dropdown-item').forEach((item) => {
+          item.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdownEl.style.display = 'none';
+            _editLastRoundKey = item.dataset.roundKey;
+            _editAdjustments = {};
+            _editScoresMode = true;
+            _render(container, roomCode);
+          });
+        });
+      }
 
       const exitEditMode = () => {
         _editAdjustments = {};
@@ -379,7 +424,7 @@ function _render(container, roomCode) {
       content.querySelector('#btn-edit-save')?.addEventListener('click', async () => {
         if (Object.keys(_editAdjustments).length === 0) { exitEditMode(); return; }
         const patchedRounds = rounds.map((rnd, i) =>
-          i === rounds.length - 1
+          i === editingRoundIndex
             ? { ...rnd, entries: { ...(rnd.entries || {}), ..._editAdjustments } }
             : rnd
         );
@@ -388,9 +433,6 @@ function _render(container, roomCode) {
         const saveBtn = content.querySelector('#btn-edit-save');
         saveBtn.disabled = true;
         saveBtn.innerHTML = '<div class="spinner mx-auto"></div>';
-        // Snapshot and clear state before the await — the Firebase listener will fire
-        // during the write and call _render(); it must see the cleared state so it
-        // renders the normal button row, not a second edit-mode render.
         const pendingAdjustments = { ..._editAdjustments };
         _editAdjustments = {};
         _editScoresMode = false;
@@ -851,15 +893,17 @@ async function _confirmFlip7Round(container, roomCode, initialGame, gameModule) 
 function _openAdjustDrawer(container, roomCode, game, pid, snapshot) {
   if (!_editScoresEl) return;
 
+  const roundKeys = game.rounds ? Object.keys(game.rounds) : [];
   const rounds = game.rounds ? Object.values(game.rounds) : [];
-  if (rounds.length === 0) {
-    toast.show('No rounds to edit yet');
+  const selectedRoundIndex = roundKeys.indexOf(_editLastRoundKey);
+  const selectedRound = rounds[selectedRoundIndex];
+  if (!selectedRound) {
+    toast.show('Round not found');
     return;
   }
 
-  const lastRound = rounds[rounds.length - 1];
   // Use already-buffered adjustment for this player if they've been edited this session
-  const currentEntry = _editAdjustments[pid] || lastRound.entries?.[pid] || { basePoints: 0, flip7: false };
+  const currentEntry = _editAdjustments[pid] || selectedRound.entries?.[pid] || { basePoints: 0, flip7: false };
   const currentRoundPts = (currentEntry.basePoints || 0) + (currentEntry.flip7 ? 15 : 0);
 
   const p = snapshot[pid] || {};
@@ -876,7 +920,7 @@ function _openAdjustDrawer(container, roomCode, game, pid, snapshot) {
       </div>
       <div class="px-4 pb-3 border-b border-outline-variant">
         <p class="font-headline font-bold text-base uppercase">${name}</p>
-        <p class="font-mono text-[10px] text-outline">${total} PTS TOTAL · LAST ROUND: ${currentRoundPts >= 0 ? '+' : ''}${currentRoundPts}</p>
+        <p class="font-mono text-[10px] text-outline">${total} PTS TOTAL · RD ${selectedRoundIndex + 1}: ${currentRoundPts >= 0 ? '+' : ''}${currentRoundPts}</p>
       </div>
       <div class="p-4 flex items-center gap-3">
         <div class="flex font-mono text-xs uppercase shrink-0">
