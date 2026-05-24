@@ -242,51 +242,16 @@ async function _addPlayer(container, roomCode) {
     input.value = '';
     input.focus();
 
-    // If no host player set yet, prompt the host to identify themselves
+    // Auto-assign the first player added as the host player
     const meta = state.get('roomMeta') || {};
     if (!meta.hostPlayerId && newPlayerId) {
-      _showHostPrompt(container, roomCode, newPlayerId, nameUpper);
+      await fb.updateRoomMeta(roomCode, { hostPlayerId: newPlayerId });
     }
   } catch (e) {
     toast.show('Failed to add player');
   }
 }
 
-function _showHostPrompt(container, roomCode, playerId, playerName) {
-  // Remove any existing prompt
-  const existing = container.querySelector('#host-prompt');
-  if (existing) existing.remove();
-
-  const playerList = container.querySelector('#player-list');
-  if (!playerList) return;
-
-  const prompt = document.createElement('div');
-  prompt.id = 'host-prompt';
-  prompt.className = 'bg-primary text-on-primary border border-outline p-4 mb-2';
-  prompt.innerHTML = `
-    <p class="font-headline font-bold text-sm uppercase mb-3">Are you ${escapeHTML(playerName)}?</p>
-    <div class="flex gap-2">
-      <button id="host-prompt-yes" class="flex-1 py-2 bg-surface-container-lowest text-primary font-headline font-bold text-xs uppercase tracking-widest hover:bg-surface-container-high transition-colors">
-        YES, THAT'S ME
-      </button>
-      <button id="host-prompt-no" class="flex-1 py-2 border border-white/40 text-white font-headline font-bold text-xs uppercase tracking-widest hover:bg-white/10 transition-colors">
-        NO
-      </button>
-    </div>
-  `;
-
-  playerList.insertAdjacentElement('beforebegin', prompt);
-
-  prompt.querySelector('#host-prompt-yes').addEventListener('click', async () => {
-    await fb.updateRoomMeta(roomCode, { hostPlayerId: playerId });
-    toast.show('You are set as the host player');
-    prompt.remove();
-  });
-
-  prompt.querySelector('#host-prompt-no').addEventListener('click', () => {
-    prompt.remove();
-  });
-}
 
 function _startWatching(roomCode, container) {
   fb.watchRoom(roomCode, (data) => {
@@ -318,12 +283,6 @@ function _startWatching(roomCode, container) {
     const addRow = container.querySelector('#add-player-row');
     if (addRow) addRow.style.display = isHost ? 'flex' : 'none';
     _renderPlayers(container, players, isHost, roomCode, isPlaying);
-
-    // Remove host prompt if host player has been set
-    if (meta.hostPlayerId) {
-      const hostPrompt = container.querySelector('#host-prompt');
-      if (hostPrompt) hostPrompt.remove();
-    }
 
     // Stats tracking
     const trackStats = meta.trackStats || false;
@@ -444,16 +403,6 @@ function _renderPlayers(container, players, isHost, roomCode, isPlaying = false)
       `;
     })
     .join('');
-
-  // Show hint if no host player selected yet and there are players
-  if (isHost && !hostPlayerId && sorted.length > 0) {
-    list.insertAdjacentHTML('beforeend', `
-      <p class="font-mono text-[10px] text-outline text-center mt-2 uppercase">
-        <span aria-hidden="true" class="material-symbols-outlined text-[10px] align-middle">info</span>
-        TAP THE PERSON ICON TO MARK HOST PLAYER
-      </p>
-    `);
-  }
 
   // Bind player action buttons
   if (isHost) {
