@@ -476,7 +476,7 @@ function _showSuggestions(container, roomCode) {
   if (!input || !suggestionsEl) return;
 
   const existing = new Set(Object.values(state.get('players') || {}).map((p) => p.name));
-  const matches = _getKnownNames().filter((n) => !existing.has(n)).slice(0, 10);
+  const matches = _getKnownNames().filter((n) => !existing.has(n)).slice(0, 4);
 
   if (matches.length === 0) {
     suggestionsEl.innerHTML = '';
