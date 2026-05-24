@@ -495,27 +495,32 @@ function _renderFlip7HostRow(standing, playerData, roundHistory) {
   }
 
   return `
-    <button type="button"
-      class="flip7-player-row w-full text-left ${bgClass} border border-outline hover:bg-surface-container-high transition-colors"
-      data-player-id="${escapeHTML(pid)}"
-      aria-label="Score ${name}">
-      <div class="accent-bar" style="background:${color}"></div>
-      <div class="p-4 flex items-center gap-3">
-        <div class="flex-1 min-w-0">
-          <div class="flex items-baseline gap-2">
-            <p class="font-headline font-extrabold text-xl uppercase truncate">${name}</p>
-            <span class="font-mono text-[10px] text-outline uppercase shrink-0">${rankLabel}</span>
-          </div>
-          <div class="flex gap-1 mt-1 flex-wrap items-center">
-            ${roundChips}
-            ${draftChip}
-          </div>
-        </div>
-        <div class="text-right shrink-0">
-          <p class="font-mono text-2xl font-bold ${rank === 1 ? 'text-secondary' : ''}">${total}</p>
+    <div class="flex items-stretch gap-1">
+      <div class="flex flex-col border border-outline ${bgClass} shrink-0 min-w-[2.5rem]">
+        <div class="accent-bar" style="background:${color}"></div>
+        <div class="flex-1 flex items-center justify-center">
+          <span class="font-mono text-2xl font-bold" style="color:${color}">${rank}</span>
         </div>
       </div>
-    </button>
+      <button type="button"
+        class="flip7-player-row flex-1 text-left ${bgClass} border border-outline hover:bg-surface-container-high transition-colors"
+        data-player-id="${escapeHTML(pid)}"
+        aria-label="Score ${name}">
+        <div class="accent-bar" style="background:${color}"></div>
+        <div class="p-4 flex items-center gap-3">
+          <div class="flex-1 min-w-0">
+            <p class="font-headline font-extrabold text-xl uppercase truncate">${name}</p>
+            <div class="flex gap-1 mt-1 flex-wrap items-center">
+              ${roundChips}
+              ${draftChip}
+            </div>
+          </div>
+          <div class="text-right shrink-0">
+            <p class="font-mono text-2xl font-bold ${rank === 1 ? 'text-secondary' : ''}">${total}</p>
+          </div>
+        </div>
+      </button>
+    </div>
   `;
 }
 

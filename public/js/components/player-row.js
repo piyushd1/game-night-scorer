@@ -55,18 +55,23 @@ export function renderRow({
     .join('');
 
   return `
-    <div class="accent-${accentIndex} ${bgClass} ${dim} border border-outline group" style="${leaderBorder ? `border-left: 3px solid ${color}` : ''}">
-      <div class="accent-bar" style="background:${color}"></div>
-      <div class="p-4 flex items-center gap-3">
-        <div class="flex-1 min-w-0">
-          <div class="flex items-baseline gap-2">
-            <p class="font-headline font-extrabold text-xl uppercase truncate">${escapeHTML(name)}</p>
-            <span class="font-mono text-[10px] text-outline uppercase shrink-0">${isInactive ? 'SITTING OUT' : rankLabel}</span>
-          </div>
-          ${rounds.length > 0 ? `<div class="flex gap-1 mt-1 flex-wrap">${roundChips}</div>` : ''}
+    <div class="flex items-stretch gap-1 ${dim}">
+      <div class="flex flex-col border border-outline ${bgClass} shrink-0 min-w-[2.5rem]">
+        <div class="accent-bar" style="background:${color}"></div>
+        <div class="flex-1 flex items-center justify-center">
+          <span class="font-mono text-2xl font-bold" style="color:${color}">${isInactive ? '—' : rank}</span>
         </div>
-        <div class="text-right shrink-0">
-          <p class="font-mono text-2xl font-bold ${!isInactive && isLeader ? 'text-secondary' : ''}">${displayTotal}</p>
+      </div>
+      <div class="flex-1 accent-${accentIndex} ${bgClass} border border-outline group" style="${leaderBorder ? `border-left: 3px solid ${color}` : ''}">
+        <div class="accent-bar" style="background:${color}"></div>
+        <div class="p-4 flex items-center gap-3">
+          <div class="flex-1 min-w-0">
+            <p class="font-headline font-extrabold text-xl uppercase truncate">${escapeHTML(name)}</p>
+            ${rounds.length > 0 ? `<div class="flex gap-1 mt-1 flex-wrap">${roundChips}</div>` : ''}
+          </div>
+          <div class="text-right shrink-0">
+            <p class="font-mono text-2xl font-bold ${!isInactive && isLeader ? 'text-secondary' : ''}">${displayTotal}</p>
+          </div>
         </div>
       </div>
     </div>
