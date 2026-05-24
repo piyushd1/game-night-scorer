@@ -314,6 +314,16 @@ export async function patchLastRoundMulti(roomCode, gameId, roundKey, pidEntries
   await db.ref().update(updates);
 }
 
+export async function addPlayerToGame(roomCode, gameId, playerId, playerName, currentPlayerIds) {
+  if (!db) return;
+  await db.ref().update({
+    [`rooms/${roomCode}/games/${gameId}/playerIds`]: [...currentPlayerIds, playerId],
+    [`rooms/${roomCode}/games/${gameId}/totals/${playerId}`]: 0,
+    [`rooms/${roomCode}/games/${gameId}/playerSnapshot/${playerId}`]: { name: playerName },
+    [`rooms/${roomCode}/meta/updatedAt`]: Date.now(),
+  });
+}
+
 // ── Night Lifecycle ──
 
 export async function endNight(roomCode) {

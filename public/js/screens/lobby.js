@@ -242,6 +242,14 @@ async function _addPlayer(container, roomCode) {
     input.value = '';
     input.focus();
 
+    // If a game is in progress, add the player to that game too
+    const meta = state.get('roomMeta') || {};
+    if (meta.status === 'playing' && meta.activeGameId && newPlayerId) {
+      const game = state.currentGame();
+      if (game) {
+        await fb.addPlayerToGame(roomCode, meta.activeGameId, newPlayerId, nameUpper, game.playerIds || []);
+      }
+    }
   } catch (e) {
     toast.show('Failed to add player');
   }
