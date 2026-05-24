@@ -270,15 +270,15 @@ function _render(container, roomCode) {
     && game.status !== 'finished' && game.status !== 'abandoned';
 
   html += `
-    <div class="flex justify-between items-end mb-4">
+    <div class="flex justify-between items-end mb-8">
       <div>
-        <p class="font-mono text-[10px] uppercase tracking-widest text-outline">${_editScoresMode ? 'EDITING' : 'ROUND'}</p>
-        <p class="font-mono text-xl font-bold">${_editScoresMode ? `RD ${editingRoundIndex + 1}` : `${rounds.length + 1}${game.type === 'papayoo' ? `/${game.config?.roundLimit || 5}` : ''}`}</p>
-        ${isFlip7Host ? `<p class="font-mono text-[10px] text-outline mt-0.5">${_editScoresMode ? 'Tap a player to edit' : 'Tap a player to score'}</p>` : ''}
+        <p class="font-mono text-xs uppercase tracking-widest text-outline">${_editScoresMode ? 'EDITING' : ''}</p>
+        <p class="font-mono text-3xl font-bold">${_editScoresMode ? `ROUND ${editingRoundIndex + 1}` : `ROUND ${rounds.length + 1}${game.type === 'papayoo' ? `/${game.config?.roundLimit || 5}` : ''}`}</p>
+        ${isFlip7Host ? `<p class="font-mono text-xs text-outline mt-0.5">${_editScoresMode ? 'Tap a player to edit' : 'Tap a player to add score'}</p>` : ''}
       </div>
       <div class="text-right">
-        <p class="font-mono text-[10px] uppercase tracking-widest text-outline">${gameModule.winMode === 'highest_total' ? 'TARGET' : game.type === 'cabo' ? 'BUST AT' : 'ROUNDS'}</p>
-        <p class="font-mono text-xl font-bold">${gameModule.winMode === 'highest_total' ? game.config?.targetScore : game.type === 'cabo' ? '>100' : game.config?.roundLimit}</p>
+        <p class="font-mono text-xs uppercase tracking-widest text-outline">${gameModule.winMode === 'highest_total' ? 'TARGET' : game.type === 'cabo' ? 'BUST AT' : 'ROUNDS'}</p>
+        <p class="font-mono text-3xl font-bold">${gameModule.winMode === 'highest_total' ? game.config?.targetScore : game.type === 'cabo' ? '>100' : game.config?.roundLimit}</p>
       </div>
     </div>
   `;
@@ -333,7 +333,8 @@ function _render(container, roomCode) {
     if (isFlip7Host) {
       const roundDropdownItems = roundKeys.map((key, i) => `
         <button type="button" data-round-key="${key}"
-          class="round-dropdown-item w-full text-left px-3 py-2 font-mono text-[10px] uppercase tracking-widest hover:bg-surface-container-high transition-colors ${key === _editLastRoundKey ? 'text-on-surface font-bold' : 'text-outline'}">
+          style="display:block;width:100%;text-align:left;padding:10px 16px;font-family:monospace;font-size:20px;text-transform:uppercase;letter-spacing:0.05em;color:#000;background:${key === _editLastRoundKey ? '#f0f0f0' : '#fff'};border:none;cursor:pointer;white-space:nowrap"
+          class="round-dropdown-item">
           Round ${i + 1}
         </button>
       `).join('');
@@ -357,7 +358,7 @@ function _render(container, roomCode) {
                 style="width:3.25rem;height:100%;" ${rounds.length === 0 ? 'disabled' : ''}>
                 <span class="material-symbols-outlined text-lg" aria-hidden="true">edit</span>
               </button>
-              <div id="round-dropdown" class="absolute bottom-full left-0 mb-1 bg-surface-container-lowest border border-outline z-20 min-w-[6rem] shadow-md" style="display:none">
+              <div id="round-dropdown" style="display:none;position:absolute;bottom:100%;left:0;margin-bottom:4px;background:#fff;border:1px solid #000;z-index:20;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
                 ${roundDropdownItems}
               </div>
             </div>
@@ -501,13 +502,12 @@ function _renderFlip7HostRow(standing, playerData, roundHistory) {
       <div class="p-4 flex items-center gap-3">
         <div class="flex-1 min-w-0">
           <div class="flex items-baseline gap-2">
-            <p class="font-headline font-extrabold text-base uppercase truncate">${name}</p>
+            <p class="font-headline font-extrabold text-xl uppercase truncate">${name}</p>
             <span class="font-mono text-[10px] text-outline uppercase shrink-0">${rankLabel}</span>
           </div>
           <div class="flex gap-1 mt-1 flex-wrap items-center">
             ${roundChips}
             ${draftChip}
-            ${_editScoresMode ? `<span class="font-mono text-[9px] text-outline">TAP TO EDIT</span>` : (!hasDraft ? `<span class="font-mono text-[9px] text-outline">TAP TO SCORE</span>` : '')}
           </div>
         </div>
         <div class="text-right shrink-0">
@@ -916,28 +916,26 @@ function _openAdjustDrawer(container, roomCode, game, pid, snapshot) {
   _editScoresEl.innerHTML = `
     <div id="adjust-backdrop" class="absolute inset-0 bg-black/50"></div>
     <div class="relative w-full bg-surface-container-lowest border-t-2 border-outline">
-      <div class="h-[3px]" style="background:${color}"></div>
+      <div class="h-[6px]" style="background:${color}"></div>
       <div class="flex justify-center pt-3 pb-1">
         <div class="w-10 h-1 rounded-full bg-outline-variant"></div>
       </div>
       <div class="px-4 pb-3 border-b border-outline-variant">
-        <p class="font-headline font-bold text-base uppercase">${name}</p>
-        <p class="font-mono text-[10px] text-outline">${total} PTS TOTAL · RD ${selectedRoundIndex + 1}: ${currentRoundPts >= 0 ? '+' : ''}${currentRoundPts}</p>
+        <p class="font-headline font-bold text-4xl uppercase truncate">${name}</p>
       </div>
-      <div class="p-4 flex items-center gap-3">
+      <div class="px-4 py-4 flex items-center gap-2 pb-8">
         <div class="flex font-mono text-xs uppercase shrink-0">
           <button type="button" id="adj-add-btn"
-            class="px-4 py-2 border border-outline transition-colors"
+            class="px-4 py-3 border border-outline transition-colors"
             style="background:#000;color:#fff;border-color:#000">+ADD</button>
           <button type="button" id="adj-sub-btn"
-            class="px-4 py-2 border border-outline border-l-0 text-outline transition-colors">−SUB</button>
+            class="px-4 py-3 border border-outline border-l-0 text-outline transition-colors">−SUB</button>
         </div>
         <input type="number" id="adj-amount-input" inputmode="numeric"
           class="score-input flex-1" placeholder="0" min="0">
-      </div>
-      <div class="px-4 pb-6 flex gap-2">
-        <button id="adj-cancel-btn" class="flex-1 bg-surface-container-lowest border border-outline py-3 font-mono text-xs uppercase tracking-widest hover:bg-surface-container-high transition-colors">CANCEL</button>
-        <button id="adj-apply-btn" class="flex-1 btn-primary">APPLY</button>
+        <button id="adj-apply-btn" class="btn-primary shrink-0 flex items-center justify-center" style="width:48px;height:48px;padding:0">
+          <span aria-hidden="true" class="material-symbols-outlined" style="font-size:20px;font-variation-settings:'FILL' 1">check</span>
+        </button>
       </div>
     </div>
   `;
@@ -965,7 +963,6 @@ function _openAdjustDrawer(container, roomCode, game, pid, snapshot) {
   subBtn.addEventListener('click', () => setOp(false));
 
   _editScoresEl.querySelector('#adjust-backdrop')?.addEventListener('click', _closeAdjustDrawer);
-  _editScoresEl.querySelector('#adj-cancel-btn')?.addEventListener('click', _closeAdjustDrawer);
 
   _editScoresEl.querySelector('#adj-apply-btn')?.addEventListener('click', () => {
     const amount = parseInt(_editScoresEl.querySelector('#adj-amount-input')?.value) || 0;
