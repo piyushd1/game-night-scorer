@@ -242,11 +242,6 @@ async function _addPlayer(container, roomCode) {
     input.value = '';
     input.focus();
 
-    // Auto-assign the first player added as the host player
-    const meta = state.get('roomMeta') || {};
-    if (!meta.hostPlayerId && newPlayerId) {
-      await fb.updateRoomMeta(roomCode, { hostPlayerId: newPlayerId });
-    }
   } catch (e) {
     toast.show('Failed to add player');
   }
@@ -351,9 +346,6 @@ function _startWatching(roomCode, container) {
 function _renderPlayers(container, players, isHost, roomCode, isPlaying = false) {
   const list = container.querySelector('#player-list');
   const sorted = Object.values(players).sort((a, b) => a.seatOrder - b.seatOrder);
-  const meta = state.get('roomMeta') || {};
-  const hostPlayerId = meta.hostPlayerId || null;
-
   if (sorted.length === 0) {
     list.innerHTML = `
       <div class="text-center py-12">
@@ -368,7 +360,6 @@ function _renderPlayers(container, players, isHost, roomCode, isPlaying = false)
     .map((p) => {
       const color = ACCENT_COLORS[p.accentIndex % ACCENT_COLORS.length];
       const inactive = !p.isActive ? 'opacity-40' : '';
-      const isHostPlayer = hostPlayerId === p.id;
       return `
         <div class="bg-surface-container-lowest border border-outline ${inactive} flex items-center">
           <div class="w-1.5 self-stretch" style="background:${color}"></div>
@@ -377,17 +368,11 @@ function _renderPlayers(container, players, isHost, roomCode, isPlaying = false)
               ${escapeHTML(p.name.substring(0, 2))}
             </div>
             <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2">
-                <p class="font-headline font-extrabold text-sm uppercase truncate">${escapeHTML(p.name)}</p>
-                ${isHostPlayer ? '<span class="font-mono text-[8px] bg-primary text-on-primary px-1.5 py-0.5 uppercase tracking-widest shrink-0">HOST</span>' : ''}
-              </div>
+              <p class="font-headline font-extrabold text-sm uppercase truncate">${escapeHTML(p.name)}</p>
               <p class="font-mono text-[10px] text-outline uppercase">${p.isActive ? 'ACTIVE' : 'INACTIVE'}</p>
             </div>
             ${isHost ? `
               <div class="flex gap-1">
-                <button class="player-set-host p-1.5 hover:bg-surface-container-high transition-colors ${isHostPlayer ? 'opacity-30' : ''}" data-id="${escapeHTML(p.id)}" title="Set as host player" aria-label="Set ${escapeHTML(p.name)} as host player">
-                  <span aria-hidden="true" class="material-symbols-outlined text-sm">${isHostPlayer ? 'shield_person' : 'person'}</span>
-                </button>
                 <button class="player-toggle p-1.5 hover:bg-surface-container-high transition-colors" data-id="${escapeHTML(p.id)}" data-active="${p.isActive}" title="${p.isActive ? 'Deactivate' : 'Activate'}" aria-label="${p.isActive ? 'Deactivate' : 'Activate'} ${escapeHTML(p.name)}">
                   <span aria-hidden="true" class="material-symbols-outlined text-sm">${p.isActive ? 'person_off' : 'person_add'}</span>
                 </button>
@@ -406,22 +391,9 @@ function _renderPlayers(container, players, isHost, roomCode, isPlaying = false)
 
   // Bind player action buttons
   if (isHost) {
-    list.querySelectorAll('.player-set-host').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const id = btn.dataset.id;
-        fb.updateRoomMeta(roomCode, { hostPlayerId: id });
-        toast.show('Host player set');
-      });
-    });
-
     list.querySelectorAll('.player-toggle').forEach((btn) => {
       btn.addEventListener('click', () => {
         const id = btn.dataset.id;
-        const meta = state.get('roomMeta') || {};
-        if (id === meta.hostPlayerId) {
-          toast.show('Cannot deactivate host player');
-          return;
-        }
         const isActive = btn.dataset.active === 'true';
         fb.updatePlayer(roomCode, id, { isActive: !isActive });
       });
@@ -430,11 +402,6 @@ function _renderPlayers(container, players, isHost, roomCode, isPlaying = false)
     list.querySelectorAll('.player-remove').forEach((btn) => {
       btn.addEventListener('click', () => {
         const id = btn.dataset.id;
-        const meta = state.get('roomMeta') || {};
-        if (id === meta.hostPlayerId) {
-          toast.show('Cannot remove host player');
-          return;
-        }
         fb.removePlayer(roomCode, id);
       });
     });
