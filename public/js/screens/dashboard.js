@@ -30,6 +30,7 @@ let _flip7RoundCount = -1; // Detects undo (round count decreases) to clear the 
 let _flip7DrawerEl = null; // Fixed overlay appended to body — survives _render() calls
 let _flip7DrawerPlayerId = null; // Which player's drawer is currently open
 let _flip7Grayscale = false; // false = colour (default); true = grayscale (toggle hidden for now)
+let _flip7DragMode = false; // Drag-to-rearrange mode for the card grid
 
 // Grayscale spritesheet: converted once via canvas, reused across all drawer opens.
 let _flip7SpriteSrc = '/images/flip7-cards.png';
@@ -399,31 +400,31 @@ function _computeFlip7Score(draft) {
 //  12 +2 +4 +6
 //  +8 +10 ×2 DONE
 // Grid layout (5 cols × 4 rows):
-// ---   0  +8  +10  ×2
-// +6    1   2    3   4
-// +4    5   6    7   8
-// +2    9  10   11  12
+// ---  +6  +8  +10  ×2
+// +4   12  11   10   9
+// +2    8   7    6   5
+//  4    3   2    1   0
 const _F7_CARD_DATA = [
   { empty: true },
-  { cls: 'flip7-num-btn',    attr: 'data-num',    val:  0, col: 0, row: 0 },
+  { cls: 'flip7-action-btn', attr: 'data-action', val:  6, col: 5, row: 2 },
   { cls: 'flip7-action-btn', attr: 'data-action', val:  8, col: 6, row: 0 },
   { cls: 'flip7-action-btn', attr: 'data-action', val: 10, col: 2, row: 2 },
   { id: 'flip7-x2-btn', col: 1, row: 3 },
-  { cls: 'flip7-action-btn', attr: 'data-action', val:  6, col: 5, row: 2 },
-  { cls: 'flip7-num-btn',    attr: 'data-num',    val:  1, col: 1, row: 0 },
-  { cls: 'flip7-num-btn',    attr: 'data-num',    val:  2, col: 5, row: 0 },
-  { cls: 'flip7-num-btn',    attr: 'data-num',    val:  3, col: 0, row: 1 },
-  { cls: 'flip7-num-btn',    attr: 'data-num',    val:  4, col: 1, row: 1 },
   { cls: 'flip7-action-btn', attr: 'data-action', val:  4, col: 4, row: 2 },
-  { cls: 'flip7-num-btn',    attr: 'data-num',    val:  5, col: 2, row: 1 },
-  { cls: 'flip7-num-btn',    attr: 'data-num',    val:  6, col: 3, row: 1 },
-  { cls: 'flip7-num-btn',    attr: 'data-num',    val:  7, col: 4, row: 1 },
-  { cls: 'flip7-num-btn',    attr: 'data-num',    val:  8, col: 5, row: 1 },
-  { cls: 'flip7-action-btn', attr: 'data-action', val:  2, col: 3, row: 2 },
-  { cls: 'flip7-num-btn',    attr: 'data-num',    val:  9, col: 0, row: 2 },
-  { cls: 'flip7-num-btn',    attr: 'data-num',    val: 10, col: 2, row: 0 },
-  { cls: 'flip7-num-btn',    attr: 'data-num',    val: 11, col: 3, row: 0 },
   { cls: 'flip7-num-btn',    attr: 'data-num',    val: 12, col: 4, row: 0 },
+  { cls: 'flip7-num-btn',    attr: 'data-num',    val: 11, col: 3, row: 0 },
+  { cls: 'flip7-num-btn',    attr: 'data-num',    val: 10, col: 2, row: 0 },
+  { cls: 'flip7-num-btn',    attr: 'data-num',    val:  9, col: 0, row: 2 },
+  { cls: 'flip7-action-btn', attr: 'data-action', val:  2, col: 3, row: 2 },
+  { cls: 'flip7-num-btn',    attr: 'data-num',    val:  8, col: 5, row: 1 },
+  { cls: 'flip7-num-btn',    attr: 'data-num',    val:  7, col: 4, row: 1 },
+  { cls: 'flip7-num-btn',    attr: 'data-num',    val:  6, col: 3, row: 1 },
+  { cls: 'flip7-num-btn',    attr: 'data-num',    val:  5, col: 2, row: 1 },
+  { cls: 'flip7-num-btn',    attr: 'data-num',    val:  4, col: 1, row: 1 },
+  { cls: 'flip7-num-btn',    attr: 'data-num',    val:  3, col: 0, row: 1 },
+  { cls: 'flip7-num-btn',    attr: 'data-num',    val:  2, col: 5, row: 0 },
+  { cls: 'flip7-num-btn',    attr: 'data-num',    val:  1, col: 1, row: 0 },
+  { cls: 'flip7-num-btn',    attr: 'data-num',    val:  0, col: 0, row: 0 },
 ];
 
 // Returns inline background CSS for a single card sprite cell (fully responsive).
@@ -449,7 +450,7 @@ function _openFlip7Drawer(container, roomCode, playerId, snapshot, game) {
 
   // Build all 20 grid cells using the spritesheet
   const cardBtns = _F7_CARD_DATA.map((c) => {
-    if (c.empty) return `<div style="aspect-ratio:130/204"></div>`;
+    if (c.empty) return `<button type="button" id="flip7-clear-btn" class="font-mono text-[10px] uppercase tracking-widest text-outline flex items-center justify-center" style="aspect-ratio:130/204;transition:transform 120ms ease,opacity 120ms ease">clear</button>`;
     const bg = _cardSpriteBg(c.col, c.row);
     const cardStyle = `aspect-ratio:130/204;border-radius:6px;box-shadow:0 3px 5px -1px rgba(0,0,0,0.18);${bg}`;
     if (c.id) {
@@ -464,8 +465,14 @@ function _openFlip7Drawer(container, roomCode, playerId, snapshot, game) {
       <!-- Sticky header -->
       <div class="shrink-0">
         <div class="accent-bar" style="background:${color}"></div>
-        <div class="flex justify-center pt-3 pb-1">
+        <div class="relative flex justify-center pt-3 pb-1">
           <div class="w-10 h-1 rounded-full bg-outline-variant"></div>
+          <button id="flip7-arrange-toggle" type="button" aria-pressed="${_flip7DragMode}"
+            class="absolute right-4 top-1.5 font-mono text-[9px] uppercase tracking-widest flex items-center gap-0.5 transition-colors ${_flip7DragMode ? 'text-on-surface' : 'text-outline hover:text-on-surface'}"
+            style="display:none">
+            <span class="material-symbols-outlined text-sm" aria-hidden="true">drag_indicator</span>
+            ${_flip7DragMode ? 'DONE' : 'ARRANGE'}
+          </button>
         </div>
         <div class="px-4 pb-3 flex items-center justify-between border-b border-outline-variant">
           <div>
@@ -478,9 +485,9 @@ function _openFlip7Drawer(container, roomCode, playerId, snapshot, game) {
           </div>
         </div>
       </div>
-      <!-- Scrollable 4-col grid: 19 sprite cards + DONE in the 20th slot -->
+      <!-- Scrollable 5-col card grid -->
       <div class="overflow-y-auto flex-1 p-4">
-        <div class="grid grid-cols-5 gap-3">
+        <div id="flip7-card-grid" class="grid grid-cols-5 gap-3">
           ${cardBtns}
         </div>
       </div>
@@ -553,8 +560,23 @@ function _bindDrawerEvents(container, roomCode, playerId) {
     _render(container, roomCode);
   });
 
+  _flip7DrawerEl.querySelector('#flip7-clear-btn')?.addEventListener('click', (e) => {
+    const btn = e.currentTarget;
+    btn.style.transform = 'scale(0.82)';
+    btn.style.opacity = '0.4';
+    setTimeout(() => { btn.style.transform = ''; btn.style.opacity = ''; }, 150);
+    draft.numbers.clear();
+    draft.actions.clear();
+    draft.x2 = false;
+    _refreshDrawerCardStates(playerId);
+    _updateDrawerScore(playerId);
+  });
+
+  // ── Card selection (blocked in drag mode) ──
+
   _flip7DrawerEl.querySelectorAll('.flip7-num-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
+      if (_flip7DragMode) return;
       const n = parseInt(btn.dataset.num);
       if (!draft.numbers.has(n) && draft.numbers.size >= 7) return;
       const sel = !draft.numbers.has(n);
@@ -566,6 +588,7 @@ function _bindDrawerEvents(container, roomCode, playerId) {
 
   _flip7DrawerEl.querySelectorAll('.flip7-action-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
+      if (_flip7DragMode) return;
       const n = parseInt(btn.dataset.action);
       const sel = !draft.actions.has(n);
       sel ? draft.actions.add(n) : draft.actions.delete(n);
@@ -575,12 +598,65 @@ function _bindDrawerEvents(container, roomCode, playerId) {
   });
 
   _flip7DrawerEl.querySelector('#flip7-x2-btn')?.addEventListener('click', (e) => {
+    if (_flip7DragMode) return;
     draft.x2 = !draft.x2;
     _applyCardStyle(e.currentTarget, draft.x2);
     _updateDrawerScore(playerId);
   });
 
+  // ── Arrange toggle ──
 
+  const arrangeBtn = _flip7DrawerEl.querySelector('#flip7-arrange-toggle');
+  const gridEl = _flip7DrawerEl.querySelector('#flip7-card-grid');
+  let _arrangeSelected = null;
+
+  function _applyArrangeModeVisuals() {
+    if (!arrangeBtn) return;
+    arrangeBtn.setAttribute('aria-pressed', String(_flip7DragMode));
+    arrangeBtn.innerHTML = `<span class="material-symbols-outlined text-sm" aria-hidden="true">drag_indicator</span>${_flip7DragMode ? 'DONE' : 'ARRANGE'}`;
+    arrangeBtn.className = `absolute right-4 top-1.5 font-mono text-[9px] uppercase tracking-widest flex items-center gap-0.5 transition-colors ${_flip7DragMode ? 'text-on-surface' : 'text-outline hover:text-on-surface'}`;
+  }
+
+  arrangeBtn?.addEventListener('click', () => {
+    _flip7DragMode = !_flip7DragMode;
+    if (!_flip7DragMode && _arrangeSelected) {
+      _arrangeSelected.style.outline = '';
+      _arrangeSelected = null;
+    }
+    _applyArrangeModeVisuals();
+  });
+
+  // ── Tap-to-swap in arrange mode ──
+  // First tap selects a cell (outlined). Second tap on a different cell swaps
+  // them. Tapping the same cell again deselects it. The empty slot is valid.
+
+  gridEl.addEventListener('click', (e) => {
+    if (!_flip7DragMode) return;
+    let node = e.target;
+    while (node && node.parentNode !== gridEl) node = node.parentNode;
+    if (!node || node.parentNode !== gridEl) return;
+
+    if (!_arrangeSelected) {
+      _arrangeSelected = node;
+      node.style.outline = '2px solid #000';
+    } else if (_arrangeSelected === node) {
+      _arrangeSelected.style.outline = '';
+      _arrangeSelected = null;
+    } else {
+      _arrangeSelected.style.outline = '';
+      _swapGridCells(_arrangeSelected, node);
+      _arrangeSelected = null;
+    }
+  });
+}
+
+function _swapGridCells(a, b) {
+  const parent = a.parentNode;
+  const ph = document.createComment('swap');
+  parent.insertBefore(ph, a);
+  parent.insertBefore(a, b);
+  parent.insertBefore(b, ph);
+  ph.remove();
 }
 
 // ── Confirm Flip 7 Round ──
