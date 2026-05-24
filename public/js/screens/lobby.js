@@ -28,8 +28,11 @@ export function mount(container, params = {}) {
   const topBar = document.getElementById('top-bar');
   topBar.style.display = 'flex';
   document.getElementById('top-bar-title').textContent = 'LOBBY';
-  document.getElementById('top-bar-back').classList.remove('hidden');
-  document.getElementById('top-bar-back').onclick = () => {
+  const backBtn = document.getElementById('top-bar-back');
+  backBtn.classList.remove('hidden');
+  backBtn.textContent = 'logout';
+  backBtn.setAttribute('aria-label', 'Leave room');
+  backBtn.onclick = () => {
     fb.unwatchRoom();
     router.navigate('home', {}, 'back');
   };
@@ -39,7 +42,7 @@ export function mount(container, params = {}) {
     <div class="p-6 pb-32">
       <!-- Room Code -->
       <div class="bg-surface-container-lowest border border-outline p-6 mb-6">
-        <p class="font-mono text-[10px] uppercase tracking-widest text-outline mb-2">ROOM PIN</p>
+        <p class="font-mono text-[10px] uppercase tracking-widest text-outline mb-2">LOBBY PIN</p>
         <div class="flex items-center justify-between">
           <span class="font-mono text-3xl font-bold tracking-[0.3em]">${roomCode}</span>
           <div class="flex items-center gap-2">

@@ -67,8 +67,11 @@ export function mount(container, params = {}) {
   // Top bar
   const topBar = document.getElementById('top-bar');
   topBar.style.display = 'flex';
-  document.getElementById('top-bar-back').classList.remove('hidden');
-  document.getElementById('top-bar-back').onclick = () => router.navigate('lobby', { roomCode });
+  const backBtn = document.getElementById('top-bar-back');
+  backBtn.classList.remove('hidden');
+  backBtn.textContent = 'arrow_back';
+  backBtn.setAttribute('aria-label', 'Go back');
+  backBtn.onclick = () => router.navigate('lobby', { roomCode });
 
   // Bottom nav
   bottomNav.show('dashboard');
