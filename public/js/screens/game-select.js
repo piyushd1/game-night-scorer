@@ -323,9 +323,8 @@ async function _startGame(container, roomCode) {
   }
 
   if (config.jua) {
-    const total = config.juaBuyIn * playerIds.length;
-    if (total % 3 !== 0) {
-      toast.show(`Buy In ×${playerIds.length} players = ₹${total} — must be divisible by 3`);
+    if (config.juaBuyIn % 3 !== 0) {
+      toast.show(`Buy In must be divisible by 3`);
       container.querySelector('#config-juaBuyIn')?.focus();
       return;
     }
