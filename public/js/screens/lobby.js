@@ -502,21 +502,18 @@ function _renderPlayers(container, players, isHost, roomCode, isPlaying = false)
         <div class="bg-surface-container-lowest border border-outline ${inactive} flex items-center">
           <div class="w-1.5 self-stretch" style="background:${color}"></div>
           <div class="flex-1 p-4 flex items-center gap-3">
-            <div class="w-10 h-10 border border-outline flex items-center justify-center font-mono font-bold text-sm" style="border-top: 3px solid ${color}">
-              ${escapeHTML(p.name.substring(0, 2))}
-            </div>
             <div class="flex-1 min-w-0">
-              <p class="font-headline font-extrabold text-sm uppercase truncate">${escapeHTML(p.name)}</p>
+              <p class="font-headline font-extrabold text-xl uppercase truncate">${escapeHTML(p.name)}</p>
               <p class="font-mono text-[10px] text-outline uppercase">${p.isActive ? 'ACTIVE' : 'INACTIVE'}</p>
             </div>
             ${isHost ? `
               <div class="flex gap-1">
                 <button class="player-toggle p-1.5 hover:bg-surface-container-high transition-colors" data-id="${escapeHTML(p.id)}" data-active="${p.isActive}" title="${p.isActive ? 'Deactivate' : 'Activate'}" aria-label="${p.isActive ? 'Deactivate' : 'Activate'} ${escapeHTML(p.name)}">
-                  <span aria-hidden="true" class="material-symbols-outlined text-sm">${p.isActive ? 'person_off' : 'person_add'}</span>
+                  <span aria-hidden="true" class="material-symbols-outlined text-[21px]">${p.isActive ? 'person_off' : 'person_add'}</span>
                 </button>
                 ${isPlaying ? '' : `
                 <button class="player-remove p-1.5 hover:bg-surface-container-high transition-colors" data-id="${escapeHTML(p.id)}" title="Remove" aria-label="Remove ${escapeHTML(p.name)}">
-                  <span aria-hidden="true" class="material-symbols-outlined text-sm text-error">close</span>
+                  <span aria-hidden="true" class="material-symbols-outlined text-[21px] text-error">close</span>
                 </button>
                 `}
               </div>
