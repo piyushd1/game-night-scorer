@@ -135,8 +135,8 @@ export function mount(container, params = {}) {
                 } else if (s.rank <= 3) {
                   terms.push(fmt(Math.round(reward)));
                 }
-                if (savesCount > 0) terms.push(`(-${firstSaveAmt} x ${savesCount})`);
-                if (finesCount > 0) terms.push(`(-${influenceFine} x ${finesCount})`);
+                if (savesCount > 0) terms.push(`+ (-${firstSaveAmt} x ${savesCount})`);
+                if (finesCount > 0) terms.push(`+ (-${influenceFine} x ${finesCount})`);
                 terms.push(fmt(-buyIn));
                 const mathStr = terms.length > 1
                   ? `${terms.join(' ')} = ${fmt(Math.round(net))}`
