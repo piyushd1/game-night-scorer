@@ -83,6 +83,7 @@ export function mount(container, params = {}) {
             let pool = rounds.filter((r) => r.jua?.firstSavePid).length * firstSaveAmt;
             pool += Object.values(game.juaFines || {}).reduce((s, n) => s + n, 0) * influenceFine;
 
+            const d1 = (v) => parseFloat(v.toFixed(1));
             const fmt = (n) => `${n >= 0 ? '+' : ''}${n}`;
 
             // Group standings by rank to detect ties
@@ -133,17 +134,17 @@ export function mount(container, params = {}) {
                   // Split into base position amount and pool share, even for ties
                   const potsCount = Math.min(n1, 3);
                   const totalNoPool = [pot1, pot2, pot3].slice(0, potsCount).reduce((a, b) => a + b, 0) - pool;
-                  terms.push(fmt(Math.round(totalNoPool / n1)));
-                  if (pool > 0) terms.push(fmt(Math.round(pool / n1)));
+                  terms.push(fmt(d1(totalNoPool / n1)));
+                  if (pool > 0) terms.push(fmt(d1(pool / n1)));
                 } else if (s.rank <= 3) {
-                  terms.push(fmt(Math.round(reward)));
+                  terms.push(fmt(d1(reward)));
                 }
                 if (savesCount > 0) terms.push(`+ (-${firstSaveAmt} x ${savesCount})`);
                 if (finesCount > 0) terms.push(`+ (-${influenceFine} x ${finesCount})`);
                 terms.push(fmt(-buyIn));
                 const mathStr = terms.length > 1
-                  ? `${terms.join(' ')} = ${fmt(Math.round(net))}`
-                  : fmt(Math.round(net));
+                  ? `${terms.join(' ')} = ${fmt(d1(net))}`
+                  : fmt(d1(net));
                 netLabel = `<p class="font-mono text-sm opacity-70">${mathStr}</p>`;
               }
               return `
@@ -164,7 +165,7 @@ export function mount(container, params = {}) {
             const hasTie = juaOn && (n1 > 1 || n2 > 1 || n3 > 1);
             let tieHtml = '';
             if (hasTie) {
-              const r = (v) => Math.round(v);
+              const r = (v) => parseFloat(v.toFixed(1));
               const posLine = (rank, count) => {
                 const label = ['1st', '2nd', '3rd'][rank - 1];
                 const pot = [pot1, pot2, pot3][rank - 1];
