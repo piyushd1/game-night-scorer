@@ -331,13 +331,13 @@ function _render(container, roomCode) {
   if (game.config?.jua && !_editScoresMode) {
     const numPlayers = playerIds.length;
     const buyIn = game.config.juaBuyIn || 30;
-    const baseShare = (buyIn * numPlayers) / 3;
+    const totalPot = buyIn * numPlayers;
     const juaPool = _computeJuaPool(game);
     const rankLabels = ['1ST', '2ND', '3RD'];
     const positions = [1, 2, 3].map((rank) => {
       const s = standings.find((x) => x.rank === rank);
       const pName = s ? (snapshot[s.playerId]?.name || s.playerId) : '—';
-      const amount = baseShare + (rank === 1 ? 20 + juaPool : rank === 2 ? 0 : -20);
+      const amount = rank === 1 ? (totalPot * 2) / 5 + juaPool : rank === 2 ? (totalPot * 2) / 5 : (totalPot * 1) / 5;
       return { rank, name: pName, amount };
     });
     const fineEntries = Object.entries(game.juaFines || {})

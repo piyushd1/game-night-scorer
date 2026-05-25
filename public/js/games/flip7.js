@@ -92,7 +92,7 @@ export default {
     const buyIn = config.juaBuyIn || 30;
     const firstSaveAmt = config.juaFirstSave || 5;
     const influenceFine = config.juaInfluenceFine || 10;
-    const baseShare = (buyIn * numPlayers) / 3;
+    const totalPot = buyIn * numPlayers;
 
     let pool = 0;
     const rounds = game.rounds ? Object.values(game.rounds) : [];
@@ -100,16 +100,20 @@ export default {
     const totalFines = Object.values(game.juaFines || {}).reduce((s, n) => s + n, 0);
     pool += totalFines * influenceFine;
 
+    const pot1 = (totalPot * 2) / 5 + pool;
+    const pot2 = (totalPot * 2) / 5;
+    const pot3 = (totalPot * 1) / 5;
+
     const standings = this.deriveStandings(game.totals || {}, game.playerIds || []);
     const payouts = standings
       .filter((s) => s.rank <= 3)
       .map((s) => ({
         playerId: s.playerId,
         rank: s.rank,
-        amount: baseShare + (s.rank === 1 ? 20 + pool : s.rank === 2 ? 0 : -20),
+        amount: s.rank === 1 ? pot1 : s.rank === 2 ? pot2 : pot3,
       }));
 
-    return { baseShare, pool, payouts };
+    return { pool, payouts };
   },
 
   getRoundPoints(roundData, playerId) {

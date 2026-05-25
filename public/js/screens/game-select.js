@@ -323,8 +323,8 @@ async function _startGame(container, roomCode) {
   }
 
   if (config.jua) {
-    if (config.juaBuyIn % 3 !== 0) {
-      toast.show(`Buy In must be divisible by 3`);
+    if (config.juaBuyIn % 5 !== 0) {
+      toast.show(`Buy In must be a multiple of 5`);
       container.querySelector('#config-juaBuyIn')?.focus();
       return;
     }
