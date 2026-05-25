@@ -332,7 +332,7 @@ export async function submitGameAbandon(roomCode, gameId) {
   });
 }
 
-export async function patchLastRoundMulti(roomCode, gameId, roundKey, pidEntries, newTotals) {
+export async function patchLastRoundMulti(roomCode, gameId, roundKey, pidEntries, newTotals, juaData) {
   if (!db) return;
   const updates = {
     [`rooms/${roomCode}/games/${gameId}/totals`]: newTotals,
@@ -342,6 +342,9 @@ export async function patchLastRoundMulti(roomCode, gameId, roundKey, pidEntries
   Object.entries(pidEntries).forEach(([pid, entry]) => {
     updates[`rooms/${roomCode}/games/${gameId}/rounds/${roundKey}/entries/${pid}`] = entry;
   });
+  if (juaData !== undefined) {
+    updates[`rooms/${roomCode}/games/${gameId}/rounds/${roundKey}/jua`] = juaData;
+  }
   await db.ref().update(updates);
 }
 

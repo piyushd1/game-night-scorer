@@ -42,6 +42,7 @@ let _editScoresEl = null;
 let _editScoresMode = false; // When true, tapping a player row opens adjust drawer instead of card drawer
 let _editAdjustments = {}; // { [pid]: newEntry } — buffered until SAVE is clicked
 let _editLastRoundKey = null; // round key captured when edit mode is entered
+let _editFirstSavePid = undefined; // undefined = untouched; null = cleared; pid = changed
 
 // Grayscale spritesheet: converted once via canvas, reused across all drawer opens.
 let _flip7SpriteSrc = '/images/flip7-cards.png';
@@ -149,6 +150,7 @@ export function unmount() {
   _editScoresMode = false;
   _editAdjustments = {};
   _editLastRoundKey = null;
+  _editFirstSavePid = undefined;
   _juaRoundData = { firstSavePid: null };
   _juaRoundTracked = -1;
   if (_juaModalEl) {
@@ -507,6 +509,7 @@ function _render(container, roomCode) {
             closeDropdown();
             _editLastRoundKey = item.dataset.roundKey;
             _editAdjustments = {};
+            _editFirstSavePid = undefined;
             _editScoresMode = true;
             _render(container, roomCode);
           });
@@ -515,6 +518,7 @@ function _render(container, roomCode) {
 
       const exitEditMode = () => {
         _editAdjustments = {};
+        _editFirstSavePid = undefined;
         _editScoresMode = false;
         _editLastRoundKey = null;
         _render(container, roomCode);
@@ -522,7 +526,9 @@ function _render(container, roomCode) {
       content.querySelector('#btn-edit-cancel')?.addEventListener('click', exitEditMode);
 
       content.querySelector('#btn-edit-save')?.addEventListener('click', async () => {
-        if (Object.keys(_editAdjustments).length === 0) { exitEditMode(); return; }
+        const hasScoreAdjustments = Object.keys(_editAdjustments).length > 0;
+        const hasFirstSaveChange = game.config?.jua && _editFirstSavePid !== undefined;
+        if (!hasScoreAdjustments && !hasFirstSaveChange) { exitEditMode(); return; }
         const patchedRounds = rounds.map((rnd, i) =>
           i === editingRoundIndex
             ? { ...rnd, entries: { ...(rnd.entries || {}), ..._editAdjustments } }
@@ -534,10 +540,13 @@ function _render(container, roomCode) {
         saveBtn.disabled = true;
         saveBtn.innerHTML = '<div class="spinner mx-auto"></div>';
         const pendingAdjustments = { ..._editAdjustments };
+        const pendingFirstSavePid = _editFirstSavePid;
         _editAdjustments = {};
+        _editFirstSavePid = undefined;
         _editScoresMode = false;
+        const juaData = hasFirstSaveChange ? { firstSavePid: pendingFirstSavePid || null } : undefined;
         try {
-          await fb.patchLastRoundMulti(roomCode, game.gameId, _editLastRoundKey, pendingAdjustments, newTotals);
+          await fb.patchLastRoundMulti(roomCode, game.gameId, _editLastRoundKey, pendingAdjustments, newTotals, juaData);
           if (game.status === 'active' || game.status === 'overtime') {
             const endResult = gameModule.checkEnd(newTotals, game.config, playerIds, rounds.length);
             if (endResult.ended && endResult.winner) {
@@ -552,6 +561,7 @@ function _render(container, roomCode) {
           console.error('Save failed:', e);
           toast.show('Save failed');
           _editAdjustments = pendingAdjustments;
+          _editFirstSavePid = pendingFirstSavePid;
           _editScoresMode = true;
           _render(container, roomCode);
         }
@@ -607,8 +617,12 @@ function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundInd
   const hasDraft = draft && (draft.numbers.size > 0 || draft.actions.size > 0 || draft.x2);
 
   const chipList = roundHistory.map((pts, i) => {
-    const label = `${pts}${roundFlip7[i] ? ' 🔥' : ''}${roundJuaSave[i] ? ' ❤️' : ''}`;
-    if (_editScoresMode && i === editingRoundIndex && _editAdjustments[pid]) {
+    const isEditingRound = _editScoresMode && i === editingRoundIndex;
+    const showHeart = (isEditingRound && _editFirstSavePid !== undefined)
+      ? _editFirstSavePid === pid
+      : roundJuaSave[i];
+    const label = `${pts}${roundFlip7[i] ? ' 🔥' : ''}${showHeart ? ' ❤️' : ''}`;
+    if (isEditingRound) {
       return `<span class="inline-block font-mono text-sm px-1.5 py-0.5" style="background:#000;color:#fff;border:1px solid #000">${label}</span>`;
     }
     return `<span class="inline-block font-mono text-sm bg-surface-container-low border border-outline-variant px-1.5 py-0.5 text-on-surface">${label}</span>`;
@@ -1142,6 +1156,10 @@ function _openAdjustDrawer(container, roomCode, game, pid, snapshot) {
   const color = ACCENT_COLORS[p.accentIndex || 0];
   const name = escapeHTML(p.name || pid);
 
+  // For first save display: use pending change if set, otherwise read from round data
+  const effectiveFirstSavePid = _editFirstSavePid !== undefined ? _editFirstSavePid : (selectedRound.jua?.firstSavePid || null);
+  const isFirstSave = effectiveFirstSavePid === pid;
+
   _editScoresEl.innerHTML = `
     <div id="adjust-backdrop" class="absolute inset-0 bg-black/50"></div>
     <div class="relative w-full bg-surface-container-lowest border-t-2 border-outline">
@@ -1152,6 +1170,14 @@ function _openAdjustDrawer(container, roomCode, game, pid, snapshot) {
       <div class="px-4 pb-3 border-b border-outline-variant">
         <p class="font-headline font-bold text-4xl uppercase truncate">${name}</p>
       </div>
+      ${game.config?.jua ? `
+      <div class="px-4 pt-2 pb-0 flex justify-center">
+        <button id="adj-first-save-btn" type="button"
+          class="font-mono text-xs uppercase tracking-widest px-4 py-2 border transition-colors whitespace-nowrap ${isFirstSave ? 'bg-primary text-on-primary border-primary' : 'border-outline hover:border-primary'}">
+          FIRST SAVE ❤️
+        </button>
+      </div>
+      ` : ''}
       <div class="px-4 py-4 flex items-center gap-2 pb-8">
         <div class="flex font-mono text-xs uppercase shrink-0">
           <button type="button" id="adj-add-btn"
@@ -1193,6 +1219,20 @@ function _openAdjustDrawer(container, roomCode, game, pid, snapshot) {
 
   addBtn.addEventListener('click', () => setOp(true));
   subBtn.addEventListener('click', () => setOp(false));
+
+  _editScoresEl.querySelector('#adj-first-save-btn')?.addEventListener('click', (e) => {
+    const current = _editFirstSavePid !== undefined ? _editFirstSavePid : (selectedRound.jua?.firstSavePid || null);
+    _editFirstSavePid = current === pid ? null : pid;
+    const btn = e.currentTarget;
+    if (_editFirstSavePid === pid) {
+      btn.classList.remove('border-outline', 'hover:border-primary');
+      btn.classList.add('bg-primary', 'text-on-primary', 'border-primary');
+    } else {
+      btn.classList.remove('bg-primary', 'text-on-primary', 'border-primary');
+      btn.classList.add('border-outline', 'hover:border-primary');
+    }
+    _render(container, roomCode);
+  });
 
   _editScoresEl.querySelector('#adjust-backdrop')?.addEventListener('click', _closeAdjustDrawer);
 
