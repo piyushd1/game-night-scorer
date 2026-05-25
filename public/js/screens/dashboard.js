@@ -32,11 +32,17 @@ let _flip7DrawerPlayerId = null; // Which player's drawer is currently open
 let _flip7Grayscale = false; // false = colour (default); true = grayscale (toggle hidden for now)
 let _flip7DragMode = false; // Drag-to-rearrange mode for the card grid
 
+// Jua round tracking state (reset each round)
+let _juaRoundData = { firstSavePid: null };
+let _juaRoundTracked = -1;
+let _juaModalEl = null; // Body-level modal — survives _render() calls
+
 // Edit scores overlay (body-level, survives _render() calls)
 let _editScoresEl = null;
 let _editScoresMode = false; // When true, tapping a player row opens adjust drawer instead of card drawer
 let _editAdjustments = {}; // { [pid]: newEntry } — buffered until SAVE is clicked
 let _editLastRoundKey = null; // round key captured when edit mode is entered
+let _editFirstSavePid = undefined; // undefined = untouched; null = cleared; pid = changed
 
 // Grayscale spritesheet: converted once via canvas, reused across all drawer opens.
 let _flip7SpriteSrc = '/images/flip7-cards.png';
@@ -94,6 +100,12 @@ export function mount(container, params = {}) {
   _editScoresEl.style.display = 'none';
   document.body.appendChild(_editScoresEl);
 
+  _juaModalEl = document.createElement('div');
+  _juaModalEl.id = 'jua-modal';
+  _juaModalEl.className = 'fixed inset-0 z-50 flex items-end';
+  _juaModalEl.style.display = 'none';
+  document.body.appendChild(_juaModalEl);
+
   // Watch for state changes
   const renderHandler = () => _render(container, roomCode);
   _unsubGames = state.on('games', renderHandler);
@@ -138,6 +150,13 @@ export function unmount() {
   _editScoresMode = false;
   _editAdjustments = {};
   _editLastRoundKey = null;
+  _editFirstSavePid = undefined;
+  _juaRoundData = { firstSavePid: null };
+  _juaRoundTracked = -1;
+  if (_juaModalEl) {
+    _juaModalEl.remove();
+    _juaModalEl = null;
+  }
 }
 
 function _render(container, roomCode) {
@@ -215,6 +234,7 @@ function _render(container, roomCode) {
 
   // Round points per player — use game module's getRoundPoints for accuracy
   let roundPoints = {};
+  let roundFlip7Meta = {};
   let cacheHit = false;
 
   if (game.rounds && typeof game.rounds === 'object') {
@@ -222,35 +242,50 @@ function _render(container, roomCode) {
     // Ensure player list hasn't changed (strict equality on array ref)
     if (cached && cached.playerIds === playerIds) {
       roundPoints = cached.result;
+      roundFlip7Meta = cached.flip7Meta || {};
       cacheHit = true;
     }
   }
 
   if (!cacheHit) {
-    playerIds.forEach((pid) => { roundPoints[pid] = []; });
+    playerIds.forEach((pid) => { roundPoints[pid] = []; roundFlip7Meta[pid] = []; });
     rounds.forEach((rnd) => {
       playerIds.forEach((pid) => {
         roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
+        roundFlip7Meta[pid].push(rnd.entries?.[pid]?.flip7 || false);
       });
     });
 
     if (game.rounds && typeof game.rounds === 'object') {
-      _roundPointsCache.set(game.rounds, { result: roundPoints, playerIds });
+      _roundPointsCache.set(game.rounds, { result: roundPoints, flip7Meta: roundFlip7Meta, playerIds });
     }
+  }
+
+  // Per-player jua first-save metadata (one boolean per committed round)
+  const roundJuaMeta = {};
+  if (game.config?.jua) {
+    playerIds.forEach((pid) => {
+      roundJuaMeta[pid] = rounds.map((rnd) => rnd.jua?.firstSavePid === pid);
+    });
   }
 
   // In edit mode, overlay buffered adjustments onto the display round points so
   // the chip for the edited round shows the pending value before SAVE is clicked.
   let displayRoundPoints = roundPoints;
+  let displayRoundFlip7Meta = roundFlip7Meta;
   if (_editScoresMode && editingRoundIndex >= 0 && Object.keys(_editAdjustments).length > 0) {
     displayRoundPoints = {};
+    displayRoundFlip7Meta = {};
     playerIds.forEach((pid) => {
       const chips = [...(roundPoints[pid] || [])];
+      const metas = [...(roundFlip7Meta[pid] || [])];
       if (_editAdjustments[pid]) {
         const e = _editAdjustments[pid];
         chips[editingRoundIndex] = (e.basePoints || 0) + (e.flip7 ? 15 : 0);
+        metas[editingRoundIndex] = e.flip7 || false;
       }
       displayRoundPoints[pid] = chips;
+      displayRoundFlip7Meta[pid] = metas;
     });
   }
 
@@ -260,12 +295,13 @@ function _render(container, roomCode) {
     _flip7RoundCount = rounds.length;
   }
 
-  let html = '';
-
-  // Overtime banner
-  if (game.status === 'overtime') {
-    html += `<div class="overtime-banner mb-4">TIE-BREAKER / OVERTIME</div>`;
+  // Clear Jua round data when round count changes
+  if (game.type === 'flip7' && game.config?.jua && rounds.length !== _juaRoundTracked) {
+    _juaRoundData = { firstSavePid: null };
+    _juaRoundTracked = rounds.length;
   }
+
+  let html = '';
 
   // Game info bar
   const isFlip7Host = game.type === 'flip7' && isHost
@@ -291,6 +327,39 @@ function _render(container, roomCode) {
     return;
   }
 
+  // Jua prize card — shown for all viewers when Jua is enabled
+  if (game.config?.jua && !_editScoresMode) {
+    const numPlayers = playerIds.length;
+    const buyIn = game.config.juaBuyIn || 30;
+    const baseShare = (buyIn * numPlayers) / 3;
+    const juaPool = _computeJuaPool(game);
+    const rankLabels = ['1ST', '2ND', '3RD'];
+    const positions = [1, 2, 3].map((rank) => {
+      const s = standings.find((x) => x.rank === rank);
+      const pName = s ? (snapshot[s.playerId]?.name || s.playerId) : '—';
+      const amount = baseShare + (rank === 1 ? 20 + juaPool : rank === 2 ? 0 : -20);
+      return { rank, name: pName, amount };
+    });
+    const fineEntries = Object.entries(game.juaFines || {})
+      .filter(([, count]) => count > 0)
+      .sort(([, a], [, b]) => b - a)
+      .map(([pid, count]) => `${escapeHTML(snapshot[pid]?.name || pid)} x ${count}`);
+    html += `
+      <div class="flex border border-outline">
+        ${positions.map((pos, i) => `
+          <div class="flex-1 p-3 text-center ${i < 2 ? 'border-r border-outline' : ''}">
+            <p class="font-mono text-[9px] uppercase tracking-widest text-outline">${rankLabels[i]}</p>
+            <p class="font-mono text-2xl font-bold">₹${pos.amount}</p>
+          </div>
+        `).join('')}
+      </div>
+      ${fineEntries.length > 0 ? `
+        <p class="font-mono text-xs text-outline px-1 pt-1">Fines: ${fineEntries.join(', ')}</p>
+      ` : ''}
+      <div class="mb-6"></div>
+    `;
+  }
+
   // Sort: inactive players drop to the bottom regardless of score,
   // so active rankings stay visually clear.
   const playersMap = state.get('players') || {};
@@ -306,14 +375,30 @@ function _render(container, roomCode) {
     const p = snapshot[s.playerId] || {};
     if (isFlip7Host && !isInactive(s.playerId)) {
       // Tappable row for active players — host enters cards via drawer
-      html += _renderFlip7HostRow(s, p, displayRoundPoints[s.playerId] || [], editingRoundIndex);
+      const liveFirstSave = game.config?.jua && game.juaLive?.firstSavePid === s.playerId;
+      html += _renderFlip7HostRow(s, p, displayRoundPoints[s.playerId] || [], editingRoundIndex, displayRoundFlip7Meta[s.playerId] || [], roundJuaMeta[s.playerId] || [], liveFirstSave);
     } else {
+      const liveEntry = game.liveRound?.[s.playerId];
+      const spectatorRounds = liveEntry != null
+        ? [...(displayRoundPoints[s.playerId] || []), liveEntry.pts]
+        : (displayRoundPoints[s.playerId] || []);
+      const spectatorMeta = liveEntry != null
+        ? [...(displayRoundFlip7Meta[s.playerId] || []), liveEntry.flip7 || false]
+        : (displayRoundFlip7Meta[s.playerId] || []);
+      const liveFirstSave = game.config?.jua && game.juaLive?.firstSavePid === s.playerId;
+      const spectatorJuaMeta = liveEntry != null
+        ? [...(roundJuaMeta[s.playerId] || []), liveFirstSave]
+        : (roundJuaMeta[s.playerId] || []);
       html += renderRow({
         name: p.name || s.playerId,
         total: s.total,
         accentIndex: p.accentIndex || 0,
         rank: s.rank,
-        rounds: displayRoundPoints[s.playerId] || [],
+        rounds: spectatorRounds,
+        roundsMeta: game.type === 'flip7' ? spectatorMeta : [],
+        roundsJuaMeta: spectatorJuaMeta,
+
+        hasLiveChip: liveEntry != null,
         progressPct: getProgress(s.total),
         isLeader: s.rank === 1,
         winMode: gameModule.winMode,
@@ -397,23 +482,29 @@ function _render(container, roomCode) {
       const dropdownEl = content.querySelector('#round-dropdown');
       const pencilBtn = content.querySelector('#btn-edit-scores');
       if (pencilBtn && dropdownEl) {
+        const closeDropdown = () => {
+          dropdownEl.style.display = 'none';
+          document.removeEventListener('click', closeDropdown);
+        };
+
         pencilBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           const open = dropdownEl.style.display !== 'none';
-          dropdownEl.style.display = open ? 'none' : 'block';
-          if (!open) {
-            document.addEventListener('click', function closeDropdown() {
-              dropdownEl.style.display = 'none';
-              document.removeEventListener('click', closeDropdown);
-            });
+          if (open) {
+            closeDropdown();
+          } else {
+            dropdownEl.style.display = 'block';
+            document.addEventListener('click', closeDropdown);
           }
         });
+
         dropdownEl.querySelectorAll('.round-dropdown-item').forEach((item) => {
           item.addEventListener('click', (e) => {
             e.stopPropagation();
-            dropdownEl.style.display = 'none';
+            closeDropdown();
             _editLastRoundKey = item.dataset.roundKey;
             _editAdjustments = {};
+            _editFirstSavePid = undefined;
             _editScoresMode = true;
             _render(container, roomCode);
           });
@@ -422,6 +513,7 @@ function _render(container, roomCode) {
 
       const exitEditMode = () => {
         _editAdjustments = {};
+        _editFirstSavePid = undefined;
         _editScoresMode = false;
         _editLastRoundKey = null;
         _render(container, roomCode);
@@ -429,7 +521,9 @@ function _render(container, roomCode) {
       content.querySelector('#btn-edit-cancel')?.addEventListener('click', exitEditMode);
 
       content.querySelector('#btn-edit-save')?.addEventListener('click', async () => {
-        if (Object.keys(_editAdjustments).length === 0) { exitEditMode(); return; }
+        const hasScoreAdjustments = Object.keys(_editAdjustments).length > 0;
+        const hasFirstSaveChange = game.config?.jua && _editFirstSavePid !== undefined;
+        if (!hasScoreAdjustments && !hasFirstSaveChange) { exitEditMode(); return; }
         const patchedRounds = rounds.map((rnd, i) =>
           i === editingRoundIndex
             ? { ...rnd, entries: { ...(rnd.entries || {}), ..._editAdjustments } }
@@ -441,32 +535,53 @@ function _render(container, roomCode) {
         saveBtn.disabled = true;
         saveBtn.innerHTML = '<div class="spinner mx-auto"></div>';
         const pendingAdjustments = { ..._editAdjustments };
+        const pendingFirstSavePid = _editFirstSavePid;
         _editAdjustments = {};
+        _editFirstSavePid = undefined;
         _editScoresMode = false;
+        const juaData = hasFirstSaveChange ? { firstSavePid: pendingFirstSavePid || null } : undefined;
         try {
-          await fb.patchLastRoundMulti(roomCode, game.gameId, _editLastRoundKey, pendingAdjustments, newTotals);
-          if (game.status === 'active' || game.status === 'overtime') {
+          await fb.patchLastRoundMulti(roomCode, game.gameId, _editLastRoundKey, pendingAdjustments, newTotals, juaData);
+          if (game.status === 'active') {
             const endResult = gameModule.checkEnd(newTotals, game.config, playerIds, rounds.length);
-            if (endResult.ended && endResult.winner) {
+            if (endResult.ended) {
               await fb.submitGameEnd(roomCode, game.gameId, endResult.winner);
               router.navigate('winner', { roomCode });
               return;
-            } else if (endResult.ended && endResult.overtime) {
-              toast.show('Tied! Overtime round needed');
             }
           }
         } catch (e) {
           console.error('Save failed:', e);
           toast.show('Save failed');
           _editAdjustments = pendingAdjustments;
+          _editFirstSavePid = pendingFirstSavePid;
           _editScoresMode = true;
           _render(container, roomCode);
         }
       });
 
-      // Open card drawer or adjust drawer depending on mode
+      // Open card drawer or adjust drawer; long-press opens Jua modal when Jua is active
       content.querySelectorAll('.flip7-player-row').forEach((btn) => {
+        let _lpTimer = null;
+        let _lpFired = false;
+
+        btn.addEventListener('pointerdown', () => {
+          _lpFired = false;
+          if (game.config?.jua && !_editScoresMode) {
+            _lpTimer = setTimeout(() => {
+              _lpFired = true;
+              _openJuaFineCounter(btn.dataset.playerId, game, roomCode);
+            }, 500);
+          }
+        });
+
+        const _cancelLp = () => { clearTimeout(_lpTimer); _lpTimer = null; };
+        btn.addEventListener('pointerup', _cancelLp);
+        btn.addEventListener('pointermove', _cancelLp);
+        btn.addEventListener('pointercancel', _cancelLp);
+
         btn.addEventListener('click', () => {
+          if (_lpFired) { _lpFired = false; return; }
           if (_editScoresMode) {
             _openAdjustDrawer(container, roomCode, game, btn.dataset.playerId, snapshot);
           } else {
@@ -484,7 +599,7 @@ function _render(container, roomCode) {
 
 // ── Flip 7 tappable player row ──
 
-function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundIndex = -1) {
+function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundIndex = -1, roundFlip7 = [], roundJuaSave = [], isLiveFirstSave = false) {
   const { playerId: pid, total, rank } = standing;
   const color = ACCENT_COLORS[playerData.accentIndex || 0];
   const name = escapeHTML(playerData.name || pid);
@@ -494,20 +609,26 @@ function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundInd
   const draft = _flip7Draft[pid];
   const hasDraft = draft && (draft.numbers.size > 0 || draft.actions.size > 0 || draft.x2);
 
-  const roundChips = roundHistory.map((pts, i) => {
-    const label = `${pts >= 0 ? '+' : ''}${pts}`;
-    if (_editScoresMode && i === editingRoundIndex && _editAdjustments[pid]) {
+  const chipList = roundHistory.map((pts, i) => {
+    const isEditingRound = _editScoresMode && i === editingRoundIndex;
+    const showHeart = (isEditingRound && _editFirstSavePid !== undefined)
+      ? _editFirstSavePid === pid
+      : roundJuaSave[i];
+    const label = `${pts}${roundFlip7[i] ? ' 🔥' : ''}${showHeart ? ' ❤️' : ''}`;
+    if (isEditingRound) {
       return `<span class="inline-block font-mono text-sm px-1.5 py-0.5" style="background:#000;color:#fff;border:1px solid #000">${label}</span>`;
     }
     return `<span class="inline-block font-mono text-sm bg-surface-container-low border border-outline-variant px-1.5 py-0.5 text-on-surface">${label}</span>`;
-  }).join('');
+  });
 
   let draftChip = '';
   if (hasDraft) {
     const { basePoints, flip7 } = _computeFlip7Score(draft);
     const roundPts = basePoints + (flip7 ? 15 : 0);
-    const chipLabel = `+${roundPts}${flip7 ? ' F7' : ''}`;
+    const chipLabel = `${roundPts}${flip7 ? ' 🔥' : ''}${isLiveFirstSave ? ' ❤️' : ''}`;
     draftChip = `<span class="inline-block font-mono text-sm px-1.5 py-0.5" style="background:#000;color:#fff;border:1px solid #000">${chipLabel}</span>`;
+  } else if (isLiveFirstSave) {
+    draftChip = `<span class="inline-block font-mono text-sm px-1.5 py-0.5 border border-outline-variant">❤️</span>`;
   }
 
   return `
@@ -524,10 +645,15 @@ function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundInd
           <div class="p-4 flex items-center gap-3">
             <div class="flex-1 min-w-0">
               <p class="font-headline font-extrabold text-xl uppercase truncate">${name}</p>
-              <div class="flex gap-1 mt-1 flex-wrap items-center">
-                ${roundChips}
-                ${draftChip}
-              </div>
+              ${(() => {
+                const all = draftChip ? [...chipList, draftChip] : chipList;
+                if (all.length === 0) return '';
+                let rows = '';
+                for (let i = 0; i < all.length; i += 5) {
+                  rows += `<div class="flex gap-1">${all.slice(i, i + 5).join('')}</div>`;
+                }
+                return `<div class="flex flex-col gap-1 mt-2">${rows}</div>`;
+              })()}
             </div>
             <div class="text-right shrink-0">
               <p class="font-mono text-2xl font-bold">${total}</p>
@@ -537,6 +663,20 @@ function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundInd
       </div>
     </div>
   `;
+}
+
+// ── Jua pool helper ──
+
+function _computeJuaPool(game) {
+  const config = game.config || {};
+  const firstSaveAmt = config.juaFirstSave || 5;
+  const influenceFine = config.juaInfluenceFine || 10;
+  let pool = 0;
+  const rounds = game.rounds ? Object.values(game.rounds) : [];
+  rounds.forEach((rnd) => { if (rnd.jua?.firstSavePid) pool += firstSaveAmt; });
+  const totalFines = Object.values(game.juaFines || {}).reduce((s, n) => s + n, 0);
+  pool += totalFines * influenceFine;
+  return pool;
 }
 
 // ── Flip 7 score computation (mirrors gameModule.computeScoreFromCards) ──
@@ -558,6 +698,7 @@ async function _pushLiveTotals(roomCode, game) {
   const committedTotals = game.totals || {};
   const playersMap = state.get('players') || {};
   const liveTotals = {};
+  const liveRound = {};
   playerIds.forEach((pid) => {
     const committed = committedTotals[pid] || 0;
     if (playersMap[pid]?.isActive === false) {
@@ -566,13 +707,15 @@ async function _pushLiveTotals(roomCode, game) {
       const draft = _flip7Draft[pid];
       if (draft) {
         const { basePoints, flip7 } = _computeFlip7Score(draft);
-        liveTotals[pid] = committed + basePoints + (flip7 ? 15 : 0);
+        const roundPts = basePoints + (flip7 ? 15 : 0);
+        liveTotals[pid] = committed + roundPts;
+        liveRound[pid] = { pts: roundPts, flip7 };
       } else {
         liveTotals[pid] = committed;
       }
     }
   });
-  await fb.updateLiveTotals(roomCode, game.gameId, liveTotals);
+  await fb.updateLiveTotals(roomCode, game.gameId, liveTotals, liveRound);
 }
 
 // ── Flip 7 card drawer ──
@@ -642,7 +785,7 @@ function _openFlip7Drawer(container, roomCode, playerId, snapshot, game) {
 
   // Build all 20 grid cells using the spritesheet
   const cardBtns = _F7_CARD_DATA.map((c) => {
-    if (c.empty) return `<div class="flex items-center justify-center" style="aspect-ratio:130/204"><button type="button" id="flip7-done-btn" aria-label="Done" class="flex items-center justify-center border-2 border-primary text-primary hover:bg-primary hover:text-on-primary transition-colors" style="width:75%;aspect-ratio:130/204;box-shadow:0 3px 5px -1px rgba(0,0,0,0.18)"><span aria-hidden="true" class="material-symbols-outlined" style="font-size:20px">check</span></button></div>`;
+    if (c.empty) return `<div class="flex items-center justify-center" style="aspect-ratio:130/204"><button type="button" id="flip7-done-btn" aria-label="Done" class="flex items-center justify-center border-2 border-primary text-primary hover:bg-primary hover:text-on-primary transition-colors" style="width:75%;aspect-ratio:130/204;box-shadow:0 3px 5px -1px rgba(0,0,0,0.18)"><span aria-hidden="true" class="material-symbols-outlined" style="font-size:28px;font-variation-settings:'wght' 700">check</span></button></div>`;
     const bg = _cardSpriteBg(c.col, c.row);
     const cardStyle = `aspect-ratio:130/204;border-radius:6px;box-shadow:0 3px 5px -1px rgba(0,0,0,0.18);${bg}`;
     if (c.id) {
@@ -666,13 +809,24 @@ function _openFlip7Drawer(container, roomCode, playerId, snapshot, game) {
             ${_flip7DragMode ? 'DONE' : 'ARRANGE'}
           </button>
         </div>
-        <div class="px-4 pb-3 flex items-center justify-between border-b border-outline-variant">
-          <div>
-            <p id="flip7-header-score" class="font-mono text-4xl font-bold leading-none">0</p>
+        <div class="px-4 pb-3 flex items-center gap-3 border-b border-outline-variant">
+          <p class="font-headline font-bold text-4xl uppercase truncate min-w-0 flex-1 shrink">${name}</p>
+          <div class="shrink-0 text-right">
+            <div class="flex items-center gap-2 justify-end">
+              <p id="flip7-header-score" class="font-mono text-4xl font-bold leading-none">0</p>
+              <span id="flip7-header-emoji" class="text-4xl leading-none" style="display:none">🔥</span>
+            </div>
             <p id="flip7-header-label" class="font-mono text-[9px] text-outline mt-0.5 uppercase tracking-widest">THIS ROUND</p>
           </div>
-          <p class="font-headline font-bold text-4xl uppercase truncate">${name}</p>
         </div>
+        ${game.config?.jua ? `
+        <div class="px-4 pt-2 pb-0 flex justify-center">
+          <button id="flip7-first-save-btn" type="button"
+            class="font-mono text-xs uppercase tracking-widest px-4 py-2 border transition-colors whitespace-nowrap ${_juaRoundData.firstSavePid === playerId ? 'bg-primary text-on-primary border-primary' : 'border-outline hover:border-primary'}">
+            FIRST SAVE ❤️
+          </button>
+        </div>
+        ` : ''}
       </div>
       <!-- Scrollable 5-col card grid -->
       <div class="overflow-y-auto flex-1 p-4">
@@ -688,7 +842,14 @@ function _openFlip7Drawer(container, roomCode, playerId, snapshot, game) {
 
   _refreshDrawerCardStates(playerId);
   _updateDrawerScore(playerId);
-  _bindDrawerEvents(container, roomCode, playerId);
+
+  const draftSnapshot = {
+    numbers: new Set(_flip7Draft[playerId].numbers),
+    actions: new Set(_flip7Draft[playerId].actions),
+    x2: _flip7Draft[playerId].x2,
+    firstSavePid: _juaRoundData.firstSavePid,
+  };
+  _bindDrawerEvents(container, roomCode, playerId, draftSnapshot);
 }
 
 function _closeFlip7Drawer() {
@@ -729,22 +890,47 @@ function _applyCardStyle(btn, selected) {
 
 function _updateDrawerScore(playerId) {
   const scoreEl = _flip7DrawerEl?.querySelector('#flip7-header-score');
-  const labelEl = _flip7DrawerEl?.querySelector('#flip7-header-label');
+  const emojiEl = _flip7DrawerEl?.querySelector('#flip7-header-emoji');
+  const firstSaveBtn = _flip7DrawerEl?.querySelector('#flip7-first-save-btn');
   if (!scoreEl) return;
   const draft = _flip7Draft[playerId];
-  if (!draft) { scoreEl.textContent = '0'; return; }
+  if (!draft) { scoreEl.textContent = '0'; if (emojiEl) emojiEl.style.display = 'none'; return; }
   const { basePoints, flip7 } = _computeFlip7Score(draft);
   const roundPts = basePoints + (flip7 ? 15 : 0);
   scoreEl.textContent = roundPts;
-  if (labelEl) labelEl.textContent = flip7 ? 'THIS ROUND · FLIP 7!' : 'THIS ROUND';
+  if (emojiEl) emojiEl.style.display = flip7 ? '' : 'none';
+  if (firstSaveBtn) {
+    if (flip7) {
+      if (_juaRoundData.firstSavePid === playerId) _juaRoundData.firstSavePid = null;
+      firstSaveBtn.disabled = true;
+      firstSaveBtn.classList.remove('bg-primary', 'text-on-primary', 'border-primary', 'border-outline', 'hover:border-primary');
+      firstSaveBtn.classList.add('opacity-30', 'border-outline', 'cursor-not-allowed');
+    } else {
+      firstSaveBtn.disabled = false;
+      firstSaveBtn.classList.remove('opacity-30', 'cursor-not-allowed');
+      if (_juaRoundData.firstSavePid === playerId) {
+        firstSaveBtn.classList.remove('border-outline', 'hover:border-primary');
+        firstSaveBtn.classList.add('bg-primary', 'text-on-primary', 'border-primary');
+      } else {
+        firstSaveBtn.classList.remove('bg-primary', 'text-on-primary', 'border-primary');
+        firstSaveBtn.classList.add('border-outline', 'hover:border-primary');
+      }
+    }
+  }
 }
 
-function _bindDrawerEvents(container, roomCode, playerId) {
+function _bindDrawerEvents(container, roomCode, playerId, draftSnapshot) {
   if (!_flip7DrawerEl) return;
   const draft = _flip7Draft[playerId];
   if (!draft) return;
 
   _flip7DrawerEl.querySelector('#flip7-drawer-backdrop')?.addEventListener('click', () => {
+    _flip7Draft[playerId].numbers = new Set(draftSnapshot.numbers);
+    _flip7Draft[playerId].actions = new Set(draftSnapshot.actions);
+    _flip7Draft[playerId].x2 = draftSnapshot.x2;
+    _juaRoundData.firstSavePid = draftSnapshot.firstSavePid;
+    const game = state.currentGame();
+    if (game) fb.updateJuaLive(roomCode, game.gameId, _juaRoundData.firstSavePid).catch(() => {});
     _closeFlip7Drawer();
     _render(container, roomCode);
   });
@@ -755,10 +941,27 @@ function _bindDrawerEvents(container, roomCode, playerId) {
     btn.style.color = '#fff';
     setTimeout(() => {
       const game = state.currentGame();
-      if (game) _pushLiveTotals(roomCode, game).catch(() => {});
+      if (game) {
+        _pushLiveTotals(roomCode, game).catch(() => {});
+        fb.updateJuaLive(roomCode, game.gameId, _juaRoundData.firstSavePid).catch(() => {});
+      }
       _closeFlip7Drawer();
       _render(container, roomCode);
     }, 150);
+  });
+
+  // Jua first-save toggle inside the scoring drawer
+  _flip7DrawerEl.querySelector('#flip7-first-save-btn')?.addEventListener('click', (e) => {
+    const isMarked = _juaRoundData.firstSavePid === playerId;
+    _juaRoundData.firstSavePid = isMarked ? null : playerId;
+    const btn = e.currentTarget;
+    if (_juaRoundData.firstSavePid === playerId) {
+      btn.classList.remove('border-outline', 'hover:border-primary');
+      btn.classList.add('bg-primary', 'text-on-primary', 'border-primary');
+    } else {
+      btn.classList.remove('bg-primary', 'text-on-primary', 'border-primary');
+      btn.classList.add('border-outline', 'hover:border-primary');
+    }
   });
 
   // ── Card selection (blocked in drag mode) ──
@@ -876,6 +1079,11 @@ async function _confirmFlip7Round(container, roomCode, initialGame, gameModule) 
 
   const draft = { entries };
 
+  // Attach Jua round data when Jua is enabled
+  if (game.config?.jua) {
+    draft.jua = { firstSavePid: _juaRoundData.firstSavePid || null };
+  }
+
   const validation = gameModule.validateRound(draft, game);
   if (!validation.valid) {
     toast.show(validation.error || 'Invalid round data');
@@ -892,11 +1100,12 @@ async function _confirmFlip7Round(container, roomCode, initialGame, gameModule) 
   try {
     await fb.submitRound(roomCode, game.gameId, rounds.length, draft, newTotals, endResult.ended ? endResult : null);
 
-    if (endResult.ended && endResult.winner) {
+    _juaRoundData = { firstSavePid: null };
+    _juaRoundTracked = rounds.length + 1;
+    fb.updateJuaLive(roomCode, game.gameId, null).catch(() => {});
+
+    if (endResult.ended) {
       router.navigate('winner', { roomCode });
-    } else if (endResult.ended && endResult.overtime) {
-      toast.show('Tied! Overtime round needed');
-      router.navigate('dashboard', { roomCode });
     } else {
       toast.show(`Round ${newRoundCount} submitted`);
       router.navigate('dashboard', { roomCode });
@@ -925,14 +1134,21 @@ function _openAdjustDrawer(container, roomCode, game, pid, snapshot) {
     return;
   }
 
-  // Use already-buffered adjustment for this player if they've been edited this session
-  const currentEntry = _editAdjustments[pid] || selectedRound.entries?.[pid] || { basePoints: 0, flip7: false };
-  const currentRoundPts = (currentEntry.basePoints || 0) + (currentEntry.flip7 ? 15 : 0);
+  const originalEntry = selectedRound.entries?.[pid] || { basePoints: 0, flip7: false };
+  const currentEntry = _editAdjustments[pid] || originalEntry;
+
+  // Compute the delta from original so re-opening shows what was last entered
+  const delta = (currentEntry.basePoints || 0) - (originalEntry.basePoints || 0);
+  const initialIsAdd = delta >= 0;
+  const initialAmount = Math.abs(delta);
 
   const p = snapshot[pid] || {};
   const color = ACCENT_COLORS[p.accentIndex || 0];
   const name = escapeHTML(p.name || pid);
-  const total = (game.totals || {})[pid] || 0;
+
+  // For first save display: use pending change if set, otherwise read from round data
+  const effectiveFirstSavePid = _editFirstSavePid !== undefined ? _editFirstSavePid : (selectedRound.jua?.firstSavePid || null);
+  const isFirstSave = effectiveFirstSavePid === pid;
 
   _editScoresEl.innerHTML = `
     <div id="adjust-backdrop" class="absolute inset-0 bg-black/50"></div>
@@ -944,16 +1160,24 @@ function _openAdjustDrawer(container, roomCode, game, pid, snapshot) {
       <div class="px-4 pb-3 border-b border-outline-variant">
         <p class="font-headline font-bold text-4xl uppercase truncate">${name}</p>
       </div>
+      ${game.config?.jua ? `
+      <div class="px-4 pt-2 pb-0 flex justify-center">
+        <button id="adj-first-save-btn" type="button"
+          class="font-mono text-xs uppercase tracking-widest px-4 py-2 border transition-colors whitespace-nowrap ${isFirstSave ? 'bg-primary text-on-primary border-primary' : 'border-outline hover:border-primary'}">
+          FIRST SAVE ❤️
+        </button>
+      </div>
+      ` : ''}
       <div class="px-4 py-4 flex items-center gap-2 pb-8">
         <div class="flex font-mono text-xs uppercase shrink-0">
           <button type="button" id="adj-add-btn"
-            class="px-4 py-3 border border-outline transition-colors"
-            style="background:#000;color:#fff;border-color:#000">+ADD</button>
+            class="px-4 py-3 border border-outline transition-colors">+ADD</button>
           <button type="button" id="adj-sub-btn"
-            class="px-4 py-3 border border-outline border-l-0 text-outline transition-colors">−SUB</button>
+            class="px-4 py-3 border border-outline border-l-0 transition-colors">−SUB</button>
         </div>
         <input type="number" id="adj-amount-input" inputmode="numeric"
-          class="score-input flex-1" placeholder="0" min="0">
+          class="score-input flex-1" placeholder="0" min="0"
+          value="${initialAmount || ''}">
         <button id="adj-apply-btn" class="btn-primary shrink-0 flex items-center justify-center" style="width:48px;height:48px;padding:0">
           <span aria-hidden="true" class="material-symbols-outlined" style="font-size:20px;font-variation-settings:'FILL' 1">check</span>
         </button>
@@ -966,7 +1190,7 @@ function _openAdjustDrawer(container, roomCode, game, pid, snapshot) {
 
   setTimeout(() => _editScoresEl.querySelector('#adj-amount-input')?.focus(), 50);
 
-  let isAdd = true;
+  let isAdd = initialIsAdd;
   const addBtn = _editScoresEl.querySelector('#adj-add-btn');
   const subBtn = _editScoresEl.querySelector('#adj-sub-btn');
 
@@ -980,8 +1204,25 @@ function _openAdjustDrawer(container, roomCode, game, pid, snapshot) {
     subBtn.style.borderColor = add ? '' : '#000';
   };
 
+  // Apply initial state
+  setOp(initialIsAdd);
+
   addBtn.addEventListener('click', () => setOp(true));
   subBtn.addEventListener('click', () => setOp(false));
+
+  _editScoresEl.querySelector('#adj-first-save-btn')?.addEventListener('click', (e) => {
+    const current = _editFirstSavePid !== undefined ? _editFirstSavePid : (selectedRound.jua?.firstSavePid || null);
+    _editFirstSavePid = current === pid ? null : pid;
+    const btn = e.currentTarget;
+    if (_editFirstSavePid === pid) {
+      btn.classList.remove('border-outline', 'hover:border-primary');
+      btn.classList.add('bg-primary', 'text-on-primary', 'border-primary');
+    } else {
+      btn.classList.remove('bg-primary', 'text-on-primary', 'border-primary');
+      btn.classList.add('border-outline', 'hover:border-primary');
+    }
+    _render(container, roomCode);
+  });
 
   _editScoresEl.querySelector('#adjust-backdrop')?.addEventListener('click', _closeAdjustDrawer);
 
@@ -989,12 +1230,9 @@ function _openAdjustDrawer(container, roomCode, game, pid, snapshot) {
     const amount = parseInt(_editScoresEl.querySelector('#adj-amount-input')?.value) || 0;
     if (amount === 0) { _closeAdjustDrawer(); return; }
 
-    const adjustment = isAdd ? amount : -amount;
-    const newBasePoints = Math.max(0, (currentEntry.basePoints || 0) + adjustment);
-    const newEntry = { ...currentEntry, basePoints: newBasePoints };
-
-    // Buffer the adjustment — written to Firebase only when SAVE is clicked
-    _editAdjustments[pid] = newEntry;
+    // Apply relative to original so re-edits replace rather than stack
+    const newBasePoints = Math.max(0, (originalEntry.basePoints || 0) + (isAdd ? amount : -amount));
+    _editAdjustments[pid] = { ...currentEntry, basePoints: newBasePoints };
     _closeAdjustDrawer();
     _render(container, roomCode);
   });
@@ -1004,6 +1242,70 @@ function _closeAdjustDrawer() {
   if (!_editScoresEl) return;
   _editScoresEl.style.display = 'none';
   _editScoresEl.innerHTML = '';
+  document.body.style.overflow = '';
+}
+
+// ── Jua Modal ──
+
+function _openJuaFineCounter(pid, game, roomCode) {
+  if (!_juaModalEl) return;
+  const snapshot = game.playerSnapshot || {};
+  const name = escapeHTML(snapshot[pid]?.name || pid);
+  const fineRate = game.config?.juaInfluenceFine || 10;
+  let fineCount = (game.juaFines || {})[pid] || 0;
+
+  const _totalRupees = () => fineCount * fineRate;
+
+  _juaModalEl.innerHTML = `
+    <div id="jua-modal-backdrop" class="absolute inset-0 bg-black/50"></div>
+    <div class="relative w-full bg-surface-container-lowest border-t-2 border-outline">
+      <div class="flex justify-center pt-3 pb-1"><div class="w-10 h-1 rounded-full bg-outline-variant"></div></div>
+      <div class="px-4 pb-3 border-b border-outline-variant">
+        <p class="font-mono text-[9px] uppercase tracking-widest text-outline mb-1">RECORD FINES</p>
+        <div class="flex items-center justify-between gap-3">
+          <p class="font-headline font-bold text-2xl uppercase truncate">${name}</p>
+          <p id="jua-fine-rupees" class="font-mono text-2xl font-bold shrink-0">₹${_totalRupees()}</p>
+        </div>
+      </div>
+      <div class="p-6 flex items-center justify-center gap-8 pb-4">
+        <button id="jua-fine-sub" type="button"
+          class="w-16 h-16 border-2 border-outline font-mono text-3xl flex items-center justify-center hover:bg-surface-container-high transition-colors disabled:opacity-30"
+          ${fineCount === 0 ? 'disabled' : ''}>−</button>
+        <span id="jua-fine-count" class="font-mono text-6xl font-bold w-16 text-center">${fineCount}</span>
+        <button id="jua-fine-add" type="button"
+          class="w-16 h-16 border-2 border-outline font-mono text-3xl flex items-center justify-center hover:bg-surface-container-high transition-colors">+</button>
+      </div>
+      <div class="px-4 pb-8">
+        <button id="jua-fine-done" type="button" class="w-full btn-primary py-3">DONE</button>
+      </div>
+    </div>
+  `;
+
+  _juaModalEl.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  const countEl = _juaModalEl.querySelector('#jua-fine-count');
+  const rupeesEl = _juaModalEl.querySelector('#jua-fine-rupees');
+  const subBtn = _juaModalEl.querySelector('#jua-fine-sub');
+
+  const _refresh = () => {
+    countEl.textContent = fineCount;
+    rupeesEl.textContent = `₹${_totalRupees()}`;
+    subBtn.disabled = fineCount === 0;
+    fb.updateJuaFines(roomCode, game.gameId, { ...(game.juaFines || {}), [pid]: fineCount }).catch(() => {});
+  };
+
+  _juaModalEl.querySelector('#jua-fine-add').addEventListener('click', () => { fineCount++; _refresh(); });
+  subBtn.addEventListener('click', () => { if (fineCount > 0) { fineCount--; _refresh(); } });
+
+  _juaModalEl.querySelector('#jua-modal-backdrop').addEventListener('click', _closeJuaModal);
+  _juaModalEl.querySelector('#jua-fine-done').addEventListener('click', _closeJuaModal);
+}
+
+function _closeJuaModal() {
+  if (!_juaModalEl) return;
+  _juaModalEl.style.display = 'none';
+  _juaModalEl.innerHTML = '';
   document.body.style.overflow = '';
 }
 
@@ -1025,18 +1327,8 @@ async function _undoRound(roomCode, game, gameModule) {
     newTotals = gameModule.applyRound(newTotals, rnd, game);
   });
 
-  // Re-evaluate end condition to determine correct status/overtime
-  const newRoundCount = allRoundsExceptLast.length;
-  const endResult = gameModule.checkEnd(newTotals, game.config, playerIds, newRoundCount);
-  let prevStatus = 'active';
-  let overtime = false;
-  if (endResult.ended && !endResult.winner) {
-    prevStatus = 'overtime';
-    overtime = true;
-  }
-
   try {
-    await fb.undoLastRound(roomCode, game.gameId, newTotals, prevStatus, overtime);
+    await fb.undoLastRound(roomCode, game.gameId, newTotals, 'active');
     toast.show('Round undone');
   } catch (e) {
     toast.show('Undo failed');

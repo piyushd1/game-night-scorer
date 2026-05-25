@@ -233,21 +233,19 @@ export async function submitRound(roomCode, gameId, roundIndex, roundData, newTo
   updates[`rooms/${roomCode}/games/${gameId}/rounds/${roundIndex}`] = roundData;
   updates[`rooms/${roomCode}/games/${gameId}/totals`] = newTotals;
   updates[`rooms/${roomCode}/games/${gameId}/liveTotals`] = null; // clear live preview on commit
+  updates[`rooms/${roomCode}/games/${gameId}/liveRound`] = null;
   updates[`rooms/${roomCode}/meta/updatedAt`] = Date.now();
 
   if (endResult) {
-    updates[`rooms/${roomCode}/games/${gameId}/status`] = endResult.overtime ? 'overtime' : 'finished';
-    updates[`rooms/${roomCode}/games/${gameId}/overtime`] = endResult.overtime || false;
-    if (endResult.winner) {
-      updates[`rooms/${roomCode}/games/${gameId}/winner`] = endResult.winner;
-      updates[`rooms/${roomCode}/games/${gameId}/finishedAt`] = Date.now();
-    }
+    updates[`rooms/${roomCode}/games/${gameId}/status`] = 'finished';
+    updates[`rooms/${roomCode}/games/${gameId}/winner`] = endResult.winner;
+    updates[`rooms/${roomCode}/games/${gameId}/finishedAt`] = Date.now();
   }
 
   await db.ref().update(updates);
 }
 
-export async function undoLastRound(roomCode, gameId, newTotals, prevStatus, overtime = false) {
+export async function undoLastRound(roomCode, gameId, newTotals, prevStatus) {
   if (!db) return;
 
 
@@ -268,7 +266,6 @@ export async function undoLastRound(roomCode, gameId, newTotals, prevStatus, ove
   updates[`rooms/${roomCode}/games/${gameId}/rounds/${lastKey}`] = null;
   updates[`rooms/${roomCode}/games/${gameId}/totals`] = newTotals;
   updates[`rooms/${roomCode}/games/${gameId}/status`] = prevStatus;
-  updates[`rooms/${roomCode}/games/${gameId}/overtime`] = overtime;
   updates[`rooms/${roomCode}/games/${gameId}/winner`] = null;
   updates[`rooms/${roomCode}/games/${gameId}/finishedAt`] = null;
   updates[`rooms/${roomCode}/meta/updatedAt`] = Date.now();
@@ -276,9 +273,22 @@ export async function undoLastRound(roomCode, gameId, newTotals, prevStatus, ove
   await db.ref().update(updates);
 }
 
-export async function updateLiveTotals(roomCode, gameId, liveTotals) {
+export async function updateLiveTotals(roomCode, gameId, liveTotals, liveRound = null) {
   if (!db) return;
-  await db.ref(`rooms/${roomCode}/games/${gameId}/liveTotals`).set(liveTotals);
+  await db.ref().update({
+    [`rooms/${roomCode}/games/${gameId}/liveTotals`]: liveTotals,
+    [`rooms/${roomCode}/games/${gameId}/liveRound`]: liveRound,
+  });
+}
+
+export async function updateJuaLive(roomCode, gameId, firstSavePid) {
+  if (!db) return;
+  await db.ref(`rooms/${roomCode}/games/${gameId}/juaLive`).set({ firstSavePid: firstSavePid || null });
+}
+
+export async function updateJuaFines(roomCode, gameId, fines) {
+  if (!db) return;
+  await db.ref(`rooms/${roomCode}/games/${gameId}/juaFines`).set(fines);
 }
 
 export async function adjustTotals(roomCode, gameId, newTotals) {
@@ -318,7 +328,7 @@ export async function submitGameAbandon(roomCode, gameId) {
   });
 }
 
-export async function patchLastRoundMulti(roomCode, gameId, roundKey, pidEntries, newTotals) {
+export async function patchLastRoundMulti(roomCode, gameId, roundKey, pidEntries, newTotals, juaData) {
   if (!db) return;
   const updates = {
     [`rooms/${roomCode}/games/${gameId}/totals`]: newTotals,
@@ -328,6 +338,9 @@ export async function patchLastRoundMulti(roomCode, gameId, roundKey, pidEntries
   Object.entries(pidEntries).forEach(([pid, entry]) => {
     updates[`rooms/${roomCode}/games/${gameId}/rounds/${roundKey}/entries/${pid}`] = entry;
   });
+  if (juaData !== undefined) {
+    updates[`rooms/${roomCode}/games/${gameId}/rounds/${roundKey}/jua`] = juaData;
+  }
   await db.ref().update(updates);
 }
 

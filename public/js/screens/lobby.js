@@ -13,6 +13,7 @@ import { ACCENT_COLORS } from '../state.js';
 import { escapeHTML } from '../utils.js';
 
 let _unsub = null;
+const _qrCache = {};
 
 export function mount(container, params = {}) {
   bottomNav.hide();
@@ -42,23 +43,22 @@ export function mount(container, params = {}) {
   container.innerHTML = `
     <div class="p-6 pb-32">
       <!-- Room Code -->
-      <div class="bg-surface-container-lowest border border-outline p-6 mb-6">
-        <p class="font-mono text-[10px] uppercase tracking-widest text-outline mb-2">LOBBY PIN</p>
-        <div class="flex items-center justify-between">
+      <div class="relative mb-6">
+        <button id="btn-lobby-pin" class="w-3/5 bg-surface-container-lowest border border-outline p-4 text-left transition-colors">
+          <p class="font-mono text-[10px] uppercase tracking-widest text-outline mb-2">CLICK TO COPY URL</p>
           <span class="font-mono text-3xl font-bold tracking-[0.3em]">${roomCode}</span>
-          <div class="flex items-center gap-2">
-            <button id="btn-qr" aria-label="Show QR code" title="Show QR code" class="font-mono text-[10px] uppercase tracking-widest border border-outline px-3 py-2 hover:bg-surface-container-high transition-colors flex items-center gap-1">
-              <span class="material-symbols-outlined" style="font-size:14px">qr_code_2</span>
-            </button>
-            <button id="btn-copy" class="font-mono text-[10px] uppercase tracking-widest border border-outline px-3 py-2 hover:bg-surface-container-high transition-colors">
-              COPY LINK
-            </button>
-          </div>
-        </div>
+        </button>
+        <div id="lobby-qr" class="absolute left-[60%] right-0 top-0 bottom-0 flex items-center justify-center" style="padding:3px"></div>
       </div>
 
       <!-- Current game card (shown when a game is active) -->
       <div id="current-game-card" class="mb-6"></div>
+
+      <!-- In-progress game actions (host only, while a game is running) -->
+      <div id="return-game-section" class="mb-6 flex flex-col gap-3" style="display:none"></div>
+
+      <!-- Finished game actions (host only, after a game ends) -->
+      <div id="finished-game-section" class="mb-6 flex flex-col gap-3" style="display:none"></div>
 
       <!-- Host-only: Add Player -->
       <div id="host-controls" style="display:none">
@@ -66,18 +66,18 @@ export function mount(container, params = {}) {
 
         <!-- Always-visible inline add. Mid-game adds are allowed; the new player joins the next game. -->
         <div id="add-player-row" class="flex gap-2 mb-2">
-          <label for="input-player-name" class="sr-only">Add player</label>
+          <label for="input-player-name" class="sr-only">Add Player</label>
           <input
             id="input-player-name"
             type="text"
             maxlength="12"
-            placeholder="Add player"
+            placeholder="Add Player"
             autocomplete="off"
             autocorrect="off"
             autocapitalize="characters"
             class="flex-1 bg-surface-container-lowest border border-outline font-headline font-bold text-sm uppercase py-3 px-4 placeholder:text-outline placeholder:normal-case placeholder:font-normal focus:outline-none focus:border-primary transition-colors"
           >
-          <button id="btn-confirm-add" aria-label="Add player" title="Add player" class="bg-primary text-on-primary px-4 font-headline font-bold text-sm uppercase tracking-widest flex items-center gap-1 hover:opacity-90 transition-opacity shrink-0">
+          <button id="btn-confirm-add" aria-label="Add Player" title="Add Player" class="bg-primary text-on-primary px-4 font-headline font-bold text-sm uppercase tracking-widest flex items-center gap-1 hover:opacity-90 transition-opacity shrink-0">
             <span class="material-symbols-outlined text-lg" aria-hidden="true">add</span>
           </button>
         </div>
@@ -101,14 +101,6 @@ export function mount(container, params = {}) {
             <div class="absolute top-[2px] left-[2px] w-[22px] h-[22px] bg-outline transition-transform" aria-hidden="true"></div>
           </button>
         </div>
-      </div>
-
-      <!-- Night Recap (visible after at least 1 game, only if tracking) -->
-      <div id="recap-section" class="mt-6" style="display:none">
-        <button id="btn-recap" class="w-full bg-surface-container-lowest border border-outline py-3 font-headline font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-surface-container-high transition-colors">
-          <span aria-hidden="true" class="material-symbols-outlined text-sm">bar_chart</span>
-          NIGHT RECAP
-        </button>
       </div>
 
       <!-- Start Game (host only) -->
@@ -140,20 +132,40 @@ export function unmount() {
 }
 
 function _bindEvents(container, roomCode) {
-  // QR code
-  container.querySelector('#btn-qr').addEventListener('click', () => {
+  // Inline QR code — generated once per session per room code, then reused
+  const qrEl = container.querySelector('#lobby-qr');
+  if (qrEl && window.QRCode) {
     const url = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
-    qrModal.show(url, roomCode);
+    if (_qrCache[roomCode]) {
+      const img = document.createElement('img');
+      img.src = _qrCache[roomCode];
+      img.style.display = 'block';
+      qrEl.appendChild(img);
+    } else {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (!document.contains(qrEl)) return; // unmounted before layout
+        const rect = qrEl.getBoundingClientRect();
+        const size = Math.min(rect.width, rect.height) - 6;
+        new window.QRCode(qrEl, { text: url, width: size, height: size, colorDark: '#000000', colorLight: '#ffffff', correctLevel: window.QRCode.CorrectLevel.L });
+        const canvas = qrEl.querySelector('canvas');
+        if (canvas) _qrCache[roomCode] = canvas.toDataURL();
+      }));
+    }
+  }
+
+  // Lobby PIN card — click to copy join URL
+  container.querySelector('#btn-lobby-pin')?.addEventListener('click', (e) => {
+    const btn = e.currentTarget;
+    btn.blur();
+    btn.style.background = 'var(--color-surface-container-high, #e0e0e0)';
+    setTimeout(() => { btn.style.background = ''; }, 150);
+    const url = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
+    navigator.clipboard.writeText(url).then(() => toast.show('Link copied')).catch(() => toast.show('Copy failed'));
   });
 
-  // Copy link
-  container.querySelector('#btn-copy').addEventListener('click', () => {
+  container.querySelector('#lobby-qr')?.addEventListener('click', () => {
     const url = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
-    navigator.clipboard.writeText(url).then(() => {
-      const btn = container.querySelector('#btn-copy');
-      btn.textContent = 'COPIED';
-      setTimeout(() => { btn.textContent = 'COPY LINK'; }, 2000);
-    }).catch(() => toast.show('Copy failed'));
+    qrModal.show(url, roomCode);
   });
 
   // Add player — inline always-visible
@@ -166,17 +178,7 @@ function _bindEvents(container, roomCode) {
 
   // Start game
   container.querySelector('#btn-start-game')?.addEventListener('click', () => {
-    const meta = state.get('roomMeta');
-    if (meta?.activeGameId && meta?.status === 'playing') {
-      router.navigate('dashboard');
-    } else {
-      router.navigate('game-select', { roomCode });
-    }
-  });
-
-  // Night recap
-  container.querySelector('#btn-recap')?.addEventListener('click', () => {
-    router.navigate('recap', { roomCode });
+    router.navigate('game-select', { roomCode });
   });
 
   // Call it a Night — host only, between games
@@ -274,6 +276,9 @@ function _startWatching(roomCode, container) {
     const isHost = state.isHost();
     const meta = data.meta || {};
     const players = data.players || {};
+    const games = data.games || {};
+    const trackStats = meta.trackStats !== false;
+    const hasPlayedGames = Object.values(games).some((g) => g.rounds && Object.keys(g.rounds).length > 0);
 
     // Show/hide host controls
     container.querySelector('#host-controls').style.display = isHost ? 'block' : 'none';
@@ -283,18 +288,28 @@ function _startWatching(roomCode, container) {
         viewerLabelEl.style.display = 'none';
       } else {
         viewerLabelEl.style.display = 'block';
-        const isPlaying = meta.status === 'playing' && meta.activeGameId;
-        viewerLabelEl.innerHTML = isPlaying
-          ? `<button id="btn-go-to-game" class="btn-primary w-full flex items-center justify-center gap-2">
-               <span aria-hidden="true" class="material-symbols-outlined text-lg">sports_esports</span>
-               GO TO GAME
-             </button>`
+        const isGameActive = meta.status === 'playing' && meta.activeGameId;
+        const showRecap = trackStats && hasPlayedGames;
+        viewerLabelEl.innerHTML = isGameActive
+          ? `<div class="flex flex-col gap-3">
+               <button id="btn-go-to-game" class="btn-primary w-full flex items-center justify-center gap-2">
+                 GO TO GAME
+                 <span aria-hidden="true" class="material-symbols-outlined text-lg">arrow_forward</span>
+               </button>
+               ${showRecap ? `<button id="btn-spectator-recap" class="w-full bg-surface-container-lowest border border-outline py-3 font-headline font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-surface-container-high transition-colors">
+                 <span aria-hidden="true" class="material-symbols-outlined text-sm">bar_chart</span>
+                 VIEW NIGHT RECAP
+               </button>` : ''}
+             </div>`
           : `<div class="bg-surface-container-high border border-outline p-4 text-center">
                <p class="font-mono text-[10px] uppercase tracking-widest text-outline">SPECTATOR MODE</p>
                <p class="font-body text-sm text-on-surface-variant mt-1">Waiting for the host to start a game...</p>
              </div>`;
         viewerLabelEl.querySelector('#btn-go-to-game')?.addEventListener('click', () => {
           router.navigate('dashboard', { roomCode });
+        });
+        viewerLabelEl.querySelector('#btn-spectator-recap')?.addEventListener('click', () => {
+          router.navigate('recap', { roomCode });
         });
       }
     }
@@ -327,11 +342,6 @@ function _startWatching(roomCode, container) {
     _renderPlayers(container, players, isHost, roomCode, isPlaying);
     _showSuggestions(container, roomCode);
 
-    // Stats tracking
-    const trackStats = meta.trackStats !== false;
-    const games = data.games || {};
-    const hasPlayedGames = Object.values(games).some((g) => g.rounds && Object.keys(g.rounds).length > 0);
-
     // Show stats toggle only for host, before first game
     const statsToggleSection = container.querySelector('#stats-toggle-section');
     if (statsToggleSection) {
@@ -356,10 +366,6 @@ function _startWatching(roomCode, container) {
       }
     }
 
-    // Show recap only if tracking is on and games have been played
-    const recapSection = container.querySelector('#recap-section');
-    if (recapSection) recapSection.style.display = (trackStats && hasPlayedGames) ? 'block' : 'none';
-
     // Show "Call it a Night" to host only, once at least one game has finished, while in lobby.
     // Gated on trackStats — without tracking there's no "night" to end.
     const callNightSection = container.querySelector('#call-night-section');
@@ -371,22 +377,120 @@ function _startWatching(roomCode, container) {
 
     // Enable/disable start
     const activeCount = Object.values(players).filter((p) => p.isActive).length;
+    const activeGame = state.currentGame();
+    const isGameFinished = isPlaying && activeGame?.status === 'finished';
+
+    const returnSection = container.querySelector('#return-game-section');
+    if (returnSection) {
+      if (isHost && isPlaying && !isGameFinished) {
+        returnSection.style.display = 'flex';
+        returnSection.innerHTML = `
+          <button id="btn-return-game" class="btn-primary w-full flex items-center justify-center gap-2">
+            GO TO GAME
+            <span aria-hidden="true" class="material-symbols-outlined text-lg">arrow_forward</span>
+          </button>
+          ${(trackStats && hasPlayedGames) ? `
+          <button id="btn-host-playing-recap" class="w-full bg-surface-container-lowest border border-outline py-3 font-headline font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-surface-container-high transition-colors">
+            <span aria-hidden="true" class="material-symbols-outlined text-sm">bar_chart</span>
+            VIEW NIGHT RECAP
+          </button>` : ''}
+        `;
+        returnSection.querySelector('#btn-return-game')?.addEventListener('click', () => {
+          router.navigate('dashboard');
+        });
+        returnSection.querySelector('#btn-host-playing-recap')?.addEventListener('click', () => {
+          router.navigate('recap', { roomCode });
+        });
+      } else {
+        returnSection.style.display = 'none';
+      }
+    }
+
+    const finishedSection = container.querySelector('#finished-game-section');
+    if (finishedSection) {
+      if (isHost && isGameFinished) {
+        finishedSection.style.display = 'flex';
+        _renderFinishedGameActions(finishedSection, roomCode, activeGame, trackStats);
+      } else {
+        finishedSection.style.display = 'none';
+      }
+    }
+
+    const startSection = container.querySelector('#start-section');
     const btn = container.querySelector('#btn-start-game');
     const hint = container.querySelector('#start-hint');
+    if (startSection) startSection.style.display = (isHost && !isPlaying) ? 'block' : 'none';
     if (btn) {
       btn.disabled = activeCount < 2;
-      if (meta.status === 'playing') {
-        btn.textContent = 'RETURN TO GAME';
-        btn.querySelector('.material-symbols-outlined')?.remove();
-        btn.disabled = false;
-        hint.textContent = '';
-      } else if (meta.status === 'lobby') {
-        btn.innerHTML = 'CHOOSE GAME <span aria-hidden="true" class="material-symbols-outlined text-lg">arrow_forward</span>';
-        btn.disabled = activeCount < 2;
-        hint.textContent = activeCount < 2 ? 'ADD AT LEAST 2 PLAYERS' : `${activeCount} PLAYERS READY`;
-      } else {
-        hint.textContent = activeCount < 2 ? 'ADD AT LEAST 2 PLAYERS' : `${activeCount} PLAYERS READY`;
-      }
+      hint.textContent = activeCount < 2 ? 'ADD AT LEAST 2 PLAYERS' : `${activeCount} PLAYERS READY`;
+    }
+  });
+}
+
+function _renderFinishedGameActions(el, roomCode, game, trackStats) {
+  const gameModule = getGame(game.type);
+  const secondaryBtn = 'w-full bg-surface-container-lowest border border-outline py-3 font-headline font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-surface-container-high transition-colors';
+
+  el.innerHTML = `
+    <button id="btn-replay" class="btn-primary w-full flex items-center justify-center gap-2">
+      <span aria-hidden="true" class="material-symbols-outlined text-lg">loop</span>
+      REPLAY ${escapeHTML(gameModule.label.toUpperCase())}
+    </button>
+    <button id="btn-start-new-game" class="${secondaryBtn}">
+      <span aria-hidden="true" class="material-symbols-outlined text-sm">add</span>
+      START NEW GAME
+    </button>
+    <button id="btn-back-to-game" class="${secondaryBtn}">
+      <span aria-hidden="true" class="material-symbols-outlined text-sm">arrow_back</span>
+      GO BACK TO GAME
+    </button>
+    ${trackStats ? `
+    <button id="btn-view-recap" class="${secondaryBtn}">
+      <span aria-hidden="true" class="material-symbols-outlined text-sm">bar_chart</span>
+      VIEW NIGHT RECAP
+    </button>
+    <button id="btn-call-night-finished" class="${secondaryBtn}">
+      <span aria-hidden="true" class="material-symbols-outlined text-sm">bedtime</span>
+      CALL IT A NIGHT
+    </button>
+    ` : ''}
+  `;
+
+  el.querySelector('#btn-back-to-game')?.addEventListener('click', () => {
+    router.navigate('winner', { roomCode });
+  });
+
+  el.querySelector('#btn-replay')?.addEventListener('click', async () => {
+    const players = state.activePlayers();
+    const playerIds = players.map((p) => p.id);
+    const snapshot = {};
+    players.forEach((p) => {
+      snapshot[p.id] = { name: p.name, accentIndex: p.accentIndex, seatOrder: p.seatOrder };
+    });
+    try {
+      await fb.createGame(roomCode, game.type, game.config, playerIds, snapshot);
+      router.navigate('dashboard', { roomCode });
+    } catch (e) {
+      toast.show('Failed to start replay');
+    }
+  });
+
+  el.querySelector('#btn-start-new-game')?.addEventListener('click', async () => {
+    await fb.updateRoomMeta(roomCode, { status: 'lobby', activeGameId: null });
+    router.navigate('game-select', { roomCode });
+  });
+
+  el.querySelector('#btn-view-recap')?.addEventListener('click', () => {
+    router.navigate('recap', { roomCode });
+  });
+
+  el.querySelector('#btn-call-night-finished')?.addEventListener('click', async () => {
+    const confirmed = window.confirm('Call it a night? This locks the room and shows the recap to everyone.');
+    if (!confirmed) return;
+    try {
+      await fb.endNight(roomCode);
+    } catch (e) {
+      toast.show('Failed to end night');
     }
   });
 }
@@ -412,21 +516,18 @@ function _renderPlayers(container, players, isHost, roomCode, isPlaying = false)
         <div class="bg-surface-container-lowest border border-outline ${inactive} flex items-center">
           <div class="w-1.5 self-stretch" style="background:${color}"></div>
           <div class="flex-1 p-4 flex items-center gap-3">
-            <div class="w-10 h-10 border border-outline flex items-center justify-center font-mono font-bold text-sm" style="border-top: 3px solid ${color}">
-              ${escapeHTML(p.name.substring(0, 2))}
-            </div>
             <div class="flex-1 min-w-0">
-              <p class="font-headline font-extrabold text-sm uppercase truncate">${escapeHTML(p.name)}</p>
+              <p class="font-headline font-extrabold text-xl uppercase truncate">${escapeHTML(p.name)}</p>
               <p class="font-mono text-[10px] text-outline uppercase">${p.isActive ? 'ACTIVE' : 'INACTIVE'}</p>
             </div>
             ${isHost ? `
               <div class="flex gap-1">
                 <button class="player-toggle p-1.5 hover:bg-surface-container-high transition-colors" data-id="${escapeHTML(p.id)}" data-active="${p.isActive}" title="${p.isActive ? 'Deactivate' : 'Activate'}" aria-label="${p.isActive ? 'Deactivate' : 'Activate'} ${escapeHTML(p.name)}">
-                  <span aria-hidden="true" class="material-symbols-outlined text-sm">${p.isActive ? 'person_off' : 'person_add'}</span>
+                  <span aria-hidden="true" class="material-symbols-outlined text-[21px]">${p.isActive ? 'person_off' : 'person_add'}</span>
                 </button>
                 ${isPlaying ? '' : `
                 <button class="player-remove p-1.5 hover:bg-surface-container-high transition-colors" data-id="${escapeHTML(p.id)}" title="Remove" aria-label="Remove ${escapeHTML(p.name)}">
-                  <span aria-hidden="true" class="material-symbols-outlined text-sm text-error">close</span>
+                  <span aria-hidden="true" class="material-symbols-outlined text-[21px] text-error">close</span>
                 </button>
                 `}
               </div>
@@ -470,6 +571,10 @@ function _savePlayerName(name) {
   localStorage.setItem(_NAMES_KEY, JSON.stringify(names.slice(0, 30)));
 }
 
+function _removePlayerName(name) {
+  localStorage.setItem(_NAMES_KEY, JSON.stringify(_getKnownNames().filter((n) => n !== name)));
+}
+
 function _showSuggestions(container, roomCode) {
   const input = container.querySelector('#input-player-name');
   const suggestionsEl = container.querySelector('#name-suggestions');
@@ -486,16 +591,23 @@ function _showSuggestions(container, roomCode) {
   suggestionsEl.innerHTML = `
     <span class="font-mono text-[10px] uppercase tracking-widest text-outline self-center mr-1">Quick add:</span>
     ${matches.map((n) => `
-      <button class="suggestion-chip font-mono text-[10px] uppercase tracking-widest border border-outline px-2 py-1 hover:bg-surface-container-high transition-colors">
+      <button class="suggestion-chip font-mono text-[10px] uppercase tracking-widest border border-outline pl-2 pr-1 py-1 hover:bg-surface-container-high transition-colors inline-flex items-center gap-1.5" data-name="${escapeHTML(n)}">
         ${escapeHTML(n)}
+        <span class="remove-chip text-outline hover:text-on-surface leading-none" aria-label="Remove ${escapeHTML(n)}">&#x2715;</span>
       </button>
     `).join('')}
   `;
 
   suggestionsEl.querySelectorAll('.suggestion-chip').forEach((chip) => {
-    chip.addEventListener('click', () => {
-      input.value = chip.textContent.trim();
+    chip.addEventListener('click', (e) => {
+      if (e.target.closest('.remove-chip')) return;
+      input.value = chip.dataset.name;
       _addPlayer(container, roomCode);
+    });
+    chip.querySelector('.remove-chip')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      _removePlayerName(chip.dataset.name);
+      _showSuggestions(container, roomCode);
     });
   });
 }
