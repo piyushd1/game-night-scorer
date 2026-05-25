@@ -503,7 +503,7 @@ function _renderFlip7HostRow(standing, playerData, roundHistory) {
     const { basePoints, flip7 } = _computeFlip7Score(draft);
     const roundPts = basePoints + (flip7 ? 15 : 0);
     const chipLabel = `+${roundPts}${flip7 ? ' F7' : ''}`;
-    draftChip = `<span class="inline-block font-mono text-[9px] px-1 py-0.5" style="background:#000;color:#fff;border:1px solid #000">${chipLabel}</span>`;
+    draftChip = `<span class="inline-block font-mono text-sm px-1.5 py-0.5" style="background:#000;color:#fff;border:1px solid #000">${chipLabel}</span>`;
   }
 
   return `
