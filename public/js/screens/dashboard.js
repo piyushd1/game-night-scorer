@@ -306,7 +306,7 @@ function _render(container, roomCode) {
     const p = snapshot[s.playerId] || {};
     if (isFlip7Host && !isInactive(s.playerId)) {
       // Tappable row for active players — host enters cards via drawer
-      html += _renderFlip7HostRow(s, p, displayRoundPoints[s.playerId] || []);
+      html += _renderFlip7HostRow(s, p, displayRoundPoints[s.playerId] || [], editingRoundIndex);
     } else {
       html += renderRow({
         name: p.name || s.playerId,
@@ -484,7 +484,7 @@ function _render(container, roomCode) {
 
 // ── Flip 7 tappable player row ──
 
-function _renderFlip7HostRow(standing, playerData, roundHistory) {
+function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundIndex = -1) {
   const { playerId: pid, total, rank } = standing;
   const color = ACCENT_COLORS[playerData.accentIndex || 0];
   const name = escapeHTML(playerData.name || pid);
@@ -494,9 +494,13 @@ function _renderFlip7HostRow(standing, playerData, roundHistory) {
   const draft = _flip7Draft[pid];
   const hasDraft = draft && (draft.numbers.size > 0 || draft.actions.size > 0 || draft.x2);
 
-  const roundChips = roundHistory.map((pts) =>
-    `<span class="inline-block font-mono text-sm bg-surface-container-low border border-outline-variant px-1.5 py-0.5 text-on-surface">${pts >= 0 ? '+' : ''}${pts}</span>`
-  ).join('');
+  const roundChips = roundHistory.map((pts, i) => {
+    const label = `${pts >= 0 ? '+' : ''}${pts}`;
+    if (_editScoresMode && i === editingRoundIndex && _editAdjustments[pid]) {
+      return `<span class="inline-block font-mono text-sm px-1.5 py-0.5" style="background:#000;color:#fff;border:1px solid #000">${label}</span>`;
+    }
+    return `<span class="inline-block font-mono text-sm bg-surface-container-low border border-outline-variant px-1.5 py-0.5 text-on-surface">${label}</span>`;
+  }).join('');
 
   let draftChip = '';
   if (hasDraft) {
