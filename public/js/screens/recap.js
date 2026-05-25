@@ -180,7 +180,7 @@ export function mount(container, params = {}) {
       if (game.type === 'flip7') {
         html += _statPill('BEST RD', '+' + ps.bestRound);
         html += _statPill('WORST RD', '+' + ps.worstRound);
-        if (ps.f7Bonuses > 0) html += _statPill('F7 BONUS', 'x' + ps.f7Bonuses, true);
+        if (ps.f7Bonuses > 0) html += _statPill('🔥 BONUS', 'x' + ps.f7Bonuses, true);
       } else if (game.type === 'papayoo') {
         html += _statPill('BEST RD', ps.bestRound);
         html += _statPill('WORST RD', ps.worstRound);

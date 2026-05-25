@@ -215,6 +215,7 @@ function _render(container, roomCode) {
 
   // Round points per player — use game module's getRoundPoints for accuracy
   let roundPoints = {};
+  let roundFlip7Meta = {};
   let cacheHit = false;
 
   if (game.rounds && typeof game.rounds === 'object') {
@@ -222,35 +223,42 @@ function _render(container, roomCode) {
     // Ensure player list hasn't changed (strict equality on array ref)
     if (cached && cached.playerIds === playerIds) {
       roundPoints = cached.result;
+      roundFlip7Meta = cached.flip7Meta || {};
       cacheHit = true;
     }
   }
 
   if (!cacheHit) {
-    playerIds.forEach((pid) => { roundPoints[pid] = []; });
+    playerIds.forEach((pid) => { roundPoints[pid] = []; roundFlip7Meta[pid] = []; });
     rounds.forEach((rnd) => {
       playerIds.forEach((pid) => {
         roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
+        roundFlip7Meta[pid].push(rnd.entries?.[pid]?.flip7 || false);
       });
     });
 
     if (game.rounds && typeof game.rounds === 'object') {
-      _roundPointsCache.set(game.rounds, { result: roundPoints, playerIds });
+      _roundPointsCache.set(game.rounds, { result: roundPoints, flip7Meta: roundFlip7Meta, playerIds });
     }
   }
 
   // In edit mode, overlay buffered adjustments onto the display round points so
   // the chip for the edited round shows the pending value before SAVE is clicked.
   let displayRoundPoints = roundPoints;
+  let displayRoundFlip7Meta = roundFlip7Meta;
   if (_editScoresMode && editingRoundIndex >= 0 && Object.keys(_editAdjustments).length > 0) {
     displayRoundPoints = {};
+    displayRoundFlip7Meta = {};
     playerIds.forEach((pid) => {
       const chips = [...(roundPoints[pid] || [])];
+      const metas = [...(roundFlip7Meta[pid] || [])];
       if (_editAdjustments[pid]) {
         const e = _editAdjustments[pid];
         chips[editingRoundIndex] = (e.basePoints || 0) + (e.flip7 ? 15 : 0);
+        metas[editingRoundIndex] = e.flip7 || false;
       }
       displayRoundPoints[pid] = chips;
+      displayRoundFlip7Meta[pid] = metas;
     });
   }
 
@@ -306,7 +314,7 @@ function _render(container, roomCode) {
     const p = snapshot[s.playerId] || {};
     if (isFlip7Host && !isInactive(s.playerId)) {
       // Tappable row for active players — host enters cards via drawer
-      html += _renderFlip7HostRow(s, p, displayRoundPoints[s.playerId] || [], editingRoundIndex);
+      html += _renderFlip7HostRow(s, p, displayRoundPoints[s.playerId] || [], editingRoundIndex, displayRoundFlip7Meta[s.playerId] || []);
     } else {
       html += renderRow({
         name: p.name || s.playerId,
@@ -314,6 +322,7 @@ function _render(container, roomCode) {
         accentIndex: p.accentIndex || 0,
         rank: s.rank,
         rounds: displayRoundPoints[s.playerId] || [],
+        roundsMeta: game.type === 'flip7' ? (displayRoundFlip7Meta[s.playerId] || []) : [],
         progressPct: getProgress(s.total),
         isLeader: s.rank === 1,
         winMode: gameModule.winMode,
@@ -484,7 +493,7 @@ function _render(container, roomCode) {
 
 // ── Flip 7 tappable player row ──
 
-function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundIndex = -1) {
+function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundIndex = -1, roundFlip7 = []) {
   const { playerId: pid, total, rank } = standing;
   const color = ACCENT_COLORS[playerData.accentIndex || 0];
   const name = escapeHTML(playerData.name || pid);
@@ -495,7 +504,7 @@ function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundInd
   const hasDraft = draft && (draft.numbers.size > 0 || draft.actions.size > 0 || draft.x2);
 
   const roundChips = roundHistory.map((pts, i) => {
-    const label = `${pts >= 0 ? '+' : ''}${pts}`;
+    const label = `${pts >= 0 ? '+' : ''}${pts}${roundFlip7[i] ? ' 🔥' : ''}`;
     if (_editScoresMode && i === editingRoundIndex && _editAdjustments[pid]) {
       return `<span class="inline-block font-mono text-sm px-1.5 py-0.5" style="background:#000;color:#fff;border:1px solid #000">${label}</span>`;
     }
@@ -506,7 +515,7 @@ function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundInd
   if (hasDraft) {
     const { basePoints, flip7 } = _computeFlip7Score(draft);
     const roundPts = basePoints + (flip7 ? 15 : 0);
-    const chipLabel = `+${roundPts}${flip7 ? ' F7' : ''}`;
+    const chipLabel = `+${roundPts}${flip7 ? ' 🔥' : ''}`;
     draftChip = `<span class="inline-block font-mono text-sm px-1.5 py-0.5" style="background:#000;color:#fff;border:1px solid #000">${chipLabel}</span>`;
   }
 
@@ -642,7 +651,7 @@ function _openFlip7Drawer(container, roomCode, playerId, snapshot, game) {
 
   // Build all 20 grid cells using the spritesheet
   const cardBtns = _F7_CARD_DATA.map((c) => {
-    if (c.empty) return `<div class="flex items-center justify-center" style="aspect-ratio:130/204"><button type="button" id="flip7-done-btn" aria-label="Done" class="flex items-center justify-center border-2 border-primary text-primary hover:bg-primary hover:text-on-primary transition-colors" style="width:75%;aspect-ratio:130/204;box-shadow:0 3px 5px -1px rgba(0,0,0,0.18)"><span aria-hidden="true" class="material-symbols-outlined" style="font-size:20px">check</span></button></div>`;
+    if (c.empty) return `<div class="flex items-center justify-center" style="aspect-ratio:130/204"><button type="button" id="flip7-done-btn" aria-label="Done" class="flex items-center justify-center border-2 border-primary text-primary hover:bg-primary hover:text-on-primary transition-colors" style="width:75%;aspect-ratio:130/204;box-shadow:0 3px 5px -1px rgba(0,0,0,0.18)"><span aria-hidden="true" class="material-symbols-outlined" style="font-size:28px;font-variation-settings:'wght' 700">check</span></button></div>`;
     const bg = _cardSpriteBg(c.col, c.row);
     const cardStyle = `aspect-ratio:130/204;border-radius:6px;box-shadow:0 3px 5px -1px rgba(0,0,0,0.18);${bg}`;
     if (c.id) {
@@ -668,7 +677,10 @@ function _openFlip7Drawer(container, roomCode, playerId, snapshot, game) {
         </div>
         <div class="px-4 pb-3 flex items-center justify-between border-b border-outline-variant">
           <div>
-            <p id="flip7-header-score" class="font-mono text-4xl font-bold leading-none">0</p>
+            <div class="flex items-center gap-2">
+              <p id="flip7-header-score" class="font-mono text-4xl font-bold leading-none">0</p>
+              <span id="flip7-header-emoji" class="text-4xl leading-none" style="display:none">🔥</span>
+            </div>
             <p id="flip7-header-label" class="font-mono text-[9px] text-outline mt-0.5 uppercase tracking-widest">THIS ROUND</p>
           </div>
           <p class="font-headline font-bold text-4xl uppercase truncate">${name}</p>
@@ -688,7 +700,13 @@ function _openFlip7Drawer(container, roomCode, playerId, snapshot, game) {
 
   _refreshDrawerCardStates(playerId);
   _updateDrawerScore(playerId);
-  _bindDrawerEvents(container, roomCode, playerId);
+
+  const draftSnapshot = {
+    numbers: new Set(_flip7Draft[playerId].numbers),
+    actions: new Set(_flip7Draft[playerId].actions),
+    x2: _flip7Draft[playerId].x2,
+  };
+  _bindDrawerEvents(container, roomCode, playerId, draftSnapshot);
 }
 
 function _closeFlip7Drawer() {
@@ -729,22 +747,25 @@ function _applyCardStyle(btn, selected) {
 
 function _updateDrawerScore(playerId) {
   const scoreEl = _flip7DrawerEl?.querySelector('#flip7-header-score');
-  const labelEl = _flip7DrawerEl?.querySelector('#flip7-header-label');
+  const emojiEl = _flip7DrawerEl?.querySelector('#flip7-header-emoji');
   if (!scoreEl) return;
   const draft = _flip7Draft[playerId];
-  if (!draft) { scoreEl.textContent = '0'; return; }
+  if (!draft) { scoreEl.textContent = '0'; if (emojiEl) emojiEl.style.display = 'none'; return; }
   const { basePoints, flip7 } = _computeFlip7Score(draft);
   const roundPts = basePoints + (flip7 ? 15 : 0);
   scoreEl.textContent = roundPts;
-  if (labelEl) labelEl.textContent = flip7 ? 'THIS ROUND · FLIP 7!' : 'THIS ROUND';
+  if (emojiEl) emojiEl.style.display = flip7 ? '' : 'none';
 }
 
-function _bindDrawerEvents(container, roomCode, playerId) {
+function _bindDrawerEvents(container, roomCode, playerId, draftSnapshot) {
   if (!_flip7DrawerEl) return;
   const draft = _flip7Draft[playerId];
   if (!draft) return;
 
   _flip7DrawerEl.querySelector('#flip7-drawer-backdrop')?.addEventListener('click', () => {
+    _flip7Draft[playerId].numbers = new Set(draftSnapshot.numbers);
+    _flip7Draft[playerId].actions = new Set(draftSnapshot.actions);
+    _flip7Draft[playerId].x2 = draftSnapshot.x2;
     _closeFlip7Drawer();
     _render(container, roomCode);
   });

@@ -200,7 +200,7 @@ function _bindFormInteractions(container, gameType, playerIds) {
         const isActive = btn.classList.contains('active');
         btn.setAttribute('aria-pressed', isActive.toString());
         const label = btn.querySelector('.flip7-label');
-        if (label) label.textContent = isActive ? 'F7\u2713' : 'F7';
+        if (label) label.textContent = isActive ? '\ud83d\udd25\u2713' : '\ud83d\udd25';
         if (isActive) {
           btn.style.background = '#000';
           btn.style.color = '#fff';

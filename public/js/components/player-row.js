@@ -24,6 +24,7 @@ export function renderRow({
   accentIndex,
   rank,
   rounds = [],
+  roundsMeta = [],
   progressPct = 0,
   isLeader = false,
   winMode = 'highest_total',
@@ -48,8 +49,10 @@ export function renderRow({
 
   const roundChips = rounds
     .map(
-      (pts, i) =>
-        `<span class="inline-block font-mono text-sm bg-surface-container-low border border-outline-variant px-1.5 py-0.5 text-on-surface">${pts >= 0 ? '+' : ''}${pts}</span>`
+      (pts, i) => {
+        const label = `${pts >= 0 ? '+' : ''}${pts}${roundsMeta[i] ? ' 🔥' : ''}`;
+        return `<span class="inline-block font-mono text-sm bg-surface-container-low border border-outline-variant px-1.5 py-0.5 text-on-surface">${label}</span>`;
+      }
     )
     .join('');
 

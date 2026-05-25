@@ -117,7 +117,7 @@ export default {
                     aria-pressed="false"
                     aria-label="Flip 7 for ${escapeHTML(p.name || pid)}"
                     class="flip7-toggle min-w-[44px] min-h-[44px] px-2 border font-mono text-[10px] uppercase tracking-widest transition-colors border-outline-variant text-outline hover:border-primary inline-flex items-center justify-center gap-1"
-                  ><span class="flip7-label">F7</span></button>
+                  ><span class="flip7-label">🔥</span></button>
                   <button
                     type="button"
                     data-player="${escapeHTML(pid)}"
@@ -164,7 +164,7 @@ export default {
       toggle.style.color = '';
       toggle.style.borderColor = '';
       const label = toggle.querySelector('.flip7-label');
-      if (label) label.textContent = 'F7';
+      if (label) label.textContent = '🔥';
     }
   },
 
