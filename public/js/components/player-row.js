@@ -26,7 +26,7 @@ export function renderRow({
   rounds = [],
   roundsMeta = [],
   roundsJuaMeta = [],
-  fineCount = 0,
+
   hasLiveChip = false,
   progressPct = 0,
   isLeader = false,

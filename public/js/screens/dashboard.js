@@ -357,8 +357,9 @@ function _render(container, roomCode) {
         `).join('')}
       </div>
       ${fineEntries.length > 0 ? `
-        <p class="font-mono text-xs text-outline px-1 pt-1 mb-6">Fines: ${fineEntries.join(', ')}</p>
-      ` : '<div class="mb-6"></div>'}
+        <p class="font-mono text-xs text-outline px-1 pt-1">Fines: ${fineEntries.join(', ')}</p>
+      ` : ''}
+      <div class="mb-6"></div>
     `;
   }
 
@@ -378,8 +379,7 @@ function _render(container, roomCode) {
     if (isFlip7Host && !isInactive(s.playerId)) {
       // Tappable row for active players — host enters cards via drawer
       const liveFirstSave = game.config?.jua && game.juaLive?.firstSavePid === s.playerId;
-      const hostFineCount = (game.juaFines || {})[s.playerId] || 0;
-      html += _renderFlip7HostRow(s, p, displayRoundPoints[s.playerId] || [], editingRoundIndex, displayRoundFlip7Meta[s.playerId] || [], roundJuaMeta[s.playerId] || [], liveFirstSave, hostFineCount);
+      html += _renderFlip7HostRow(s, p, displayRoundPoints[s.playerId] || [], editingRoundIndex, displayRoundFlip7Meta[s.playerId] || [], roundJuaMeta[s.playerId] || [], liveFirstSave);
     } else {
       const liveEntry = game.liveRound?.[s.playerId];
       const spectatorRounds = liveEntry != null
@@ -400,7 +400,7 @@ function _render(container, roomCode) {
         rounds: spectatorRounds,
         roundsMeta: game.type === 'flip7' ? spectatorMeta : [],
         roundsJuaMeta: spectatorJuaMeta,
-        fineCount: (game.juaFines || {})[s.playerId] || 0,
+
         hasLiveChip: liveEntry != null,
         progressPct: getProgress(s.total),
         isLeader: s.rank === 1,
@@ -596,7 +596,7 @@ function _render(container, roomCode) {
 
 // ── Flip 7 tappable player row ──
 
-function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundIndex = -1, roundFlip7 = [], roundJuaSave = [], isLiveFirstSave = false, fineCount = 0) {
+function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundIndex = -1, roundFlip7 = [], roundJuaSave = [], isLiveFirstSave = false) {
   const { playerId: pid, total, rank } = standing;
   const color = ACCENT_COLORS[playerData.accentIndex || 0];
   const name = escapeHTML(playerData.name || pid);
