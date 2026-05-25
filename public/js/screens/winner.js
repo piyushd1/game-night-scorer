@@ -152,7 +152,7 @@ export function mount(container, params = {}) {
                     </div>
                     <span class="font-mono text-xl font-bold">${s.total}</span>
                   </div>
-                  ${netLabel ? `<div class="text-right">${netLabel}</div>` : ''}
+                  ${netLabel ? `<div class="text-right mt-1">${netLabel}</div>` : ''}
                 </div>
               `;
             }).join('');
