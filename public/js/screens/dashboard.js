@@ -332,12 +332,15 @@ function _render(container, roomCode) {
     const numPlayers = playerIds.length;
     const buyIn = game.config.juaBuyIn || 30;
     const totalPot = buyIn * numPlayers;
+    const prize1 = game.config.juaPrize1 || 0;
+    const prize2 = game.config.juaPrize2 || 0;
+    const prize3 = totalPot - prize1 - prize2;
     const juaPool = _computeJuaPool(game);
     const rankLabels = ['1ST', '2ND', '3RD'];
     const positions = [1, 2, 3].map((rank) => {
       const s = standings.find((x) => x.rank === rank);
       const pName = s ? (snapshot[s.playerId]?.name || s.playerId) : '—';
-      const amount = rank === 1 ? (totalPot * 2) / 5 + juaPool : rank === 2 ? (totalPot * 2) / 5 : (totalPot * 1) / 5;
+      const amount = rank === 1 ? prize1 + juaPool : rank === 2 ? prize2 : prize3;
       return { rank, name: pName, amount };
     });
     const fineEntries = Object.entries(game.juaFines || {})
