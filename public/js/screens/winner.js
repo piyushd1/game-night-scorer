@@ -144,15 +144,15 @@ export function mount(container, params = {}) {
                 netLabel = `<p class="font-mono text-sm opacity-70">${mathStr}</p>`;
               }
               return `
-                <div class="flex justify-between items-center py-2 border-b border-white/20">
-                  <div class="flex items-center gap-3">
-                    <span class="font-mono text-sm opacity-50 w-6 text-center">${s.rank}</span>
-                    <span class="font-headline font-bold text-lg uppercase">${escapeHTML(p.name || s.playerId)}</span>
-                  </div>
-                  <div class="text-right">
+                <div class="flex flex-col py-2 border-b border-white/20">
+                  <div class="flex justify-between items-start">
+                    <div class="flex items-center gap-3">
+                      <span class="font-mono text-sm opacity-50 w-6 text-center">${s.rank}</span>
+                      <span class="font-headline font-bold text-lg uppercase">${escapeHTML(p.name || s.playerId)}</span>
+                    </div>
                     <span class="font-mono text-xl font-bold">${s.total}</span>
-                    ${netLabel}
                   </div>
+                  ${netLabel ? `<div class="text-right">${netLabel}</div>` : ''}
                 </div>
               `;
             }).join('');
