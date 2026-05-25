@@ -349,15 +349,16 @@ function _computeJuaNets(game) {
 }
 
 // Aggregate Jua nets across all finished Jua games in a night.
-// Returns { players: [{playerId, name, accentIndex, net, gamesCount}] } sorted by net desc, or null.
+// Returns { players: [{playerId, name, accentIndex, net, gamesCount, gameNets}] } sorted by net desc, or null.
 function _computeNightWinnings(allGames) {
   const playerNets = {};
 
-  allGames.forEach((game) => {
+  allGames.forEach((game, gi) => {
     if (game.type !== 'flip7') return;
     const nets = _computeJuaNets(game);
     if (!nets) return;
 
+    const gameNum = gi + 1;
     const snapshot = game.playerSnapshot || {};
     nets.forEach((net, pid) => {
       if (!playerNets[pid]) {
@@ -367,10 +368,12 @@ function _computeNightWinnings(allGames) {
           accentIndex: snapshot[pid]?.accentIndex || 0,
           net: 0,
           gamesCount: 0,
+          gameNets: [],
         };
       }
       playerNets[pid].net += net;
       playerNets[pid].gamesCount++;
+      playerNets[pid].gameNets.push({ gameNum, net });
     });
   });
 

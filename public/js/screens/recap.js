@@ -91,12 +91,20 @@ export function mount(container, params = {}) {
             const net = parseFloat(p.net.toFixed(1));
             const netStr = `${net >= 0 ? '+' : '-'}&#8377;${Math.abs(net)}`;
             const netColor = net >= 0 ? 'text-secondary' : 'text-error';
+            const gameBreakdown = p.gameNets.map(({ gameNum, net: gn }) => {
+              const v = parseFloat(gn.toFixed(1));
+              const s = `${v >= 0 ? '+' : ''}${Number.isInteger(v) ? v : v}`;
+              const c = v >= 0 ? 'text-secondary' : 'text-error';
+              return `<span class="font-mono text-[9px] ${c}">${s}</span>`;
+            }).join('<span class="font-mono text-[9px] text-outline mx-0.5">·</span>');
             return `
               <div class="grid grid-cols-12 items-center px-4 py-3 border-b border-outline-variant last:border-0 ${bgClass}">
                 <div class="col-span-8 flex items-center gap-2">
-                  <div class="w-1 h-6" style="background:${color}"></div>
-                  <span class="font-headline font-bold text-xs uppercase truncate">${escapeHTML(p.name)}</span>
-                  <span class="font-mono text-[9px] text-outline">${p.gamesCount}G</span>
+                  <div class="w-1 self-stretch" style="background:${color}"></div>
+                  <div>
+                    <span class="font-headline font-bold text-xs uppercase">${escapeHTML(p.name)}</span>
+                    <div class="flex items-center gap-0.5 mt-0.5">${gameBreakdown}</div>
+                  </div>
                 </div>
                 <div class="col-span-4 font-mono text-sm text-right font-bold ${netColor}">${netStr}</div>
               </div>
