@@ -8,6 +8,7 @@ import { WORDS } from './wordlist.js';
 
 let db = null;
 let _roomUnsub = null;
+let _connUnsub = null;
 
 // ── Init ──
 
@@ -30,12 +31,15 @@ export function isConfigured() {
   return db !== null;
 }
 
+export function isWatchingRoom() {
+  return _roomUnsub !== null;
+}
+
 // ── Room Code Generation ──
 
 function generateCode() {
-  // 4-letter word + 2 digits (e.g. GAME42). Easier to share verbally
-  // than a random 6-char alphanumeric. createRoom handles collisions by
-  // retrying — namespace is ~96k codes.
+  // 4-letter noun + 2 digits (e.g. DUCK37). Easy to say and spell verbally.
+  // createRoom handles collisions by retrying — namespace is 5000 codes.
   const array = new Uint32Array(2);
   crypto.getRandomValues(array);
   const word = WORDS[array[0] % WORDS.length];
@@ -76,6 +80,7 @@ export async function createRoom() {
     hostKey,
     status: 'lobby',
     activeGameId: null,
+    trackStats: true,
     createdAt: now,
     updatedAt: now,
   };
@@ -142,6 +147,23 @@ export function unwatchRoom() {
   }
 }
 
+// ── Connection State ──
+
+export function watchConnection(cb) {
+  if (!db) return;
+  unwatchConnection();
+  const ref = db.ref('.info/connected');
+  const handler = ref.on('value', (snap) => cb(snap.val() === true));
+  _connUnsub = () => ref.off('value', handler);
+}
+
+export function unwatchConnection() {
+  if (_connUnsub) {
+    _connUnsub();
+    _connUnsub = null;
+  }
+}
+
 // ── Player Management ──
 
 export async function addPlayer(roomCode, name, seatOrder, accentIndex) {
@@ -203,18 +225,14 @@ export async function createGame(roomCode, type, config, playerIds, playerSnapsh
   return gameId;
 }
 
-export async function submitRound(roomCode, gameId, roundData, newTotals, endResult) {
-  if (!db) return;
+export async function submitRound(roomCode, gameId, roundIndex, roundData, newTotals, endResult) {
+  if (!db) throw new Error('Firebase not initialized');
 
-
-  const game = state.get('games')?.[gameId];
-  if (!game) return;
-
-  const roundIndex = Object.keys(game.rounds || {}).length;
   const updates = {};
 
   updates[`rooms/${roomCode}/games/${gameId}/rounds/${roundIndex}`] = roundData;
   updates[`rooms/${roomCode}/games/${gameId}/totals`] = newTotals;
+  updates[`rooms/${roomCode}/games/${gameId}/liveTotals`] = null; // clear live preview on commit
   updates[`rooms/${roomCode}/meta/updatedAt`] = Date.now();
 
   if (endResult) {
@@ -258,6 +276,20 @@ export async function undoLastRound(roomCode, gameId, newTotals, prevStatus, ove
   await db.ref().update(updates);
 }
 
+export async function updateLiveTotals(roomCode, gameId, liveTotals) {
+  if (!db) return;
+  await db.ref(`rooms/${roomCode}/games/${gameId}/liveTotals`).set(liveTotals);
+}
+
+export async function adjustTotals(roomCode, gameId, newTotals) {
+  if (!db) return;
+  await db.ref().update({
+    [`rooms/${roomCode}/games/${gameId}/totals`]: newTotals,
+    [`rooms/${roomCode}/games/${gameId}/liveTotals`]: null,
+    [`rooms/${roomCode}/meta/updatedAt`]: Date.now(),
+  });
+}
+
 export async function setRoomStatus(roomCode, status) {
   if (!db) return;
   await db.ref(`rooms/${roomCode}/meta`).update({ status, updatedAt: Date.now() });
@@ -283,6 +315,29 @@ export async function submitGameAbandon(roomCode, gameId) {
     status: 'abandoned',
     winner: null,
     finishedAt: Date.now(),
+  });
+}
+
+export async function patchLastRoundMulti(roomCode, gameId, roundKey, pidEntries, newTotals) {
+  if (!db) return;
+  const updates = {
+    [`rooms/${roomCode}/games/${gameId}/totals`]: newTotals,
+    [`rooms/${roomCode}/games/${gameId}/liveTotals`]: null,
+    [`rooms/${roomCode}/meta/updatedAt`]: Date.now(),
+  };
+  Object.entries(pidEntries).forEach(([pid, entry]) => {
+    updates[`rooms/${roomCode}/games/${gameId}/rounds/${roundKey}/entries/${pid}`] = entry;
+  });
+  await db.ref().update(updates);
+}
+
+export async function addPlayerToGame(roomCode, gameId, playerId, playerName, accentIndex, currentPlayerIds) {
+  if (!db) return;
+  await db.ref().update({
+    [`rooms/${roomCode}/games/${gameId}/playerIds`]: [...currentPlayerIds, playerId],
+    [`rooms/${roomCode}/games/${gameId}/totals/${playerId}`]: 0,
+    [`rooms/${roomCode}/games/${gameId}/playerSnapshot/${playerId}`]: { name: playerName, accentIndex },
+    [`rooms/${roomCode}/meta/updatedAt`]: Date.now(),
   });
 }
 

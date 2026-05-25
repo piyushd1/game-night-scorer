@@ -3,10 +3,12 @@
 // ═══════════════════════════════════════════
 
 import * as state from '../state.js';
+import { getGame } from '../games/registry.js';
 import * as fb from '../firebase.js';
 import * as router from '../router.js';
 import * as toast from '../components/toast.js';
 import * as bottomNav from '../components/bottom-nav.js';
+import * as qrModal from '../components/qr-modal.js';
 import { ACCENT_COLORS } from '../state.js';
 import { escapeHTML } from '../utils.js';
 
@@ -27,8 +29,11 @@ export function mount(container, params = {}) {
   const topBar = document.getElementById('top-bar');
   topBar.style.display = 'flex';
   document.getElementById('top-bar-title').textContent = 'LOBBY';
-  document.getElementById('top-bar-back').classList.remove('hidden');
-  document.getElementById('top-bar-back').onclick = () => {
+  const backBtn = document.getElementById('top-bar-back');
+  backBtn.classList.remove('hidden');
+  backBtn.textContent = 'logout';
+  backBtn.setAttribute('aria-label', 'Leave room');
+  backBtn.onclick = () => {
     fb.unwatchRoom();
     router.navigate('home', {}, 'back');
   };
@@ -38,27 +43,35 @@ export function mount(container, params = {}) {
     <div class="p-6 pb-32">
       <!-- Room Code -->
       <div class="bg-surface-container-lowest border border-outline p-6 mb-6">
-        <p class="font-mono text-[10px] uppercase tracking-widest text-outline mb-2">ROOM PIN</p>
+        <p class="font-mono text-[10px] uppercase tracking-widest text-outline mb-2">LOBBY PIN</p>
         <div class="flex items-center justify-between">
           <span class="font-mono text-3xl font-bold tracking-[0.3em]">${roomCode}</span>
-          <button id="btn-copy" class="font-mono text-[10px] uppercase tracking-widest border border-outline px-3 py-2 hover:bg-surface-container-high transition-colors">
-            COPY LINK
-          </button>
+          <div class="flex items-center gap-2">
+            <button id="btn-qr" aria-label="Show QR code" title="Show QR code" class="font-mono text-[10px] uppercase tracking-widest border border-outline px-3 py-2 hover:bg-surface-container-high transition-colors flex items-center gap-1">
+              <span class="material-symbols-outlined" style="font-size:14px">qr_code_2</span>
+            </button>
+            <button id="btn-copy" class="font-mono text-[10px] uppercase tracking-widest border border-outline px-3 py-2 hover:bg-surface-container-high transition-colors">
+              COPY LINK
+            </button>
+          </div>
         </div>
       </div>
+
+      <!-- Current game card (shown when a game is active) -->
+      <div id="current-game-card" class="mb-6"></div>
 
       <!-- Host-only: Add Player -->
       <div id="host-controls" style="display:none">
         <h2 class="font-headline font-extrabold uppercase text-sm tracking-widest mb-4">PLAYERS</h2>
 
         <!-- Always-visible inline add. Mid-game adds are allowed; the new player joins the next game. -->
-        <div id="add-player-row" class="flex gap-2 mb-4">
-          <label for="input-player-name" class="sr-only">Player name...</label>
+        <div id="add-player-row" class="flex gap-2 mb-2">
+          <label for="input-player-name" class="sr-only">Add player</label>
           <input
             id="input-player-name"
             type="text"
             maxlength="12"
-            placeholder="Player name..."
+            placeholder="Add player"
             autocomplete="off"
             autocorrect="off"
             autocapitalize="characters"
@@ -68,15 +81,11 @@ export function mount(container, params = {}) {
             <span class="material-symbols-outlined text-lg" aria-hidden="true">add</span>
           </button>
         </div>
+        <div id="name-suggestions" class="mb-4"></div>
       </div>
 
       <!-- Viewer label -->
-      <div id="viewer-label" class="mb-4" style="display:none">
-        <div class="bg-surface-container-high border border-outline p-4 text-center">
-          <p class="font-mono text-[10px] uppercase tracking-widest text-outline">SPECTATOR MODE</p>
-          <p class="font-body text-sm text-on-surface-variant mt-1">Waiting for the host to start a game...</p>
-        </div>
-      </div>
+      <div id="viewer-label" class="mb-4" style="display:none"></div>
 
       <!-- Player List -->
       <div id="player-list" class="flex flex-col gap-1"></div>
@@ -131,6 +140,12 @@ export function unmount() {
 }
 
 function _bindEvents(container, roomCode) {
+  // QR code
+  container.querySelector('#btn-qr').addEventListener('click', () => {
+    const url = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
+    qrModal.show(url, roomCode);
+  });
+
   // Copy link
   container.querySelector('#btn-copy').addEventListener('click', () => {
     const url = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
@@ -143,9 +158,11 @@ function _bindEvents(container, roomCode) {
 
   // Add player — inline always-visible
   container.querySelector('#btn-confirm-add')?.addEventListener('click', () => _addPlayer(container, roomCode));
-  container.querySelector('#input-player-name')?.addEventListener('keydown', (e) => {
+  const nameInput = container.querySelector('#input-player-name');
+  nameInput?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') _addPlayer(container, roomCode);
   });
+  _showSuggestions(container, roomCode);
 
   // Start game
   container.querySelector('#btn-start-game')?.addEventListener('click', () => {
@@ -227,54 +244,24 @@ async function _addPlayer(container, roomCode) {
 
   try {
     const newPlayerId = await fb.addPlayer(roomCode, name, count, accentIndex);
+    _savePlayerName(nameUpper);
     input.value = '';
     input.focus();
+    _showSuggestions(container, roomCode);
 
-    // If no host player set yet, prompt the host to identify themselves
+    // If a game is in progress, add the player to that game too
     const meta = state.get('roomMeta') || {};
-    if (!meta.hostPlayerId && newPlayerId) {
-      _showHostPrompt(container, roomCode, newPlayerId, nameUpper);
+    if (meta.status === 'playing' && meta.activeGameId && newPlayerId) {
+      const game = state.currentGame();
+      if (game) {
+        await fb.addPlayerToGame(roomCode, meta.activeGameId, newPlayerId, nameUpper, accentIndex, game.playerIds || []);
+      }
     }
   } catch (e) {
     toast.show('Failed to add player');
   }
 }
 
-function _showHostPrompt(container, roomCode, playerId, playerName) {
-  // Remove any existing prompt
-  const existing = container.querySelector('#host-prompt');
-  if (existing) existing.remove();
-
-  const playerList = container.querySelector('#player-list');
-  if (!playerList) return;
-
-  const prompt = document.createElement('div');
-  prompt.id = 'host-prompt';
-  prompt.className = 'bg-primary text-on-primary border border-outline p-4 mb-2';
-  prompt.innerHTML = `
-    <p class="font-headline font-bold text-sm uppercase mb-3">Are you ${escapeHTML(playerName)}?</p>
-    <div class="flex gap-2">
-      <button id="host-prompt-yes" class="flex-1 py-2 bg-surface-container-lowest text-primary font-headline font-bold text-xs uppercase tracking-widest hover:bg-surface-container-high transition-colors">
-        YES, THAT'S ME
-      </button>
-      <button id="host-prompt-no" class="flex-1 py-2 border border-white/40 text-white font-headline font-bold text-xs uppercase tracking-widest hover:bg-white/10 transition-colors">
-        NO
-      </button>
-    </div>
-  `;
-
-  playerList.insertAdjacentElement('beforebegin', prompt);
-
-  prompt.querySelector('#host-prompt-yes').addEventListener('click', async () => {
-    await fb.updateRoomMeta(roomCode, { hostPlayerId: playerId });
-    toast.show('You are set as the host player');
-    prompt.remove();
-  });
-
-  prompt.querySelector('#host-prompt-no').addEventListener('click', () => {
-    prompt.remove();
-  });
-}
 
 function _startWatching(roomCode, container) {
   fb.watchRoom(roomCode, (data) => {
@@ -290,13 +277,45 @@ function _startWatching(roomCode, container) {
 
     // Show/hide host controls
     container.querySelector('#host-controls').style.display = isHost ? 'block' : 'none';
-    container.querySelector('#viewer-label').style.display = isHost ? 'none' : 'block';
+    const viewerLabelEl = container.querySelector('#viewer-label');
+    if (viewerLabelEl) {
+      if (isHost) {
+        viewerLabelEl.style.display = 'none';
+      } else {
+        viewerLabelEl.style.display = 'block';
+        const isPlaying = meta.status === 'playing' && meta.activeGameId;
+        viewerLabelEl.innerHTML = isPlaying
+          ? `<button id="btn-go-to-game" class="btn-primary w-full flex items-center justify-center gap-2">
+               <span aria-hidden="true" class="material-symbols-outlined text-lg">sports_esports</span>
+               GO TO GAME
+             </button>`
+          : `<div class="bg-surface-container-high border border-outline p-4 text-center">
+               <p class="font-mono text-[10px] uppercase tracking-widest text-outline">SPECTATOR MODE</p>
+               <p class="font-body text-sm text-on-surface-variant mt-1">Waiting for the host to start a game...</p>
+             </div>`;
+        viewerLabelEl.querySelector('#btn-go-to-game')?.addEventListener('click', () => {
+          router.navigate('dashboard', { roomCode });
+        });
+      }
+    }
     container.querySelector('#start-section').style.display = isHost ? 'block' : 'none';
 
-    // If game is active and viewer just joined, go to dashboard
-    if (!isHost && meta.status === 'playing' && meta.activeGameId) {
-      router.navigate('dashboard', { roomCode });
-      return;
+    // Current game card
+    const gameCardEl = container.querySelector('#current-game-card');
+    if (gameCardEl) {
+      const activeGame = state.currentGame();
+      const gameDef = activeGame ? getGame(activeGame.type) : null;
+      if (gameDef && meta.status === 'playing') {
+        gameCardEl.innerHTML = `
+          <div class="bg-surface-container-lowest border border-outline p-6">
+            <span class="font-mono text-[10px] text-outline tracking-widest uppercase block mb-3">${gameDef.minPlayers}–${gameDef.maxPlayers} PLAYERS / ${gameDef.winMode === 'highest_total' ? 'HIGHEST WINS' : 'LOWEST WINS'}</span>
+            <h3 class="font-headline font-black text-3xl uppercase tracking-tighter mb-2">${escapeHTML(gameDef.label)}</h3>
+            <p class="text-on-surface-variant text-sm leading-relaxed">${escapeHTML(gameDef.description)}</p>
+          </div>
+        `;
+      } else {
+        gameCardEl.innerHTML = '';
+      }
     }
 
     // Render player list. Mid-game: Add is allowed (new player joins the
@@ -306,15 +325,10 @@ function _startWatching(roomCode, container) {
     const addRow = container.querySelector('#add-player-row');
     if (addRow) addRow.style.display = isHost ? 'flex' : 'none';
     _renderPlayers(container, players, isHost, roomCode, isPlaying);
-
-    // Remove host prompt if host player has been set
-    if (meta.hostPlayerId) {
-      const hostPrompt = container.querySelector('#host-prompt');
-      if (hostPrompt) hostPrompt.remove();
-    }
+    _showSuggestions(container, roomCode);
 
     // Stats tracking
-    const trackStats = meta.trackStats || false;
+    const trackStats = meta.trackStats !== false;
     const games = data.games || {};
     const hasPlayedGames = Object.values(games).some((g) => g.rounds && Object.keys(g.rounds).length > 0);
 
@@ -380,9 +394,6 @@ function _startWatching(roomCode, container) {
 function _renderPlayers(container, players, isHost, roomCode, isPlaying = false) {
   const list = container.querySelector('#player-list');
   const sorted = Object.values(players).sort((a, b) => a.seatOrder - b.seatOrder);
-  const meta = state.get('roomMeta') || {};
-  const hostPlayerId = meta.hostPlayerId || null;
-
   if (sorted.length === 0) {
     list.innerHTML = `
       <div class="text-center py-12">
@@ -397,7 +408,6 @@ function _renderPlayers(container, players, isHost, roomCode, isPlaying = false)
     .map((p) => {
       const color = ACCENT_COLORS[p.accentIndex % ACCENT_COLORS.length];
       const inactive = !p.isActive ? 'opacity-40' : '';
-      const isHostPlayer = hostPlayerId === p.id;
       return `
         <div class="bg-surface-container-lowest border border-outline ${inactive} flex items-center">
           <div class="w-1.5 self-stretch" style="background:${color}"></div>
@@ -406,17 +416,11 @@ function _renderPlayers(container, players, isHost, roomCode, isPlaying = false)
               ${escapeHTML(p.name.substring(0, 2))}
             </div>
             <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2">
-                <p class="font-headline font-extrabold text-sm uppercase truncate">${escapeHTML(p.name)}</p>
-                ${isHostPlayer ? '<span class="font-mono text-[8px] bg-primary text-on-primary px-1.5 py-0.5 uppercase tracking-widest shrink-0">HOST</span>' : ''}
-              </div>
+              <p class="font-headline font-extrabold text-sm uppercase truncate">${escapeHTML(p.name)}</p>
               <p class="font-mono text-[10px] text-outline uppercase">${p.isActive ? 'ACTIVE' : 'INACTIVE'}</p>
             </div>
             ${isHost ? `
               <div class="flex gap-1">
-                <button class="player-set-host p-1.5 hover:bg-surface-container-high transition-colors ${isHostPlayer ? 'opacity-30' : ''}" data-id="${escapeHTML(p.id)}" title="Set as host player" aria-label="Set ${escapeHTML(p.name)} as host player">
-                  <span aria-hidden="true" class="material-symbols-outlined text-sm">${isHostPlayer ? 'shield_person' : 'person'}</span>
-                </button>
                 <button class="player-toggle p-1.5 hover:bg-surface-container-high transition-colors" data-id="${escapeHTML(p.id)}" data-active="${p.isActive}" title="${p.isActive ? 'Deactivate' : 'Activate'}" aria-label="${p.isActive ? 'Deactivate' : 'Activate'} ${escapeHTML(p.name)}">
                   <span aria-hidden="true" class="material-symbols-outlined text-sm">${p.isActive ? 'person_off' : 'person_add'}</span>
                 </button>
@@ -433,34 +437,11 @@ function _renderPlayers(container, players, isHost, roomCode, isPlaying = false)
     })
     .join('');
 
-  // Show hint if no host player selected yet and there are players
-  if (isHost && !hostPlayerId && sorted.length > 0) {
-    list.insertAdjacentHTML('beforeend', `
-      <p class="font-mono text-[10px] text-outline text-center mt-2 uppercase">
-        <span aria-hidden="true" class="material-symbols-outlined text-[10px] align-middle">info</span>
-        TAP THE PERSON ICON TO MARK HOST PLAYER
-      </p>
-    `);
-  }
-
   // Bind player action buttons
   if (isHost) {
-    list.querySelectorAll('.player-set-host').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const id = btn.dataset.id;
-        fb.updateRoomMeta(roomCode, { hostPlayerId: id });
-        toast.show('Host player set');
-      });
-    });
-
     list.querySelectorAll('.player-toggle').forEach((btn) => {
       btn.addEventListener('click', () => {
         const id = btn.dataset.id;
-        const meta = state.get('roomMeta') || {};
-        if (id === meta.hostPlayerId) {
-          toast.show('Cannot deactivate host player');
-          return;
-        }
         const isActive = btn.dataset.active === 'true';
         fb.updatePlayer(roomCode, id, { isActive: !isActive });
       });
@@ -469,13 +450,52 @@ function _renderPlayers(container, players, isHost, roomCode, isPlaying = false)
     list.querySelectorAll('.player-remove').forEach((btn) => {
       btn.addEventListener('click', () => {
         const id = btn.dataset.id;
-        const meta = state.get('roomMeta') || {};
-        if (id === meta.hostPlayerId) {
-          toast.show('Cannot remove host player');
-          return;
-        }
         fb.removePlayer(roomCode, id);
       });
     });
   }
+}
+
+// ── Player name memory ──
+
+const _NAMES_KEY = 'gns_player_names';
+
+function _getKnownNames() {
+  try { return JSON.parse(localStorage.getItem(_NAMES_KEY) || '[]'); } catch { return []; }
+}
+
+function _savePlayerName(name) {
+  const names = _getKnownNames().filter((n) => n !== name);
+  names.unshift(name);
+  localStorage.setItem(_NAMES_KEY, JSON.stringify(names.slice(0, 30)));
+}
+
+function _showSuggestions(container, roomCode) {
+  const input = container.querySelector('#input-player-name');
+  const suggestionsEl = container.querySelector('#name-suggestions');
+  if (!input || !suggestionsEl) return;
+
+  const existing = new Set(Object.values(state.get('players') || {}).map((p) => p.name));
+  const matches = _getKnownNames().filter((n) => !existing.has(n)).slice(0, 4);
+
+  if (matches.length === 0) {
+    suggestionsEl.innerHTML = '';
+    return;
+  }
+
+  suggestionsEl.innerHTML = `
+    <span class="font-mono text-[10px] uppercase tracking-widest text-outline self-center mr-1">Quick add:</span>
+    ${matches.map((n) => `
+      <button class="suggestion-chip font-mono text-[10px] uppercase tracking-widest border border-outline px-2 py-1 hover:bg-surface-container-high transition-colors">
+        ${escapeHTML(n)}
+      </button>
+    `).join('')}
+  `;
+
+  suggestionsEl.querySelectorAll('.suggestion-chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      input.value = chip.textContent.trim();
+      _addPlayer(container, roomCode);
+    });
+  });
 }

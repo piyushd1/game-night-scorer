@@ -19,8 +19,11 @@ export function mount(container, params = {}) {
   const topBar = document.getElementById('top-bar');
   topBar.style.display = 'flex';
   document.getElementById('top-bar-title').textContent = 'SELECT GAME';
-  document.getElementById('top-bar-back').classList.remove('hidden');
-  document.getElementById('top-bar-back').onclick = () => router.navigate('lobby', { roomCode }, 'back');
+  const backBtn = document.getElementById('top-bar-back');
+  backBtn.classList.remove('hidden');
+  backBtn.textContent = 'arrow_back';
+  backBtn.setAttribute('aria-label', 'Go back');
+  backBtn.onclick = () => router.navigate('lobby', { roomCode }, 'back');
   document.getElementById('top-bar-actions').innerHTML = '';
 
   _selectedGame = null;

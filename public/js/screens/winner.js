@@ -41,8 +41,15 @@ export function mount(container, params = {}) {
 
   container.innerHTML = `
     <div class="h-full flex flex-col bg-primary text-on-primary">
+      <!-- Back button -->
+      <div class="flex items-center px-4 pt-4 shrink-0">
+        <button id="btn-back-lobby" aria-label="Back to lobby" class="flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest opacity-70 hover:opacity-100 transition-opacity">
+          <span aria-hidden="true" class="material-symbols-outlined text-base">arrow_back</span>
+          LOBBY
+        </button>
+      </div>
       <!-- Hero -->
-      <main class="flex-1 flex flex-col items-center justify-center px-6 pt-12 pb-8">
+      <main class="flex-1 flex flex-col items-center justify-center px-6 pt-4 pb-8">
         <div class="text-center w-full max-w-sm mx-auto mb-12">
           <div class="flex items-center justify-center gap-2 mb-4">
             <span aria-hidden="true" class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">emoji_events</span>
@@ -59,7 +66,7 @@ export function mount(container, params = {}) {
 
         <!-- Standings -->
         <div class="w-full max-w-sm mx-auto space-y-3">
-          ${standings.filter((s) => s.playerId !== game.winner).map((s) => {
+          ${standings.map((s) => {
             const p = snapshot[s.playerId] || {};
             return `
               <div class="flex justify-between items-center py-2 border-b border-white/20">
@@ -91,6 +98,10 @@ export function mount(container, params = {}) {
       </footer>
     </div>
   `;
+
+  container.querySelector('#btn-back-lobby')?.addEventListener('click', () => {
+    router.navigate('lobby', { roomCode });
+  });
 
   const guardHost = (fn) => () => {
     if (!state.isHost()) {

@@ -27,6 +27,8 @@ export function mount(container, params = {}) {
     backBtn.classList.add('hidden');
   } else {
     backBtn.classList.remove('hidden');
+    backBtn.textContent = 'arrow_back';
+    backBtn.setAttribute('aria-label', 'Go back');
     backBtn.onclick = () => router.navigate('lobby', { roomCode }, 'back');
   }
   document.getElementById('top-bar-actions').innerHTML = locked
