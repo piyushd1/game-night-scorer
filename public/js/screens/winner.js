@@ -132,7 +132,8 @@ export function mount(container, params = {}) {
                 ? `<p class="font-mono text-xs opacity-60 mt-2">${sfParts.join(', ')}</p>` : '';
 
               // Winnings math shown in winnings view
-              let winningsHtml = '';
+              let formulaStr = '';
+              let amountStr = '';
               if (juaOn) {
                 const savesCost = savesCount * firstSaveAmt;
                 const finesCost = finesCount * influenceFine;
@@ -148,15 +149,9 @@ export function mount(container, params = {}) {
                 if (savesCount > 0) terms.push(`+ (-${firstSaveAmt} x ${savesCount})`);
                 if (finesCount > 0) terms.push(`+ (-${influenceFine} x ${finesCount})`);
                 terms.push(fmt(-buyIn));
-                const netFmt = fmt(d1(net));
-                if (terms.length > 1) {
-                  winningsHtml = `
-                    <p class="font-mono text-xs opacity-70">${terms.join(' ')} =</p>
-                    <p class="font-mono font-bold text-lg">${netFmt}</p>
-                  `;
-                } else {
-                  winningsHtml = `<p class="font-mono font-bold text-lg">${netFmt}</p>`;
-                }
+                const absNet = parseFloat(Math.abs(net).toFixed(1));
+                amountStr = `${net >= 0 ? '+' : '-'}₹${absNet}`;
+                formulaStr = terms.length > 1 ? terms.join(' ') : '';
               }
 
               return `
@@ -173,12 +168,15 @@ export function mount(container, params = {}) {
                     <span class="font-mono text-xl font-bold">${s.total}</span>
                   </div>
                   <!-- Winnings view -->
-                  <div class="winnings-row" style="display:none">
-                    <div class="flex items-center gap-3">
-                      <span class="font-mono text-sm opacity-50 w-6 text-center">${s.rank}</span>
-                      <p class="font-headline font-bold text-lg uppercase">${escapeHTML(p.name || s.playerId)}</p>
+                  <div class="winnings-row flex justify-between items-start gap-3" style="display:none">
+                    <div class="flex items-start gap-3 min-w-0">
+                      <span class="font-mono text-sm opacity-50 w-6 shrink-0 text-center">${s.rank}</span>
+                      <div class="min-w-0">
+                        <p class="font-headline font-bold text-lg uppercase leading-tight">${escapeHTML(p.name || s.playerId)}</p>
+                        ${formulaStr ? `<p class="font-mono text-xs opacity-70 leading-relaxed mt-1">${formulaStr}</p>` : ''}
+                      </div>
                     </div>
-                    ${winningsHtml ? `<div class="pl-9 mt-1">${winningsHtml}</div>` : ''}
+                    <p class="font-headline font-bold text-lg shrink-0">${amountStr}</p>
                   </div>
                 </div>
               `;
@@ -187,43 +185,67 @@ export function mount(container, params = {}) {
             // Tie breakdown card — hidden until winnings view is active
             const hasTie = juaOn && (n1 > 1 || n2 > 1 || n3 > 1);
             let tieHtml = '';
-            if (hasTie) {
+            if (juaOn) {
               const r = (v) => parseFloat(v.toFixed(1));
-              const posLine = (rank, count) => {
+              const posRow = (rank, count) => {
                 const label = ['1st', '2nd', '3rd'][rank - 1];
-                const pot = [pot1, pot2, pot3][rank - 1];
-                if (count === 0) return `${label} (0 players)`;
                 const base20 = r(baseShare + 20);
                 const poolPart = pool > 0 ? `+${r(pool)} ` : '';
-                if (rank === 1 && count >= 3) {
-                  const each = r((pot1 + pot2 + pot3) / count);
-                  return `${label} (tie, ${count} players): ${poolPart}+${base20} + ${r(pot2)} + ${r(pot3)} / ${count} = ${each}`;
+                let math, each;
+                if (rank === 1) {
+                  if (count >= 3) {
+                    math = `${poolPart}+${base20} + ${r(pot2)} + ${r(pot3)}`;
+                    each = count > 0 ? r((pot1 + pot2 + pot3) / count) : null;
+                  } else if (count === 2) {
+                    math = `${poolPart}+${base20} + ${r(pot2)}`;
+                    each = r((pot1 + pot2) / 2);
+                  } else {
+                    math = `${poolPart}+${base20}`;
+                    each = count > 0 ? r(pot1) : null;
+                  }
+                } else if (rank === 2) {
+                  if (count >= 2) {
+                    math = `+${r(pot2)} + ${r(pot3)}`;
+                    each = r((pot2 + pot3) / count);
+                  } else {
+                    math = `+${r(pot2)}`;
+                    each = count > 0 ? r(pot2) : null;
+                  }
+                } else {
+                  math = `+${r(pot3)}`;
+                  each = count >= 2 ? r(pot3 / count) : (count > 0 ? r(pot3) : null);
                 }
-                if (rank === 1 && count === 2) {
-                  const each = r((pot1 + pot2) / 2);
-                  return `${label} (tie, 2 players): ${poolPart}+${base20} + ${r(pot2)} / 2 = ${each}`;
-                }
-                if (rank === 2 && count >= 2) {
-                  const each = r((pot2 + pot3) / count);
-                  return `${label} (tie, ${count} players): +${r(pot2)} + ${r(pot3)} / ${count} = ${each}`;
-                }
-                if (rank === 3 && count >= 2) {
-                  const each = r(pot3 / count);
-                  return `${label} (tie, ${count} players): +${r(pot3)} / ${count} = ${each}`;
-                }
-                if (rank === 1) return `${label} (1 player): ${poolPart}+${base20}`;
-                return `${label} (1 player): +${r(pot)}`;
+                return { label, math, count, each };
               };
-              const lines = [posLine(1, n1), posLine(2, n2), posLine(3, n3)];
+              const tieRows = [posRow(1, n1), posRow(2, n2), posRow(3, n3)].filter((row) => row.count > 0);
               tieHtml = `
-                <div id="tie-card" style="display:none" class="mt-4 bg-white text-black p-4 space-y-1">
-                  ${lines.map((l) => `<p class="font-mono text-xs">${escapeHTML(l)}</p>`).join('')}
+                <div id="tie-card" style="display:none" class="mt-4 bg-white text-black p-4">
+                  <table class="w-full font-mono text-xs border-collapse">
+                    <thead>
+                      <tr class="border-b border-black/20">
+                        <th class="text-left pb-2 font-bold uppercase tracking-widest">#</th>
+                        <th class="text-left pb-2 font-bold uppercase tracking-widest px-2">Winnings</th>
+                        <th class="text-center pb-2 font-bold uppercase tracking-widest px-2">Players</th>
+                        <th class="text-right pb-2 font-bold uppercase tracking-widest">Each</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${tieRows.map((row) => `
+                        <tr class="border-b border-black/10 last:border-0">
+                          <td class="py-1.5 pr-2">${escapeHTML(row.label)}</td>
+                          <td class="py-1.5 px-2">${escapeHTML(row.math)}</td>
+                          <td class="py-1.5 px-2 text-center">${row.count}</td>
+                          <td class="py-1.5 text-right font-bold">${row.each !== null ? `₹${row.each}` : '—'}</td>
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
                 </div>
               `;
             }
 
             const toggleBtn = juaOn ? `
-              <div class="flex justify-end mb-3">
+              <div class="flex justify-center mb-3">
                 <button id="btn-toggle-view" class="font-mono text-xs uppercase tracking-widest border border-white/40 px-3 py-1.5 hover:bg-white/10 transition-colors">
                   VIEW WINNINGS
                 </button>
@@ -273,7 +295,6 @@ export function mount(container, params = {}) {
     });
     container.querySelectorAll('.winnings-row').forEach((el) => {
       el.style.display = showWinnings ? 'flex' : 'none';
-      el.style.flexDirection = 'column';
     });
     const tieCard = container.querySelector('#tie-card');
     if (tieCard) tieCard.style.display = showWinnings ? 'block' : 'none';
