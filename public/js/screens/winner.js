@@ -165,24 +165,24 @@ export function mount(container, params = {}) {
               const posLine = (rank, count) => {
                 const label = ['1st', '2nd', '3rd'][rank - 1];
                 const pot = [pot1, pot2, pot3][rank - 1];
-                if (count === 0) return `${label} place (0 players)`;
+                if (count === 0) return `${label} (0 players)`;
                 if (rank === 1 && count >= 3) {
                   const each = r((pot1 + pot2 + pot3) / count);
-                  return `${label} place (tie, ${count} players): +₹${r(pot1)} + ₹${r(pot2)} + ₹${r(pot3)} / ${count} = ₹${each}`;
+                  return `${label} (tie, ${count} players): +${r(pot1)} + ${r(pot2)} + ${r(pot3)} / ${count} = ${each}`;
                 }
                 if (rank === 1 && count === 2) {
                   const each = r((pot1 + pot2) / 2);
-                  return `${label} place (tie, 2 players): +₹${r(pot1)} + ₹${r(pot2)} / 2 = ₹${each}`;
+                  return `${label} (tie, 2 players): +${r(pot1)} + ${r(pot2)} / 2 = ${each}`;
                 }
                 if (rank === 2 && count >= 2) {
                   const each = r((pot2 + pot3) / count);
-                  return `${label} place (tie, ${count} players): +₹${r(pot2)} + ₹${r(pot3)} / ${count} = ₹${each}`;
+                  return `${label} (tie, ${count} players): +${r(pot2)} + ${r(pot3)} / ${count} = ${each}`;
                 }
                 if (rank === 3 && count >= 2) {
                   const each = r(pot3 / count);
-                  return `${label} place (tie, ${count} players): +₹${r(pot3)} / ${count} = ₹${each}`;
+                  return `${label} (tie, ${count} players): +${r(pot3)} / ${count} = ${each}`;
                 }
-                return `${label} place (1 player): +₹${r(pot)}`;
+                return `${label} (1 player): +${r(pot)}`;
               };
               const lines = [posLine(1, n1), posLine(2, n2), posLine(3, n3)];
               tieHtml = `
