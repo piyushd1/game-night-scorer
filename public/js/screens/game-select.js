@@ -33,7 +33,7 @@ export function mount(container, params = {}) {
   const games = getAllGames();
 
   container.innerHTML = `
-    <div class="p-6 pb-32">
+    <div class="p-6 pb-24">
       <div class="flex justify-between items-end mb-6">
         <div>
           <p class="font-mono text-[10px] uppercase tracking-widest text-outline mb-1">CHOOSE YOUR GAME</p>
@@ -47,27 +47,26 @@ export function mount(container, params = {}) {
         ${games.map((g) => {
           const compatible = playerCount >= g.minPlayers && playerCount <= g.maxPlayers;
           return `
-            <button class="game-card w-full text-left bg-surface-container-lowest border border-outline p-6 transition-all ${compatible ? 'hover:bg-surface-container group' : 'opacity-40 cursor-not-allowed'}" data-id="${escapeHTML(g.id)}" ${!compatible ? 'disabled' : ''}>
-              <div class="flex justify-between items-start mb-3">
-                <span class="font-mono text-[10px] text-outline tracking-widest uppercase">${g.minPlayers}-${g.maxPlayers} PLAYERS / ${g.winMode === 'highest_total' ? 'HIGHEST WINS' : 'LOWEST WINS'}</span>
-                <div class="game-check w-7 h-7 border-2 border-outline-variant flex items-center justify-center transition-all"></div>
-              </div>
-              <h3 class="font-headline font-black text-3xl uppercase tracking-tighter mb-2 group-hover:text-secondary transition-colors">${g.label}</h3>
-              <p class="text-on-surface-variant text-sm leading-relaxed">${g.description}</p>
-            </button>
+            <div class="game-card-group" data-group-id="${escapeHTML(g.id)}">
+              <button class="game-card w-full text-left bg-surface-container-lowest border border-outline p-6 transition-all ${compatible ? 'hover:bg-surface-container group' : 'opacity-40 cursor-not-allowed'}" data-id="${escapeHTML(g.id)}" ${!compatible ? 'disabled' : ''}>
+                <div class="flex justify-between items-start mb-3">
+                  <span class="font-mono text-[10px] text-outline tracking-widest uppercase">${g.minPlayers}-${g.maxPlayers} PLAYERS / ${g.winMode === 'highest_total' ? 'HIGHEST WINS' : 'LOWEST WINS'}</span>
+                  <div class="game-check w-7 h-7 border-2 border-outline-variant flex items-center justify-center transition-all"></div>
+                </div>
+                <h3 class="font-headline font-black text-3xl uppercase tracking-tighter mb-2 group-hover:text-secondary transition-colors">${g.label}</h3>
+                <p class="text-on-surface-variant text-sm leading-relaxed">${g.description}</p>
+              </button>
+            </div>
           `;
         }).join('')}
       </div>
+    </div>
 
-      <!-- Config Section (shown after selection) -->
-      <div id="game-config" class="mt-6" style="display:none"></div>
-
-      <!-- Start Button -->
-      <div class="mt-8">
-        <button id="btn-start" class="btn-primary flex items-center justify-center gap-2" disabled>
-          SELECT A GAME
-        </button>
-      </div>
+    <!-- Start Button (floats up from bottom on selection) -->
+    <div id="btn-start-wrapper" class="fixed bottom-0 left-0 right-0 p-4 bg-surface border-t border-outline translate-y-full transition-transform duration-300 ease-out z-10">
+      <button id="btn-start" class="btn-primary flex items-center justify-center gap-2 w-full">
+        SELECT A GAME
+      </button>
     </div>
   `;
 
@@ -110,40 +109,44 @@ function _renderSelection(container) {
     }
   });
 
-  // Update start button to show selected game name
+  const startWrapper = container.querySelector('#btn-start-wrapper');
   const startBtn = container.querySelector('#btn-start');
   if (_selectedGame) {
     const game = getGame(_selectedGame);
+    startWrapper.classList.remove('translate-y-full');
+    startWrapper.classList.add('translate-y-0');
     startBtn.disabled = false;
     startBtn.innerHTML = `START ${game.label.toUpperCase()} <span aria-hidden="true" class="material-symbols-outlined text-lg">arrow_forward</span>`;
   } else {
+    startWrapper.classList.remove('translate-y-0');
+    startWrapper.classList.add('translate-y-full');
     startBtn.disabled = true;
     startBtn.innerHTML = `SELECT A GAME`;
   }
 }
 
 function _renderConfig(container) {
-  const configEl = container.querySelector('#game-config');
-  if (!_selectedGame) {
-    configEl.style.display = 'none';
-    return;
-  }
+  // Remove any existing inline config panels
+  container.querySelectorAll('.game-config-inline').forEach((el) => el.remove());
+
+  if (!_selectedGame) return;
 
   const game = getGame(_selectedGame);
-  if (!game || !game.configFields || game.configFields.length === 0) {
-    configEl.style.display = 'none';
-    return;
-  }
+  if (!game || !game.configFields || game.configFields.length === 0) return;
 
   const playerCount = state.activePlayers().length;
+  const group = container.querySelector(`.game-card-group[data-group-id="${_selectedGame}"]`);
+  if (!group) return;
 
-  configEl.style.display = 'block';
-  configEl.innerHTML = `
-    <div class="bg-surface-container-lowest border border-outline p-4">
+  const configDiv = document.createElement('div');
+  configDiv.className = 'game-config-inline';
+  configDiv.innerHTML = `
+    <div class="bg-surface-container-lowest border border-outline border-t-0 p-4">
       <p class="font-mono text-[10px] uppercase tracking-widest text-outline mb-4">GAME SETTINGS</p>
       ${game.configFields.map((f) => _renderConfigField(game, f, playerCount)).join('')}
     </div>
   `;
+  group.appendChild(configDiv);
 }
 
 function _renderConfigField(game, f, playerCount) {
