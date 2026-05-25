@@ -30,6 +30,7 @@ export function mount(container, params = {}) {
   const snapshot = game.playerSnapshot || {};
   const totals = game.totals || {};
   const trackStats = state.get('roomMeta')?.trackStats || false;
+  const juaOn = !!(game.config?.jua);
 
   // Derive standings
   const standings = gameModule.deriveStandings(totals, game.playerIds);
@@ -47,8 +48,8 @@ export function mount(container, params = {}) {
         </button>
       </div>
       <!-- Hero -->
-      <main class="flex-1 flex flex-col items-center justify-center px-6 pt-4 pb-8">
-        <div class="text-center w-full max-w-sm mx-auto mb-12">
+      <main class="flex-1 flex flex-col items-center overflow-y-auto min-h-0 px-6 pt-4 pb-8">
+        <div id="hero-section" class="text-center w-full max-w-sm mx-auto mb-12">
           <div class="flex items-center justify-center gap-2 mb-4">
             <span aria-hidden="true" class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">emoji_events</span>
             <span class="font-mono text-sm uppercase tracking-widest opacity-80">WINNER</span>
@@ -221,7 +222,7 @@ export function mount(container, params = {}) {
               };
               const tieRows = [posRow(1, n1), posRow(2, n2), posRow(3, n3)].filter((row) => row.count > 0);
               tieHtml = `
-                <div id="tie-card" style="display:none" class="mt-4 bg-white text-black p-4">
+                <div id="tie-card" style="display:none" class="mt-4 mb-6 bg-white text-black p-4">
                   <table class="w-full font-mono text-xs border-collapse">
                     <thead>
                       <tr class="border-b border-black/20">
@@ -246,15 +247,7 @@ export function mount(container, params = {}) {
               `;
             }
 
-            const toggleBtn = juaOn ? `
-              <div class="flex justify-center mb-3">
-                <button id="btn-toggle-view" class="font-mono text-xs uppercase tracking-widest border border-white/40 px-3 py-1.5 hover:bg-white/10 transition-colors">
-                  VIEW WINNINGS
-                </button>
-              </div>
-            ` : '';
-
-            return toggleBtn + `<div class="divide-y divide-white/20">${rowsHtml}</div>` + tieHtml;
+            return tieHtml + `<div class="divide-y divide-white/20">${rowsHtml}</div>`;
           })()}
         </div>
 
@@ -262,15 +255,21 @@ export function mount(container, params = {}) {
 
       <!-- Actions -->
       <footer class="p-6 space-y-3 shrink-0">
-        <button id="btn-lobby" class="w-full py-4 bg-surface-container-lowest text-primary font-headline font-extrabold uppercase tracking-widest text-base transition-colors hover:bg-surface-container-high">
-          BACK TO LOBBY
+        ${juaOn ? `
+        <button id="btn-toggle-view" class="w-full py-4 bg-white text-primary font-headline font-extrabold uppercase tracking-widest text-base transition-opacity hover:opacity-90">
+          VIEW WINNINGS
         </button>
+        ` : ''}
         ${trackStats ? `
         <button id="btn-recap" class="w-full py-4 border border-white/40 text-white font-headline font-extrabold uppercase tracking-widest text-base transition-colors hover:bg-white/10 flex items-center justify-center gap-2">
           <span class="material-symbols-outlined text-lg" aria-hidden="true">bar_chart</span>
           VIEW NIGHT RECAP
         </button>
         ` : ''}
+        <button id="btn-lobby" class="w-full py-4 border border-white/40 text-white font-headline font-extrabold uppercase tracking-widest text-base transition-colors hover:bg-white/10 flex items-center justify-center gap-2">
+          <span aria-hidden="true" class="material-symbols-outlined text-lg">arrow_back</span>
+          BACK TO LOBBY
+        </button>
       </footer>
     </div>
   `;
@@ -292,6 +291,8 @@ export function mount(container, params = {}) {
     showWinnings = !showWinnings;
     const btn = container.querySelector('#btn-toggle-view');
     if (btn) btn.textContent = showWinnings ? 'VIEW SCORES' : 'VIEW WINNINGS';
+    const hero = container.querySelector('#hero-section');
+    if (hero) hero.style.display = showWinnings ? 'none' : '';
     container.querySelectorAll('.score-row').forEach((el) => {
       el.style.display = showWinnings ? 'none' : 'flex';
     });

@@ -72,6 +72,41 @@ export function mount(container, params = {}) {
     </section>
   `;
 
+  // ── Night Winnings ──
+  if (stats.winnings) {
+    html += `
+      <section class="mb-10">
+        <h3 class="font-headline font-extrabold uppercase text-sm tracking-widest mb-4 flex items-center gap-2">
+          <span aria-hidden="true" class="material-symbols-outlined text-sm">payments</span>
+          NIGHT WINNINGS
+        </h3>
+        <div class="border border-outline overflow-hidden">
+          <div class="grid grid-cols-12 bg-surface-container-high border-b border-outline px-4 py-2">
+            <div class="col-span-8 font-mono text-[10px] uppercase tracking-widest text-outline">PLAYER</div>
+            <div class="col-span-4 font-mono text-[10px] uppercase tracking-widest text-outline text-right">NIGHT NET</div>
+          </div>
+          ${stats.winnings.players.map((p, i) => {
+            const color = ACCENT_COLORS[p.accentIndex % ACCENT_COLORS.length];
+            const bgClass = i % 2 === 0 ? 'bg-surface-container-lowest' : '';
+            const net = parseFloat(p.net.toFixed(1));
+            const netStr = `${net >= 0 ? '+' : '-'}&#8377;${Math.abs(net)}`;
+            const netColor = net >= 0 ? 'text-secondary' : 'text-error';
+            return `
+              <div class="grid grid-cols-12 items-center px-4 py-3 border-b border-outline-variant last:border-0 ${bgClass}">
+                <div class="col-span-8 flex items-center gap-2">
+                  <div class="w-1 h-6" style="background:${color}"></div>
+                  <span class="font-headline font-bold text-xs uppercase truncate">${escapeHTML(p.name)}</span>
+                  <span class="font-mono text-[9px] text-outline">${p.gamesCount}G</span>
+                </div>
+                <div class="col-span-4 font-mono text-sm text-right font-bold ${netColor}">${netStr}</div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </section>
+    `;
+  }
+
   // ── MVP Banner ──
   if (stats.mvpId) {
     const mvp = stats.overall.find((p) => p.playerId === stats.mvpId);
@@ -181,6 +216,10 @@ export function mount(container, params = {}) {
         html += _statPill('BEST RD', '+' + ps.bestRound);
         html += _statPill('WORST RD', '+' + ps.worstRound);
         if (ps.f7Bonuses > 0) html += _statPill('🔥 BONUS', 'x' + ps.f7Bonuses, true);
+        if (ps.juaNet !== null && ps.juaNet !== undefined) {
+          const n = parseFloat(ps.juaNet.toFixed(1));
+          html += _statPill('JUA', `${n >= 0 ? '+' : '-'}&#8377;${Math.abs(n)}`, n >= 0);
+        }
       } else if (game.type === 'papayoo') {
         html += _statPill('BEST RD', ps.bestRound);
         html += _statPill('WORST RD', ps.worstRound);

@@ -571,6 +571,10 @@ function _savePlayerName(name) {
   localStorage.setItem(_NAMES_KEY, JSON.stringify(names.slice(0, 30)));
 }
 
+function _removePlayerName(name) {
+  localStorage.setItem(_NAMES_KEY, JSON.stringify(_getKnownNames().filter((n) => n !== name)));
+}
+
 function _showSuggestions(container, roomCode) {
   const input = container.querySelector('#input-player-name');
   const suggestionsEl = container.querySelector('#name-suggestions');
@@ -587,16 +591,23 @@ function _showSuggestions(container, roomCode) {
   suggestionsEl.innerHTML = `
     <span class="font-mono text-[10px] uppercase tracking-widest text-outline self-center mr-1">Quick add:</span>
     ${matches.map((n) => `
-      <button class="suggestion-chip font-mono text-[10px] uppercase tracking-widest border border-outline px-2 py-1 hover:bg-surface-container-high transition-colors">
+      <button class="suggestion-chip font-mono text-[10px] uppercase tracking-widest border border-outline pl-2 pr-1 py-1 hover:bg-surface-container-high transition-colors inline-flex items-center gap-1.5" data-name="${escapeHTML(n)}">
         ${escapeHTML(n)}
+        <span class="remove-chip text-outline hover:text-on-surface leading-none" aria-label="Remove ${escapeHTML(n)}">&#x2715;</span>
       </button>
     `).join('')}
   `;
 
   suggestionsEl.querySelectorAll('.suggestion-chip').forEach((chip) => {
-    chip.addEventListener('click', () => {
-      input.value = chip.textContent.trim();
+    chip.addEventListener('click', (e) => {
+      if (e.target.closest('.remove-chip')) return;
+      input.value = chip.dataset.name;
       _addPlayer(container, roomCode);
+    });
+    chip.querySelector('.remove-chip')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      _removePlayerName(chip.dataset.name);
+      _showSuggestions(container, roomCode);
     });
   });
 }
