@@ -13,6 +13,7 @@ import { ACCENT_COLORS } from '../state.js';
 import { escapeHTML } from '../utils.js';
 
 let _unsub = null;
+const _qrCache = {};
 
 export function mount(container, params = {}) {
   bottomNav.hide();
@@ -42,19 +43,12 @@ export function mount(container, params = {}) {
   container.innerHTML = `
     <div class="p-6 pb-32">
       <!-- Room Code -->
-      <div class="bg-surface-container-lowest border border-outline p-6 mb-6">
-        <p class="font-mono text-[10px] uppercase tracking-widest text-outline mb-2">LOBBY PIN</p>
-        <div class="flex items-center justify-between">
+      <div class="relative mb-6">
+        <button id="btn-lobby-pin" class="w-3/5 bg-surface-container-lowest border border-outline p-4 text-left transition-colors">
+          <p class="font-mono text-[10px] uppercase tracking-widest text-outline mb-2">CLICK TO COPY URL</p>
           <span class="font-mono text-3xl font-bold tracking-[0.3em]">${roomCode}</span>
-          <div class="flex items-center gap-2">
-            <button id="btn-qr" aria-label="Show QR code" title="Show QR code" class="font-mono text-[10px] uppercase tracking-widest border border-outline px-3 py-2 hover:bg-surface-container-high transition-colors flex items-center gap-1">
-              <span class="material-symbols-outlined" style="font-size:14px">qr_code_2</span>
-            </button>
-            <button id="btn-copy" class="font-mono text-[10px] uppercase tracking-widest border border-outline px-3 py-2 hover:bg-surface-container-high transition-colors">
-              COPY LINK
-            </button>
-          </div>
-        </div>
+        </button>
+        <div id="lobby-qr" class="absolute left-[60%] right-0 top-0 bottom-0 flex items-center justify-center" style="padding:3px"></div>
       </div>
 
       <!-- Current game card (shown when a game is active) -->
@@ -138,20 +132,39 @@ export function unmount() {
 }
 
 function _bindEvents(container, roomCode) {
-  // QR code
-  container.querySelector('#btn-qr').addEventListener('click', () => {
+  // Inline QR code — generated once per room code, then reused from cache
+  const qrEl = container.querySelector('#lobby-qr');
+  if (qrEl && window.QRCode) {
     const url = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
-    qrModal.show(url, roomCode);
+    if (_qrCache[roomCode]) {
+      const img = document.createElement('img');
+      img.src = _qrCache[roomCode];
+      img.style.cssText = 'width:100%;height:100%;display:block';
+      qrEl.appendChild(img);
+    } else {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const rect = qrEl.getBoundingClientRect();
+        const size = Math.min(rect.width, rect.height) - 6;
+        new window.QRCode(qrEl, { text: url, width: size, height: size, colorDark: '#000000', colorLight: 'rgba(0,0,0,0)', correctLevel: window.QRCode.CorrectLevel.L });
+        const canvas = qrEl.querySelector('canvas');
+        if (canvas) _qrCache[roomCode] = canvas.toDataURL();
+      }));
+    }
+  }
+
+  // Lobby PIN card — click to copy join URL
+  container.querySelector('#btn-lobby-pin')?.addEventListener('click', (e) => {
+    const btn = e.currentTarget;
+    btn.blur();
+    btn.style.background = 'var(--color-surface-container-high, #e0e0e0)';
+    setTimeout(() => { btn.style.background = ''; }, 150);
+    const url = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
+    navigator.clipboard.writeText(url).then(() => toast.show('Link copied')).catch(() => toast.show('Copy failed'));
   });
 
-  // Copy link
-  container.querySelector('#btn-copy').addEventListener('click', () => {
+  container.querySelector('#lobby-qr')?.addEventListener('click', () => {
     const url = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
-    navigator.clipboard.writeText(url).then(() => {
-      const btn = container.querySelector('#btn-copy');
-      btn.textContent = 'COPIED';
-      setTimeout(() => { btn.textContent = 'COPY LINK'; }, 2000);
-    }).catch(() => toast.show('Copy failed'));
+    qrModal.show(url, roomCode);
   });
 
   // Add player — inline always-visible
