@@ -122,21 +122,22 @@ export function mount(container, params = {}) {
               const p = snapshot[s.playerId] || {};
               let netLabel = '';
               if (juaOn) {
-                const savesCost = (savesCounts[s.playerId] || 0) * firstSaveAmt;
-                const finesCost = ((game.juaFines || {})[s.playerId] || 0) * influenceFine;
+                const savesCount = savesCounts[s.playerId] || 0;
+                const finesCount = (game.juaFines || {})[s.playerId] || 0;
+                const savesCost = savesCount * firstSaveAmt;
+                const finesCost = finesCount * influenceFine;
                 const reward = positionReward(s.rank);
                 const net = reward - buyIn - savesCost - finesCost;
                 const terms = [];
                 if (s.rank === 1 && n1 === 1) {
-                  // No tie at 1st — show base + pool separately
                   terms.push(fmt(baseShare + 20));
                   if (pool > 0) terms.push(fmt(pool));
                 } else if (s.rank <= 3) {
                   terms.push(fmt(Math.round(reward)));
                 }
-                if (savesCost > 0) terms.push(fmt(-savesCost));
+                if (savesCount > 0) terms.push(`(-${firstSaveAmt} x ${savesCount})`);
+                if (finesCount > 0) terms.push(`(-${influenceFine} x ${finesCount})`);
                 terms.push(fmt(-buyIn));
-                if (finesCost > 0) terms.push(fmt(-finesCost));
                 const mathStr = terms.length > 1
                   ? `${terms.join(' ')} = ${fmt(Math.round(net))}`
                   : fmt(Math.round(net));
