@@ -77,6 +77,7 @@ export function mount(container, params = {}) {
             `;
           }).join('')}
         </div>
+
       </main>
 
       <!-- Actions -->

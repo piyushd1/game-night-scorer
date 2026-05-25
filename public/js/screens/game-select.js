@@ -147,9 +147,67 @@ function _renderConfig(container) {
     </div>
   `;
   group.appendChild(configDiv);
+
+  // Wire up toggle fields
+  game.configFields.filter((f) => f.type === 'toggle').forEach((f) => {
+    const btn = configDiv.querySelector(`#config-${f.key}`);
+    const subfields = configDiv.querySelector(`#config-${f.key}-subfields`);
+    if (!btn || !subfields) return;
+    btn.addEventListener('click', () => {
+      const isOn = btn.getAttribute('aria-checked') === 'true';
+      const next = !isOn;
+      btn.setAttribute('aria-checked', String(next));
+      const thumb = btn.querySelector('.toggle-thumb');
+      if (next) {
+        btn.classList.remove('bg-surface-container-high', 'border-outline');
+        btn.classList.add('bg-primary', 'border-primary');
+        if (thumb) { thumb.classList.remove('bg-outline'); thumb.classList.add('bg-on-primary', 'translate-x-5'); }
+        subfields.classList.remove('hidden');
+      } else {
+        btn.classList.remove('bg-primary', 'border-primary');
+        btn.classList.add('bg-surface-container-high', 'border-outline');
+        if (thumb) { thumb.classList.remove('bg-on-primary', 'translate-x-5'); thumb.classList.add('bg-outline'); }
+        subfields.classList.add('hidden');
+      }
+    });
+  });
 }
 
 function _renderConfigField(game, f, playerCount) {
+  if (f.type === 'toggle') {
+    const subFieldsHtml = (f.subFields || []).map((sf) => `
+      <div class="flex items-center justify-between py-2 border-b border-outline-variant last:border-0">
+        <label for="config-${sf.key}" class="font-headline font-bold text-xs uppercase">${escapeHTML(sf.label)}</label>
+        <div class="flex items-center gap-1">
+          ${sf.unit ? `<span class="font-mono text-lg text-outline">${escapeHTML(sf.unit)}</span>` : ''}
+          <input
+            type="number"
+            id="config-${sf.key}"
+            value="${game.defaultConfig[sf.key] !== undefined ? game.defaultConfig[sf.key] : (sf.default || 0)}"
+            min="${sf.min || 1}"
+            class="w-20 bg-transparent border-0 border-b-2 border-primary font-mono text-lg text-right py-1 px-0 focus:outline-none focus:border-secondary"
+          >
+        </div>
+      </div>
+    `).join('');
+    return `
+      <div class="py-3 border-b border-outline-variant last:border-0">
+        <div class="flex items-center justify-between">
+          <label class="font-headline font-bold text-sm uppercase">${escapeHTML(f.label)}</label>
+          <button
+            type="button"
+            role="switch"
+            id="config-${f.key}"
+            aria-checked="false"
+            class="w-12 h-7 border border-outline bg-surface-container-high transition-colors relative focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          ><span class="toggle-thumb absolute top-0.5 left-0.5 w-6 h-6 bg-outline transition-all"></span></button>
+        </div>
+        <div id="config-${f.key}-subfields" class="hidden mt-3 pl-3 border-l-2 border-outline-variant">
+          ${subFieldsHtml}
+        </div>
+      </div>
+    `;
+  }
   if (f.type === 'select') {
     // Cabo: default to 2 decks once player count exceeds the single-deck cap
     // so the form starts in a valid state for larger rooms.
@@ -202,6 +260,39 @@ async function _startGame(container, roomCode) {
   const CONFIG_MAX = 9999;
   if (game.configFields) {
     for (const f of game.configFields) {
+      if (f.type === 'toggle') {
+        const toggleBtn = container.querySelector(`#config-${f.key}`);
+        if (!toggleBtn) continue;
+        const isOn = toggleBtn.getAttribute('aria-checked') === 'true';
+        config[f.key] = isOn;
+        if (isOn && f.subFields) {
+          for (const sf of f.subFields) {
+            const subInput = container.querySelector(`#config-${sf.key}`);
+            if (!subInput) continue;
+            const raw = subInput.value.trim();
+            if (raw === '') continue;
+            const parsed = Number(raw);
+            const min = sf.min || 1;
+            if (!Number.isFinite(parsed) || !Number.isInteger(parsed)) {
+              toast.show(`${sf.label} must be a whole number`);
+              subInput.focus();
+              return;
+            }
+            if (parsed < min) {
+              toast.show(`${sf.label} must be at least ${min}`);
+              subInput.focus();
+              return;
+            }
+            if (parsed > CONFIG_MAX) {
+              toast.show(`${sf.label} can't exceed ${CONFIG_MAX}`);
+              subInput.focus();
+              return;
+            }
+            config[sf.key] = parsed;
+          }
+        }
+        continue;
+      }
       const input = container.querySelector(`#config-${f.key}`);
       if (!input) continue;
       if (f.type === 'select') {
@@ -228,6 +319,15 @@ async function _startGame(container, roomCode) {
         return;
       }
       config[f.key] = parsed;
+    }
+  }
+
+  if (config.jua) {
+    const total = config.juaBuyIn * playerIds.length;
+    if (total % 3 !== 0) {
+      toast.show(`Buy In ×${playerIds.length} players = ₹${total} — must be divisible by 3`);
+      container.querySelector('#config-juaBuyIn')?.focus();
+      return;
     }
   }
 

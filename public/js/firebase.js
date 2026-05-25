@@ -233,6 +233,7 @@ export async function submitRound(roomCode, gameId, roundIndex, roundData, newTo
   updates[`rooms/${roomCode}/games/${gameId}/rounds/${roundIndex}`] = roundData;
   updates[`rooms/${roomCode}/games/${gameId}/totals`] = newTotals;
   updates[`rooms/${roomCode}/games/${gameId}/liveTotals`] = null; // clear live preview on commit
+  updates[`rooms/${roomCode}/games/${gameId}/liveRound`] = null;
   updates[`rooms/${roomCode}/meta/updatedAt`] = Date.now();
 
   if (endResult) {
@@ -276,9 +277,22 @@ export async function undoLastRound(roomCode, gameId, newTotals, prevStatus, ove
   await db.ref().update(updates);
 }
 
-export async function updateLiveTotals(roomCode, gameId, liveTotals) {
+export async function updateLiveTotals(roomCode, gameId, liveTotals, liveRound = null) {
   if (!db) return;
-  await db.ref(`rooms/${roomCode}/games/${gameId}/liveTotals`).set(liveTotals);
+  await db.ref().update({
+    [`rooms/${roomCode}/games/${gameId}/liveTotals`]: liveTotals,
+    [`rooms/${roomCode}/games/${gameId}/liveRound`]: liveRound,
+  });
+}
+
+export async function updateJuaLive(roomCode, gameId, firstSavePid) {
+  if (!db) return;
+  await db.ref(`rooms/${roomCode}/games/${gameId}/juaLive`).set({ firstSavePid: firstSavePid || null });
+}
+
+export async function updateJuaFines(roomCode, gameId, fines) {
+  if (!db) return;
+  await db.ref(`rooms/${roomCode}/games/${gameId}/juaFines`).set(fines);
 }
 
 export async function adjustTotals(roomCode, gameId, newTotals) {

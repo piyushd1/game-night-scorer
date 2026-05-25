@@ -25,6 +25,8 @@ export function renderRow({
   rank,
   rounds = [],
   roundsMeta = [],
+  roundsJuaMeta = [],
+  fineCount = 0,
   progressPct = 0,
   isLeader = false,
   winMode = 'highest_total',
@@ -50,7 +52,7 @@ export function renderRow({
   const roundChips = rounds
     .map(
       (pts, i) => {
-        const label = `${pts >= 0 ? '+' : ''}${pts}${roundsMeta[i] ? ' 🔥' : ''}`;
+        const label = `${pts}${roundsMeta[i] ? ' 🔥' : ''}${roundsJuaMeta[i] ? ' ❤️' : ''}`;
         return `<span class="inline-block font-mono text-sm bg-surface-container-low border border-outline-variant px-1.5 py-0.5 text-on-surface">${label}</span>`;
       }
     )
@@ -66,7 +68,10 @@ export function renderRow({
         <div class="flex-1 accent-${accentIndex} group">
           <div class="p-4 flex items-center gap-3">
             <div class="flex-1 min-w-0">
-              <p class="font-headline font-extrabold text-xl uppercase truncate">${escapeHTML(name)}</p>
+              <div class="flex items-center gap-2">
+                <p class="font-headline font-extrabold text-xl uppercase truncate">${escapeHTML(name)}</p>
+                ${fineCount > 0 ? `<span class="inline-block shrink-0 font-mono text-lg text-on-surface">(${fineCount} 👎)</span>` : ''}
+              </div>
               ${rounds.length > 0 ? `<div class="flex gap-1 mt-1 flex-wrap">${roundChips}</div>` : ''}
             </div>
             <div class="text-right shrink-0">

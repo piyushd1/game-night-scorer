@@ -13,9 +13,19 @@ export default {
   minPlayers: 2,
   maxPlayers: 20,
   winMode: 'highest_total',
-  defaultConfig: { targetScore: 200 },
+  defaultConfig: { targetScore: 200, jua: false, juaBuyIn: 30, juaFirstSave: 5, juaInfluenceFine: 10 },
   configFields: [
     { key: 'targetScore', label: 'Win Target', type: 'number', min: 10 },
+    {
+      key: 'jua',
+      label: 'जुआ',
+      type: 'toggle',
+      subFields: [
+        { key: 'juaBuyIn', label: 'Buy In', type: 'number', min: 1, unit: '₹' },
+        { key: 'juaFirstSave', label: 'First Save', type: 'number', min: 1, unit: '₹' },
+        { key: 'juaInfluenceFine', label: 'Influence Fine', type: 'number', min: 1, unit: '₹' },
+      ],
+    },
   ],
 
   // Compute score from a card selection object (used by dashboard inline scoring).
@@ -73,6 +83,33 @@ export default {
       s.rank = rank;
     });
     return sorted;
+  },
+
+  computeJuaPayouts(game) {
+    const config = game.config || {};
+    if (!config.jua) return null;
+    const numPlayers = (game.playerIds || []).length;
+    const buyIn = config.juaBuyIn || 30;
+    const firstSaveAmt = config.juaFirstSave || 5;
+    const influenceFine = config.juaInfluenceFine || 10;
+    const baseShare = (buyIn * numPlayers) / 3;
+
+    let pool = 0;
+    const rounds = game.rounds ? Object.values(game.rounds) : [];
+    rounds.forEach((rnd) => { if (rnd.jua?.firstSavePid) pool += firstSaveAmt; });
+    const totalFines = Object.values(game.juaFines || {}).reduce((s, n) => s + n, 0);
+    pool += totalFines * influenceFine;
+
+    const standings = this.deriveStandings(game.totals || {}, game.playerIds || []);
+    const payouts = standings
+      .filter((s) => s.rank <= 3)
+      .map((s) => ({
+        playerId: s.playerId,
+        rank: s.rank,
+        amount: baseShare + (s.rank === 1 ? 20 + pool : s.rank === 2 ? 0 : -20),
+      }));
+
+    return { baseShare, pool, payouts };
   },
 
   getRoundPoints(roundData, playerId) {

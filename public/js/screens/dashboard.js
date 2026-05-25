@@ -32,6 +32,11 @@ let _flip7DrawerPlayerId = null; // Which player's drawer is currently open
 let _flip7Grayscale = false; // false = colour (default); true = grayscale (toggle hidden for now)
 let _flip7DragMode = false; // Drag-to-rearrange mode for the card grid
 
+// Jua round tracking state (reset each round)
+let _juaRoundData = { firstSavePid: null };
+let _juaRoundTracked = -1;
+let _juaModalEl = null; // Body-level modal — survives _render() calls
+
 // Edit scores overlay (body-level, survives _render() calls)
 let _editScoresEl = null;
 let _editScoresMode = false; // When true, tapping a player row opens adjust drawer instead of card drawer
@@ -94,6 +99,12 @@ export function mount(container, params = {}) {
   _editScoresEl.style.display = 'none';
   document.body.appendChild(_editScoresEl);
 
+  _juaModalEl = document.createElement('div');
+  _juaModalEl.id = 'jua-modal';
+  _juaModalEl.className = 'fixed inset-0 z-50 flex items-end';
+  _juaModalEl.style.display = 'none';
+  document.body.appendChild(_juaModalEl);
+
   // Watch for state changes
   const renderHandler = () => _render(container, roomCode);
   _unsubGames = state.on('games', renderHandler);
@@ -138,6 +149,12 @@ export function unmount() {
   _editScoresMode = false;
   _editAdjustments = {};
   _editLastRoundKey = null;
+  _juaRoundData = { firstSavePid: null };
+  _juaRoundTracked = -1;
+  if (_juaModalEl) {
+    _juaModalEl.remove();
+    _juaModalEl = null;
+  }
 }
 
 function _render(container, roomCode) {
@@ -242,6 +259,14 @@ function _render(container, roomCode) {
     }
   }
 
+  // Per-player jua first-save metadata (one boolean per committed round)
+  const roundJuaMeta = {};
+  if (game.config?.jua) {
+    playerIds.forEach((pid) => {
+      roundJuaMeta[pid] = rounds.map((rnd) => rnd.jua?.firstSavePid === pid);
+    });
+  }
+
   // In edit mode, overlay buffered adjustments onto the display round points so
   // the chip for the edited round shows the pending value before SAVE is clicked.
   let displayRoundPoints = roundPoints;
@@ -266,6 +291,12 @@ function _render(container, roomCode) {
   if (game.type === 'flip7' && rounds.length !== _flip7RoundCount) {
     _flip7Draft = {};
     _flip7RoundCount = rounds.length;
+  }
+
+  // Clear Jua round data when round count changes
+  if (game.type === 'flip7' && game.config?.jua && rounds.length !== _juaRoundTracked) {
+    _juaRoundData = { firstSavePid: null };
+    _juaRoundTracked = rounds.length;
   }
 
   let html = '';
@@ -299,6 +330,31 @@ function _render(container, roomCode) {
     return;
   }
 
+  // Jua prize card — shown for all viewers when Jua is enabled
+  if (game.config?.jua && !_editScoresMode) {
+    const numPlayers = playerIds.length;
+    const buyIn = game.config.juaBuyIn || 30;
+    const baseShare = (buyIn * numPlayers) / 3;
+    const juaPool = _computeJuaPool(game);
+    const rankLabels = ['1ST', '2ND', '3RD'];
+    const positions = [1, 2, 3].map((rank) => {
+      const s = standings.find((x) => x.rank === rank);
+      const pName = s ? (snapshot[s.playerId]?.name || s.playerId) : '—';
+      const amount = baseShare + (rank === 1 ? 20 + juaPool : rank === 2 ? 0 : -20);
+      return { rank, name: pName, amount };
+    });
+    html += `
+      <div class="flex border border-outline mb-6">
+        ${positions.map((pos, i) => `
+          <div class="flex-1 p-3 text-center ${i < 2 ? 'border-r border-outline' : ''}">
+            <p class="font-mono text-[9px] uppercase tracking-widest text-outline">${rankLabels[i]}</p>
+            <p class="font-mono text-2xl font-bold">₹${pos.amount}</p>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
   // Sort: inactive players drop to the bottom regardless of score,
   // so active rankings stay visually clear.
   const playersMap = state.get('players') || {};
@@ -314,15 +370,30 @@ function _render(container, roomCode) {
     const p = snapshot[s.playerId] || {};
     if (isFlip7Host && !isInactive(s.playerId)) {
       // Tappable row for active players — host enters cards via drawer
-      html += _renderFlip7HostRow(s, p, displayRoundPoints[s.playerId] || [], editingRoundIndex, displayRoundFlip7Meta[s.playerId] || []);
+      const liveFirstSave = game.config?.jua && game.juaLive?.firstSavePid === s.playerId;
+      const hostFineCount = (game.juaFines || {})[s.playerId] || 0;
+      html += _renderFlip7HostRow(s, p, displayRoundPoints[s.playerId] || [], editingRoundIndex, displayRoundFlip7Meta[s.playerId] || [], roundJuaMeta[s.playerId] || [], liveFirstSave, hostFineCount);
     } else {
+      const liveEntry = game.liveRound?.[s.playerId];
+      const spectatorRounds = liveEntry != null
+        ? [...(displayRoundPoints[s.playerId] || []), liveEntry.pts]
+        : (displayRoundPoints[s.playerId] || []);
+      const spectatorMeta = liveEntry != null
+        ? [...(displayRoundFlip7Meta[s.playerId] || []), liveEntry.flip7 || false]
+        : (displayRoundFlip7Meta[s.playerId] || []);
+      const liveFirstSave = game.config?.jua && game.juaLive?.firstSavePid === s.playerId;
+      const spectatorJuaMeta = liveEntry != null
+        ? [...(roundJuaMeta[s.playerId] || []), liveFirstSave]
+        : (roundJuaMeta[s.playerId] || []);
       html += renderRow({
         name: p.name || s.playerId,
         total: s.total,
         accentIndex: p.accentIndex || 0,
         rank: s.rank,
-        rounds: displayRoundPoints[s.playerId] || [],
-        roundsMeta: game.type === 'flip7' ? (displayRoundFlip7Meta[s.playerId] || []) : [],
+        rounds: spectatorRounds,
+        roundsMeta: game.type === 'flip7' ? spectatorMeta : [],
+        roundsJuaMeta: spectatorJuaMeta,
+        fineCount: (game.juaFines || {})[s.playerId] || 0,
         progressPct: getProgress(s.total),
         isLeader: s.rank === 1,
         winMode: gameModule.winMode,
@@ -478,9 +549,28 @@ function _render(container, roomCode) {
         }
       });
 
-      // Open card drawer or adjust drawer depending on mode
+      // Open card drawer or adjust drawer; long-press opens Jua modal when Jua is active
       content.querySelectorAll('.flip7-player-row').forEach((btn) => {
+        let _lpTimer = null;
+        let _lpFired = false;
+
+        btn.addEventListener('pointerdown', () => {
+          _lpFired = false;
+          if (game.config?.jua && !_editScoresMode) {
+            _lpTimer = setTimeout(() => {
+              _lpFired = true;
+              _openJuaFineCounter(btn.dataset.playerId, game, roomCode);
+            }, 500);
+          }
+        });
+
+        const _cancelLp = () => { clearTimeout(_lpTimer); _lpTimer = null; };
+        btn.addEventListener('pointerup', _cancelLp);
+        btn.addEventListener('pointermove', _cancelLp);
+        btn.addEventListener('pointercancel', _cancelLp);
+
         btn.addEventListener('click', () => {
+          if (_lpFired) { _lpFired = false; return; }
           if (_editScoresMode) {
             _openAdjustDrawer(container, roomCode, game, btn.dataset.playerId, snapshot);
           } else {
@@ -498,7 +588,7 @@ function _render(container, roomCode) {
 
 // ── Flip 7 tappable player row ──
 
-function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundIndex = -1, roundFlip7 = []) {
+function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundIndex = -1, roundFlip7 = [], roundJuaSave = [], isLiveFirstSave = false, fineCount = 0) {
   const { playerId: pid, total, rank } = standing;
   const color = ACCENT_COLORS[playerData.accentIndex || 0];
   const name = escapeHTML(playerData.name || pid);
@@ -509,7 +599,7 @@ function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundInd
   const hasDraft = draft && (draft.numbers.size > 0 || draft.actions.size > 0 || draft.x2);
 
   const roundChips = roundHistory.map((pts, i) => {
-    const label = `${pts >= 0 ? '+' : ''}${pts}${roundFlip7[i] ? ' 🔥' : ''}`;
+    const label = `${pts}${roundFlip7[i] ? ' 🔥' : ''}${roundJuaSave[i] ? ' ❤️' : ''}`;
     if (_editScoresMode && i === editingRoundIndex && _editAdjustments[pid]) {
       return `<span class="inline-block font-mono text-sm px-1.5 py-0.5" style="background:#000;color:#fff;border:1px solid #000">${label}</span>`;
     }
@@ -520,8 +610,10 @@ function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundInd
   if (hasDraft) {
     const { basePoints, flip7 } = _computeFlip7Score(draft);
     const roundPts = basePoints + (flip7 ? 15 : 0);
-    const chipLabel = `+${roundPts}${flip7 ? ' 🔥' : ''}`;
+    const chipLabel = `${roundPts}${flip7 ? ' 🔥' : ''}${isLiveFirstSave ? ' ❤️' : ''}`;
     draftChip = `<span class="inline-block font-mono text-sm px-1.5 py-0.5" style="background:#000;color:#fff;border:1px solid #000">${chipLabel}</span>`;
+  } else if (isLiveFirstSave) {
+    draftChip = `<span class="inline-block font-mono text-sm px-1.5 py-0.5 border border-outline-variant">❤️</span>`;
   }
 
   return `
@@ -537,7 +629,10 @@ function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundInd
           aria-label="Score ${name}">
           <div class="p-4 flex items-center gap-3">
             <div class="flex-1 min-w-0">
-              <p class="font-headline font-extrabold text-xl uppercase truncate">${name}</p>
+              <div class="flex items-center gap-2">
+                <p class="font-headline font-extrabold text-xl uppercase truncate">${name}</p>
+                ${fineCount > 0 ? `<span class="inline-block shrink-0 font-mono text-lg text-on-surface">(${fineCount} 👎)</span>` : ''}
+              </div>
               <div class="flex gap-1 mt-1 flex-wrap items-center">
                 ${roundChips}
                 ${draftChip}
@@ -551,6 +646,20 @@ function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundInd
       </div>
     </div>
   `;
+}
+
+// ── Jua pool helper ──
+
+function _computeJuaPool(game) {
+  const config = game.config || {};
+  const firstSaveAmt = config.juaFirstSave || 5;
+  const influenceFine = config.juaInfluenceFine || 10;
+  let pool = 0;
+  const rounds = game.rounds ? Object.values(game.rounds) : [];
+  rounds.forEach((rnd) => { if (rnd.jua?.firstSavePid) pool += firstSaveAmt; });
+  const totalFines = Object.values(game.juaFines || {}).reduce((s, n) => s + n, 0);
+  pool += totalFines * influenceFine;
+  return pool;
 }
 
 // ── Flip 7 score computation (mirrors gameModule.computeScoreFromCards) ──
@@ -572,6 +681,7 @@ async function _pushLiveTotals(roomCode, game) {
   const committedTotals = game.totals || {};
   const playersMap = state.get('players') || {};
   const liveTotals = {};
+  const liveRound = {};
   playerIds.forEach((pid) => {
     const committed = committedTotals[pid] || 0;
     if (playersMap[pid]?.isActive === false) {
@@ -580,13 +690,15 @@ async function _pushLiveTotals(roomCode, game) {
       const draft = _flip7Draft[pid];
       if (draft) {
         const { basePoints, flip7 } = _computeFlip7Score(draft);
-        liveTotals[pid] = committed + basePoints + (flip7 ? 15 : 0);
+        const roundPts = basePoints + (flip7 ? 15 : 0);
+        liveTotals[pid] = committed + roundPts;
+        liveRound[pid] = { pts: roundPts, flip7 };
       } else {
         liveTotals[pid] = committed;
       }
     }
   });
-  await fb.updateLiveTotals(roomCode, game.gameId, liveTotals);
+  await fb.updateLiveTotals(roomCode, game.gameId, liveTotals, liveRound);
 }
 
 // ── Flip 7 card drawer ──
@@ -680,16 +792,24 @@ function _openFlip7Drawer(container, roomCode, playerId, snapshot, game) {
             ${_flip7DragMode ? 'DONE' : 'ARRANGE'}
           </button>
         </div>
-        <div class="px-4 pb-3 flex items-center justify-between border-b border-outline-variant">
-          <div>
-            <div class="flex items-center gap-2">
+        <div class="px-4 pb-3 flex items-center gap-3 border-b border-outline-variant">
+          <p class="font-headline font-bold text-4xl uppercase truncate min-w-0 flex-1 shrink">${name}</p>
+          <div class="shrink-0 text-right">
+            <div class="flex items-center gap-2 justify-end">
               <p id="flip7-header-score" class="font-mono text-4xl font-bold leading-none">0</p>
               <span id="flip7-header-emoji" class="text-4xl leading-none" style="display:none">🔥</span>
             </div>
             <p id="flip7-header-label" class="font-mono text-[9px] text-outline mt-0.5 uppercase tracking-widest">THIS ROUND</p>
           </div>
-          <p class="font-headline font-bold text-4xl uppercase truncate">${name}</p>
         </div>
+        ${game.config?.jua ? `
+        <div class="px-4 pt-2 pb-0 flex justify-center">
+          <button id="flip7-first-save-btn" type="button"
+            class="font-mono text-xs uppercase tracking-widest px-4 py-2 border transition-colors whitespace-nowrap ${_juaRoundData.firstSavePid === playerId ? 'bg-primary text-on-primary border-primary' : 'border-outline hover:border-primary'}">
+            FIRST SAVE ❤️
+          </button>
+        </div>
+        ` : ''}
       </div>
       <!-- Scrollable 5-col card grid -->
       <div class="overflow-y-auto flex-1 p-4">
@@ -710,6 +830,7 @@ function _openFlip7Drawer(container, roomCode, playerId, snapshot, game) {
     numbers: new Set(_flip7Draft[playerId].numbers),
     actions: new Set(_flip7Draft[playerId].actions),
     x2: _flip7Draft[playerId].x2,
+    firstSavePid: _juaRoundData.firstSavePid,
   };
   _bindDrawerEvents(container, roomCode, playerId, draftSnapshot);
 }
@@ -771,6 +892,9 @@ function _bindDrawerEvents(container, roomCode, playerId, draftSnapshot) {
     _flip7Draft[playerId].numbers = new Set(draftSnapshot.numbers);
     _flip7Draft[playerId].actions = new Set(draftSnapshot.actions);
     _flip7Draft[playerId].x2 = draftSnapshot.x2;
+    _juaRoundData.firstSavePid = draftSnapshot.firstSavePid;
+    const game = state.currentGame();
+    if (game) fb.updateJuaLive(roomCode, game.gameId, _juaRoundData.firstSavePid).catch(() => {});
     _closeFlip7Drawer();
     _render(container, roomCode);
   });
@@ -781,10 +905,27 @@ function _bindDrawerEvents(container, roomCode, playerId, draftSnapshot) {
     btn.style.color = '#fff';
     setTimeout(() => {
       const game = state.currentGame();
-      if (game) _pushLiveTotals(roomCode, game).catch(() => {});
+      if (game) {
+        _pushLiveTotals(roomCode, game).catch(() => {});
+        fb.updateJuaLive(roomCode, game.gameId, _juaRoundData.firstSavePid).catch(() => {});
+      }
       _closeFlip7Drawer();
       _render(container, roomCode);
     }, 150);
+  });
+
+  // Jua first-save toggle inside the scoring drawer
+  _flip7DrawerEl.querySelector('#flip7-first-save-btn')?.addEventListener('click', (e) => {
+    const isMarked = _juaRoundData.firstSavePid === playerId;
+    _juaRoundData.firstSavePid = isMarked ? null : playerId;
+    const btn = e.currentTarget;
+    if (_juaRoundData.firstSavePid === playerId) {
+      btn.classList.remove('border-outline', 'hover:border-primary');
+      btn.classList.add('bg-primary', 'text-on-primary', 'border-primary');
+    } else {
+      btn.classList.remove('bg-primary', 'text-on-primary', 'border-primary');
+      btn.classList.add('border-outline', 'hover:border-primary');
+    }
   });
 
   // ── Card selection (blocked in drag mode) ──
@@ -902,6 +1043,11 @@ async function _confirmFlip7Round(container, roomCode, initialGame, gameModule) 
 
   const draft = { entries };
 
+  // Attach Jua round data when Jua is enabled
+  if (game.config?.jua) {
+    draft.jua = { firstSavePid: _juaRoundData.firstSavePid || null };
+  }
+
   const validation = gameModule.validateRound(draft, game);
   if (!validation.valid) {
     toast.show(validation.error || 'Invalid round data');
@@ -917,6 +1063,10 @@ async function _confirmFlip7Round(container, roomCode, initialGame, gameModule) 
 
   try {
     await fb.submitRound(roomCode, game.gameId, rounds.length, draft, newTotals, endResult.ended ? endResult : null);
+
+    _juaRoundData = { firstSavePid: null };
+    _juaRoundTracked = rounds.length + 1;
+    fb.updateJuaLive(roomCode, game.gameId, null).catch(() => {});
 
     if (endResult.ended && endResult.winner) {
       router.navigate('winner', { roomCode });
@@ -1033,6 +1183,70 @@ function _closeAdjustDrawer() {
   if (!_editScoresEl) return;
   _editScoresEl.style.display = 'none';
   _editScoresEl.innerHTML = '';
+  document.body.style.overflow = '';
+}
+
+// ── Jua Modal ──
+
+function _openJuaFineCounter(pid, game, roomCode) {
+  if (!_juaModalEl) return;
+  const snapshot = game.playerSnapshot || {};
+  const name = escapeHTML(snapshot[pid]?.name || pid);
+  const fineRate = game.config?.juaInfluenceFine || 10;
+  let fineCount = (game.juaFines || {})[pid] || 0;
+
+  const _totalRupees = () => fineCount * fineRate;
+
+  _juaModalEl.innerHTML = `
+    <div id="jua-modal-backdrop" class="absolute inset-0 bg-black/50"></div>
+    <div class="relative w-full bg-surface-container-lowest border-t-2 border-outline">
+      <div class="flex justify-center pt-3 pb-1"><div class="w-10 h-1 rounded-full bg-outline-variant"></div></div>
+      <div class="px-4 pb-3 border-b border-outline-variant">
+        <p class="font-mono text-[9px] uppercase tracking-widest text-outline mb-1">RECORD FINES</p>
+        <div class="flex items-center justify-between gap-3">
+          <p class="font-headline font-bold text-2xl uppercase truncate">${name}</p>
+          <p id="jua-fine-rupees" class="font-mono text-2xl font-bold shrink-0">₹${_totalRupees()}</p>
+        </div>
+      </div>
+      <div class="p-6 flex items-center justify-center gap-8 pb-4">
+        <button id="jua-fine-sub" type="button"
+          class="w-16 h-16 border-2 border-outline font-mono text-3xl flex items-center justify-center hover:bg-surface-container-high transition-colors disabled:opacity-30"
+          ${fineCount === 0 ? 'disabled' : ''}>−</button>
+        <span id="jua-fine-count" class="font-mono text-6xl font-bold w-16 text-center">${fineCount}</span>
+        <button id="jua-fine-add" type="button"
+          class="w-16 h-16 border-2 border-outline font-mono text-3xl flex items-center justify-center hover:bg-surface-container-high transition-colors">+</button>
+      </div>
+      <div class="px-4 pb-8">
+        <button id="jua-fine-done" type="button" class="w-full btn-primary py-3">DONE</button>
+      </div>
+    </div>
+  `;
+
+  _juaModalEl.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  const countEl = _juaModalEl.querySelector('#jua-fine-count');
+  const rupeesEl = _juaModalEl.querySelector('#jua-fine-rupees');
+  const subBtn = _juaModalEl.querySelector('#jua-fine-sub');
+
+  const _refresh = () => {
+    countEl.textContent = fineCount;
+    rupeesEl.textContent = `₹${_totalRupees()}`;
+    subBtn.disabled = fineCount === 0;
+    fb.updateJuaFines(roomCode, game.gameId, { ...(game.juaFines || {}), [pid]: fineCount }).catch(() => {});
+  };
+
+  _juaModalEl.querySelector('#jua-fine-add').addEventListener('click', () => { fineCount++; _refresh(); });
+  subBtn.addEventListener('click', () => { if (fineCount > 0) { fineCount--; _refresh(); } });
+
+  _juaModalEl.querySelector('#jua-modal-backdrop').addEventListener('click', _closeJuaModal);
+  _juaModalEl.querySelector('#jua-fine-done').addEventListener('click', _closeJuaModal);
+}
+
+function _closeJuaModal() {
+  if (!_juaModalEl) return;
+  _juaModalEl.style.display = 'none';
+  _juaModalEl.innerHTML = '';
   document.body.style.overflow = '';
 }
 
