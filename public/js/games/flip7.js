@@ -18,7 +18,7 @@ export default {
     { key: 'targetScore', label: 'Win Target', type: 'number', min: 10 },
     {
       key: 'jua',
-      label: 'जुआ',
+      label: 'Make it interesting',
       type: 'toggle',
       subFields: [
         { key: 'juaBuyIn', label: 'Buy In', type: 'number', min: 1, unit: '₹' },
