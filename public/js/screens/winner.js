@@ -170,7 +170,7 @@ export function mount(container, params = {}) {
                         ${sfLine}
                       </div>
                     </div>
-                    <span class="font-mono text-xl font-bold mt-1">${s.total}</span>
+                    <span class="font-mono text-xl font-bold">${s.total}</span>
                   </div>
                   <!-- Winnings view -->
                   <div class="winnings-row" style="display:none">
