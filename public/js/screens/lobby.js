@@ -132,17 +132,18 @@ export function unmount() {
 }
 
 function _bindEvents(container, roomCode) {
-  // Inline QR code — generated once per room code, then reused from cache
+  // Inline QR code — generated once per session per room code, then reused
   const qrEl = container.querySelector('#lobby-qr');
   if (qrEl && window.QRCode) {
     const url = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
     if (_qrCache[roomCode]) {
       const img = document.createElement('img');
       img.src = _qrCache[roomCode];
-      img.style.cssText = 'width:100%;height:100%;display:block';
+      img.style.display = 'block';
       qrEl.appendChild(img);
     } else {
       requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (!document.contains(qrEl)) return; // unmounted before layout
         const rect = qrEl.getBoundingClientRect();
         const size = Math.min(rect.width, rect.height) - 6;
         new window.QRCode(qrEl, { text: url, width: size, height: size, colorDark: '#000000', colorLight: '#ffffff', correctLevel: window.QRCode.CorrectLevel.L });
