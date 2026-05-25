@@ -171,11 +171,11 @@ export function mount(container, params = {}) {
                 const poolPart = pool > 0 ? `+${r(pool)} ` : '';
                 if (rank === 1 && count >= 3) {
                   const each = r((pot1 + pot2 + pot3) / count);
-                  return `${label} (tie, ${count} players): ${poolPart}+(${base20}) + ${r(pot2)} + ${r(pot3)} / ${count} = ${each}`;
+                  return `${label} (tie, ${count} players): ${poolPart}+${base20} + ${r(pot2)} + ${r(pot3)} / ${count} = ${each}`;
                 }
                 if (rank === 1 && count === 2) {
                   const each = r((pot1 + pot2) / 2);
-                  return `${label} (tie, 2 players): ${poolPart}+(${base20}) + ${r(pot2)} / 2 = ${each}`;
+                  return `${label} (tie, 2 players): ${poolPart}+${base20} + ${r(pot2)} / 2 = ${each}`;
                 }
                 if (rank === 2 && count >= 2) {
                   const each = r((pot2 + pot3) / count);
@@ -185,7 +185,7 @@ export function mount(container, params = {}) {
                   const each = r(pot3 / count);
                   return `${label} (tie, ${count} players): +${r(pot3)} / ${count} = ${each}`;
                 }
-                if (rank === 1) return `${label} (1 player): ${poolPart}+(${base20})`;
+                if (rank === 1) return `${label} (1 player): ${poolPart}+${base20}`;
                 return `${label} (1 player): +${r(pot)}`;
               };
               const lines = [posLine(1, n1), posLine(2, n2), posLine(3, n3)];
