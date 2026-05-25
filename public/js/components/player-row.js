@@ -31,7 +31,6 @@ export function renderRow({
 }) {
   const color = ACCENT_COLORS[accentIndex % ACCENT_COLORS.length];
   const bgClass = 'bg-surface-container-lowest';
-  const leaderBorder = !isInactive && isLeader ? 'border-l-[3px]' : '';
   const dim = isInactive ? 'opacity-50' : '';
 
   // Guard against NaN/Infinity leaking into the UI. If we ever see one,
@@ -55,11 +54,11 @@ export function renderRow({
     .join('');
 
   return `
-    <div class="flex flex-col border border-outline ${bgClass} ${dim}" style="${!isInactive && isLeader ? `border-left: 3px solid ${color}` : ''}">
+    <div class="flex flex-col border border-outline ${bgClass} ${dim}">
       <div class="accent-bar" style="background:${color}"></div>
       <div class="flex items-stretch flex-1">
         <div class="flex items-center justify-center shrink-0 min-w-[2.5rem] border-r border-outline">
-          <span class="font-mono text-2xl font-bold" style="color:${color}">${isInactive ? '—' : rank}</span>
+          <span class="font-mono text-2xl font-bold">${isInactive ? '—' : rank}</span>
         </div>
         <div class="flex-1 accent-${accentIndex} group">
           <div class="p-4 flex items-center gap-3">
@@ -68,7 +67,7 @@ export function renderRow({
               ${rounds.length > 0 ? `<div class="flex gap-1 mt-1 flex-wrap">${roundChips}</div>` : ''}
             </div>
             <div class="text-right shrink-0">
-              <p class="font-mono text-2xl font-bold ${!isInactive && isLeader ? 'text-secondary' : ''}">${displayTotal}</p>
+              <p class="font-mono text-2xl font-bold">${displayTotal}</p>
             </div>
           </div>
         </div>

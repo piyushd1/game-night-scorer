@@ -115,7 +115,7 @@ export function renderTopBarActions(roomCode) {
     <button id="btn-qr-share" aria-label="Show QR code" title="Share room QR" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 ml-1" style="font-size:22px">qr_code_2</button>
     ${isHost
       ? `<button id="btn-host-menu-trigger" aria-label="Open host menu" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 ml-1" style="font-size:22px">more_vert</button>`
-      : `<button id="btn-viewer-leave" aria-label="Leave room" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 ml-1" style="font-size:22px" title="Leave room">logout</button>`
+      : ''
     }
   `;
 
@@ -150,13 +150,6 @@ export function renderTopBarActions(roomCode) {
     menuTrigger.addEventListener('click', toggle);
   }
 
-  const leaveBtn = document.getElementById('btn-viewer-leave');
-  if (leaveBtn) {
-    leaveBtn.addEventListener('click', () => {
-      if (!window.confirm('Leave this room?')) return;
-      _leaveRoom(roomCode);
-    });
-  }
 }
 
 function _leaveRoom(roomCode) {
