@@ -560,28 +560,8 @@ function _render(container, roomCode) {
         }
       });
 
-      // Open card drawer or adjust drawer; long-press opens Jua modal when Jua is active
       content.querySelectorAll('.flip7-player-row').forEach((btn) => {
-        let _lpTimer = null;
-        let _lpFired = false;
-
-        btn.addEventListener('pointerdown', () => {
-          _lpFired = false;
-          if (game.config?.jua && !_editScoresMode) {
-            _lpTimer = setTimeout(() => {
-              _lpFired = true;
-              _openJuaFineCounter(btn.dataset.playerId, game, roomCode);
-            }, 500);
-          }
-        });
-
-        const _cancelLp = () => { clearTimeout(_lpTimer); _lpTimer = null; };
-        btn.addEventListener('pointerup', _cancelLp);
-        btn.addEventListener('pointermove', _cancelLp);
-        btn.addEventListener('pointercancel', _cancelLp);
-
         btn.addEventListener('click', () => {
-          if (_lpFired) { _lpFired = false; return; }
           if (_editScoresMode) {
             _openAdjustDrawer(container, roomCode, game, btn.dataset.playerId, snapshot);
           } else {
@@ -820,10 +800,14 @@ function _openFlip7Drawer(container, roomCode, playerId, snapshot, game) {
           </div>
         </div>
         ${game.config?.jua ? `
-        <div class="px-4 pt-2 pb-0 flex justify-center">
+        <div class="px-4 pt-2 pb-0 flex justify-center gap-3">
           <button id="flip7-first-save-btn" type="button"
             class="font-mono text-xs uppercase tracking-widest px-4 py-2 border transition-colors whitespace-nowrap ${_juaRoundData.firstSavePid === playerId ? 'bg-primary text-on-primary border-primary' : 'border-outline hover:border-primary'}">
             FIRST SAVE ❤️
+          </button>
+          <button id="flip7-fine-btn" type="button"
+            class="font-mono text-xs uppercase tracking-widest px-4 py-2 border border-outline hover:border-primary transition-colors whitespace-nowrap">
+            EDIT FINES 👎
           </button>
         </div>
         ` : ''}
@@ -962,6 +946,12 @@ function _bindDrawerEvents(container, roomCode, playerId, draftSnapshot) {
       btn.classList.remove('bg-primary', 'text-on-primary', 'border-primary');
       btn.classList.add('border-outline', 'hover:border-primary');
     }
+  });
+
+  _flip7DrawerEl.querySelector('#flip7-fine-btn')?.addEventListener('click', () => {
+    _closeFlip7Drawer();
+    const game = state.currentGame();
+    if (game) _openJuaFineCounter(playerId, game, roomCode);
   });
 
   // ── Card selection (blocked in drag mode) ──
