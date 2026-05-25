@@ -23,7 +23,7 @@ export default {
       subFields: [
         { key: 'juaBuyIn', label: 'Buy In', type: 'number', min: 1, unit: '₹' },
         { key: 'juaFirstSave', label: 'First Save', type: 'number', min: 1, unit: '₹' },
-        { key: 'juaInfluenceFine', label: 'Influence Fine', type: 'number', min: 1, unit: '₹' },
+        { key: 'juaInfluenceFine', label: 'Fine', type: 'number', min: 1, unit: '₹' },
       ],
     },
   ],

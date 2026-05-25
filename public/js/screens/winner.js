@@ -65,19 +65,54 @@ export function mount(container, params = {}) {
         <!-- Standings -->
         <div class="w-full max-w-sm mx-auto space-y-3">
           ${(() => {
-            const juaPayouts = gameModule.computeJuaPayouts?.(game);
-            const payoutByPid = {};
-            if (juaPayouts) juaPayouts.payouts.forEach((p) => { payoutByPid[p.playerId] = p.amount; });
+            const cfg = game.config || {};
+            const juaOn = !!cfg.jua;
+            const buyIn = cfg.juaBuyIn || 0;
+            const firstSaveAmt = cfg.juaFirstSave || 5;
+            const influenceFine = cfg.juaInfluenceFine || 10;
+            const numPlayers = (game.playerIds || []).length;
+            const baseShare = (buyIn * numPlayers) / 3;
 
-            const fines = game.juaFines || {};
-            const fineEntries = Object.entries(fines)
-              .filter(([, count]) => count > 0)
-              .sort(([, a], [, b]) => b - a)
-              .map(([pid, count]) => `${escapeHTML((snapshot[pid] || {}).name || pid)} x ${count}`);
+            const rounds = Object.values(game.rounds || {});
+            const savesCounts = {};
+            rounds.forEach((rnd) => {
+              const pid = rnd.jua?.firstSavePid;
+              if (pid) savesCounts[pid] = (savesCounts[pid] || 0) + 1;
+            });
 
-            const standingsHtml = standings.map((s) => {
+            let pool = rounds.filter((r) => r.jua?.firstSavePid).length * firstSaveAmt;
+            pool += Object.values(game.juaFines || {}).reduce((s, n) => s + n, 0) * influenceFine;
+
+            const baseReward = (rank) => rank === 1 ? baseShare + 20 : rank === 2 ? baseShare : baseShare - 20;
+
+            const fmt = (n) => `${n >= 0 ? '+' : ''}${n}`;
+
+            return standings.map((s) => {
               const p = snapshot[s.playerId] || {};
-              const payout = payoutByPid[s.playerId];
+              let netLabel = '';
+              if (juaOn) {
+                const savesCost = (savesCounts[s.playerId] || 0) * firstSaveAmt;
+                const finesCost = ((game.juaFines || {})[s.playerId] || 0) * influenceFine;
+                let net;
+                const terms = [];
+                if (s.rank === 1) {
+                  net = baseReward(1) + pool - buyIn - savesCost - finesCost;
+                  terms.push(fmt(baseReward(1)));
+                  if (pool > 0) terms.push(fmt(pool));
+                } else if (s.rank <= 3) {
+                  net = baseReward(s.rank) - buyIn - savesCost - finesCost;
+                  terms.push(fmt(baseReward(s.rank)));
+                } else {
+                  net = -buyIn - savesCost - finesCost;
+                }
+                if (savesCost > 0) terms.push(fmt(-savesCost));
+                terms.push(fmt(-buyIn));
+                if (finesCost > 0) terms.push(fmt(-finesCost));
+                const mathStr = terms.length > 1
+                  ? `${terms.join(' ')} = ${fmt(net)}`
+                  : fmt(net);
+                netLabel = `<p class="font-mono text-sm opacity-70">${mathStr}</p>`;
+              }
               return `
                 <div class="flex justify-between items-center py-2 border-b border-white/20">
                   <div class="flex items-center gap-3">
@@ -86,17 +121,11 @@ export function mount(container, params = {}) {
                   </div>
                   <div class="text-right">
                     <span class="font-mono text-xl font-bold">${s.total}</span>
-                    ${payout != null ? `<p class="font-mono text-sm opacity-70">₹${payout}</p>` : ''}
+                    ${netLabel}
                   </div>
                 </div>
               `;
             }).join('');
-
-            const finesHtml = fineEntries.length > 0
-              ? `<p class="font-mono text-sm opacity-60 pt-2">Fines: ${fineEntries.join(', ')}</p>`
-              : '';
-
-            return standingsHtml + finesHtml;
           })()}
         </div>
 
