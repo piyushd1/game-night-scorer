@@ -946,14 +946,17 @@ function _openAdjustDrawer(container, roomCode, game, pid, snapshot) {
     return;
   }
 
-  // Use already-buffered adjustment for this player if they've been edited this session
-  const currentEntry = _editAdjustments[pid] || selectedRound.entries?.[pid] || { basePoints: 0, flip7: false };
-  const currentRoundPts = (currentEntry.basePoints || 0) + (currentEntry.flip7 ? 15 : 0);
+  const originalEntry = selectedRound.entries?.[pid] || { basePoints: 0, flip7: false };
+  const currentEntry = _editAdjustments[pid] || originalEntry;
+
+  // Compute the delta from original so re-opening shows what was last entered
+  const delta = (currentEntry.basePoints || 0) - (originalEntry.basePoints || 0);
+  const initialIsAdd = delta >= 0;
+  const initialAmount = Math.abs(delta);
 
   const p = snapshot[pid] || {};
   const color = ACCENT_COLORS[p.accentIndex || 0];
   const name = escapeHTML(p.name || pid);
-  const total = (game.totals || {})[pid] || 0;
 
   _editScoresEl.innerHTML = `
     <div id="adjust-backdrop" class="absolute inset-0 bg-black/50"></div>
@@ -968,13 +971,13 @@ function _openAdjustDrawer(container, roomCode, game, pid, snapshot) {
       <div class="px-4 py-4 flex items-center gap-2 pb-8">
         <div class="flex font-mono text-xs uppercase shrink-0">
           <button type="button" id="adj-add-btn"
-            class="px-4 py-3 border border-outline transition-colors"
-            style="background:#000;color:#fff;border-color:#000">+ADD</button>
+            class="px-4 py-3 border border-outline transition-colors">+ADD</button>
           <button type="button" id="adj-sub-btn"
-            class="px-4 py-3 border border-outline border-l-0 text-outline transition-colors">−SUB</button>
+            class="px-4 py-3 border border-outline border-l-0 transition-colors">−SUB</button>
         </div>
         <input type="number" id="adj-amount-input" inputmode="numeric"
-          class="score-input flex-1" placeholder="0" min="0">
+          class="score-input flex-1" placeholder="0" min="0"
+          value="${initialAmount || ''}">
         <button id="adj-apply-btn" class="btn-primary shrink-0 flex items-center justify-center" style="width:48px;height:48px;padding:0">
           <span aria-hidden="true" class="material-symbols-outlined" style="font-size:20px;font-variation-settings:'FILL' 1">check</span>
         </button>
@@ -987,7 +990,7 @@ function _openAdjustDrawer(container, roomCode, game, pid, snapshot) {
 
   setTimeout(() => _editScoresEl.querySelector('#adj-amount-input')?.focus(), 50);
 
-  let isAdd = true;
+  let isAdd = initialIsAdd;
   const addBtn = _editScoresEl.querySelector('#adj-add-btn');
   const subBtn = _editScoresEl.querySelector('#adj-sub-btn');
 
@@ -1001,6 +1004,9 @@ function _openAdjustDrawer(container, roomCode, game, pid, snapshot) {
     subBtn.style.borderColor = add ? '' : '#000';
   };
 
+  // Apply initial state
+  setOp(initialIsAdd);
+
   addBtn.addEventListener('click', () => setOp(true));
   subBtn.addEventListener('click', () => setOp(false));
 
@@ -1010,12 +1016,9 @@ function _openAdjustDrawer(container, roomCode, game, pid, snapshot) {
     const amount = parseInt(_editScoresEl.querySelector('#adj-amount-input')?.value) || 0;
     if (amount === 0) { _closeAdjustDrawer(); return; }
 
-    const adjustment = isAdd ? amount : -amount;
-    const newBasePoints = Math.max(0, (currentEntry.basePoints || 0) + adjustment);
-    const newEntry = { ...currentEntry, basePoints: newBasePoints };
-
-    // Buffer the adjustment — written to Firebase only when SAVE is clicked
-    _editAdjustments[pid] = newEntry;
+    // Apply relative to original so re-edits replace rather than stack
+    const newBasePoints = Math.max(0, (originalEntry.basePoints || 0) + (isAdd ? amount : -amount));
+    _editAdjustments[pid] = { ...currentEntry, basePoints: newBasePoints };
     _closeAdjustDrawer();
     _render(container, roomCode);
   });
