@@ -441,7 +441,7 @@ function _renderFinishedGameActions(el, roomCode, game, trackStats) {
       START NEW GAME
     </button>
     <button id="btn-back-to-game" class="${secondaryBtn}">
-      <span aria-hidden="true" class="material-symbols-outlined text-sm">emoji_events</span>
+      <span aria-hidden="true" class="material-symbols-outlined text-sm">arrow_back</span>
       GO BACK TO GAME
     </button>
     ${trackStats ? `

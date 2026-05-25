@@ -286,9 +286,7 @@ export function mount(container, params = {}) {
     router.navigate('recap', { roomCode });
   });
 
-  let showWinnings = false;
-  container.querySelector('#btn-toggle-view')?.addEventListener('click', () => {
-    showWinnings = !showWinnings;
+  const _applyView = (showWinnings) => {
     const btn = container.querySelector('#btn-toggle-view');
     if (btn) btn.textContent = showWinnings ? 'VIEW SCORES' : 'VIEW WINNINGS';
     const hero = container.querySelector('#hero-section');
@@ -301,6 +299,15 @@ export function mount(container, params = {}) {
     });
     const tieCard = container.querySelector('#tie-card');
     if (tieCard) tieCard.style.display = showWinnings ? 'block' : 'none';
+  };
+
+  let showWinnings = juaOn && localStorage.getItem('gns_winner_view') === 'winnings';
+  _applyView(showWinnings);
+
+  container.querySelector('#btn-toggle-view')?.addEventListener('click', () => {
+    showWinnings = !showWinnings;
+    localStorage.setItem('gns_winner_view', showWinnings ? 'winnings' : 'scores');
+    _applyView(showWinnings);
   });
 }
 
