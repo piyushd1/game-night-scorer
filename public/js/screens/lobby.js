@@ -145,7 +145,7 @@ function _bindEvents(container, roomCode) {
       requestAnimationFrame(() => requestAnimationFrame(() => {
         const rect = qrEl.getBoundingClientRect();
         const size = Math.min(rect.width, rect.height) - 6;
-        new window.QRCode(qrEl, { text: url, width: size, height: size, colorDark: '#000000', colorLight: 'rgba(0,0,0,0)', correctLevel: window.QRCode.CorrectLevel.L });
+        new window.QRCode(qrEl, { text: url, width: size, height: size, colorDark: '#000000', colorLight: '#ffffff', correctLevel: window.QRCode.CorrectLevel.L });
         const canvas = qrEl.querySelector('canvas');
         if (canvas) _qrCache[roomCode] = canvas.toDataURL();
       }));
