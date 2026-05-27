@@ -536,7 +536,7 @@ function _render(container, roomCode) {
         patchedRounds.forEach((rnd) => { newTotals = gameModule.applyRound(newTotals, rnd, game); });
         const saveBtn = content.querySelector('#btn-edit-save');
         saveBtn.disabled = true;
-        saveBtn.innerHTML = '<div class="spinner mx-auto"></div>';
+        saveBtn.innerHTML = '<div class="spinner mx-auto"></div><span class="sr-only">Loading...</span>';
         const pendingAdjustments = { ..._editAdjustments };
         const pendingFirstSavePid = _editFirstSavePid;
         _editAdjustments = {};
@@ -1088,7 +1088,7 @@ async function _confirmFlip7Round(container, roomCode, initialGame, gameModule) 
   const endResult = gameModule.checkEnd(newTotals, game.config, playerIds, newRoundCount);
 
   const btn = container.querySelector('#btn-confirm-round');
-  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner mx-auto"></div>'; }
+  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner mx-auto"></div><span class="sr-only">Loading...</span>'; }
 
   try {
     await fb.submitRound(roomCode, game.gameId, rounds.length, draft, newTotals, endResult.ended ? endResult : null);
@@ -1171,7 +1171,7 @@ function _openAdjustDrawer(container, roomCode, game, pid, snapshot) {
         <input type="number" id="adj-amount-input" inputmode="numeric"
           class="score-input flex-1" placeholder="0" min="0"
           value="${initialAmount || ''}">
-        <button id="adj-apply-btn" class="btn-primary shrink-0 flex items-center justify-center" style="width:48px;height:48px;padding:0">
+        <button id="adj-apply-btn" aria-label="Apply adjustment" class="btn-primary shrink-0 flex items-center justify-center" style="width:48px;height:48px;padding:0">
           <span aria-hidden="true" class="material-symbols-outlined" style="font-size:20px;font-variation-settings:'FILL' 1">check</span>
         </button>
       </div>
@@ -1261,11 +1261,11 @@ function _openJuaFineCounter(pid, game, roomCode) {
         </div>
       </div>
       <div class="p-6 flex items-center justify-center gap-8 pb-4">
-        <button id="jua-fine-sub" type="button"
+        <button id="jua-fine-sub" type="button" aria-label="Decrease fines"
           class="w-16 h-16 border-2 border-outline font-mono text-3xl flex items-center justify-center hover:bg-surface-container-high transition-colors disabled:opacity-30"
           ${fineCount === 0 ? 'disabled' : ''}>−</button>
         <span id="jua-fine-count" class="font-mono text-6xl font-bold w-16 text-center">${fineCount}</span>
-        <button id="jua-fine-add" type="button"
+        <button id="jua-fine-add" type="button" aria-label="Increase fines"
           class="w-16 h-16 border-2 border-outline font-mono text-3xl flex items-center justify-center hover:bg-surface-container-high transition-colors">+</button>
       </div>
       <div class="px-4 pb-8">
