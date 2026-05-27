@@ -9,3 +9,6 @@
 ## 2026-05-23 - Accessible Loading States
 **Learning:** When replacing button text with a loading spinner (e.g. `<div class="spinner"></div>`), the button loses its accessible name. This causes screen readers to announce an empty button.
 **Action:** Always include a visually hidden span with descriptive text (e.g., `<span class="sr-only">Loading...</span>`) alongside the spinner when injecting it into an interactive element's `innerHTML`.
+## 2024-05-27 - Missing Accessible Loading States on Async Buttons
+**Learning:** When a button is disabled and its content is replaced entirely with a spinner (`<div class="spinner"></div>`), it loses its accessible name. This happens during Firebase RTDB actions that block until reconnected.
+**Action:** Always include a visually hidden text span (e.g. `<span class="sr-only">Loading...</span>`) whenever substituting interactive element content with an animated loading indicator.
