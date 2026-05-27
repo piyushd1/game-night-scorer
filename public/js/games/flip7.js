@@ -22,8 +22,8 @@ export default {
       type: 'toggle',
       subFields: [
         { key: 'juaBuyIn', label: 'Buy In', type: 'number', min: 1, unit: '₹' },
-        { key: 'juaPrize1', label: '1st Place', type: 'number', min: 0, unit: '₹', computeDefault: (cfg, n) => Math.ceil(cfg.juaBuyIn * n * 0.33) },
-        { key: 'juaPrize2', label: '2nd Place', type: 'number', min: 0, unit: '₹', computeDefault: (cfg, n) => Math.ceil(cfg.juaBuyIn * n * 0.33) },
+        { key: 'juaPrize1', label: '1st Place', type: 'number', min: 0, unit: '₹', computeDefault: (cfg, n) => Math.round(n * cfg.juaBuyIn / 3) + 20 },
+        { key: 'juaPrize2', label: '2nd Place', type: 'number', min: 0, unit: '₹', computeDefault: (cfg, n) => Math.round(n * cfg.juaBuyIn / 3) },
         { key: 'juaPrize3', label: '3rd Place', type: 'computed', unit: '₹' },
         { key: 'juaFirstSave', label: 'First Save', type: 'number', min: 1, unit: '₹' },
         { key: 'juaInfluenceFine', label: 'Fine', type: 'number', min: 1, unit: '₹' },
@@ -37,7 +37,7 @@ export default {
     if (bust) return { basePoints: 0, flip7: false };
     const numberSum = numbers.reduce((s, n) => s + n, 0);
     const actionSum = actions.reduce((s, n) => s + n, 0);
-    const subtotal = (numberSum + actionSum) * (x2 ? 2 : 1);
+    const subtotal = numberSum * (x2 ? 2 : 1) + actionSum;
     return { basePoints: subtotal, flip7: numbers.length === 7 };
   },
 
