@@ -390,7 +390,7 @@ function _render(container, roomCode) {
   // Scoreboard controls bar (rounds toggle for all Flip7; sort toggle host-only)
   if (game.type === 'flip7') {
     html += `
-      <div class="flex items-center justify-between mb-1">
+      <div class="flex items-center justify-end gap-4 mb-1">
         <button id="btn-rounds-toggle" type="button"
           class="font-mono text-xs uppercase tracking-widest flex items-center gap-0.5 transition-colors text-on-surface">
           <span class="material-symbols-outlined text-sm" aria-hidden="true">history</span>
