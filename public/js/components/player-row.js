@@ -60,7 +60,7 @@ export function renderRow({
     return `<span class="inline-block font-mono text-sm bg-surface-container-low border border-outline-variant px-1.5 py-0.5 text-on-surface">${label}</span>`;
   });
   const fineChips = fineCount > 0
-    ? [`<span class="inline-block font-mono text-sm px-1.5 py-0.5" style="background:#000;color:#fff;border:1px solid #000">👎 ${fineCount}</span>`]
+    ? [`<span class="inline-block font-mono text-sm bg-surface-container-low border border-outline-variant px-1.5 py-0.5 text-on-surface">👎 ${fineCount}</span>`]
     : [];
   const allChips = [...fineChips, ...chipList];
   const roundChips = allChips.length === 0 ? '' : (() => {
