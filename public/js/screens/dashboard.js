@@ -37,6 +37,7 @@ let _playerSortMode = 'score'; // 'score' | 'custom'
 let _customPlayerOrder = null; // ordered array of active playerIds; null until first save
 let _playerDragCleanup = null; // cleanup fn for any in-progress drag
 let _roundsDisplayMode = 'last3'; // 'none' | 'last3' | 'all'
+let _initialScrollDone = false;
 
 // Jua round tracking state (reset each round)
 let _juaRoundData = { firstSavePid: null };
@@ -161,6 +162,8 @@ export function unmount() {
   _juaRoundTracked = -1;
   _playerSortMode = 'score';
   _customPlayerOrder = null;
+  _roundsDisplayMode = 'last3';
+  _initialScrollDone = false;
   if (_playerDragCleanup) { _playerDragCleanup(); _playerDragCleanup = null; }
   if (_juaModalEl) {
     _juaModalEl.remove();
@@ -328,26 +331,13 @@ function _render(container, roomCode) {
   const isFlip7Host = game.type === 'flip7' && isHost
     && game.status !== 'finished' && game.status !== 'abandoned';
 
-  html += `
-    <div class="flex justify-between items-end mb-8">
-      <div>
-        <p class="font-mono text-xs uppercase tracking-widest text-outline">${_editScoresMode ? 'EDITING' : ''}</p>
-        <p class="font-mono text-3xl font-bold">${_editScoresMode ? `ROUND ${editingRoundIndex + 1}` : `ROUND ${rounds.length + 1}${game.type === 'papayoo' ? `/${game.config?.roundLimit || 5}` : ''}`}</p>
-      </div>
-      <div class="text-right">
-        <p class="font-mono text-xs uppercase tracking-widest text-outline">${gameModule.winMode === 'highest_total' ? 'TARGET' : game.type === 'cabo' ? 'BUST AT' : 'ROUNDS'}</p>
-        <p class="font-mono text-3xl font-bold">${gameModule.winMode === 'highest_total' ? game.config?.targetScore : game.type === 'cabo' ? '>100' : game.config?.roundLimit}</p>
-      </div>
-    </div>
-  `;
-
   // Check winner redirect
   if (game.status === 'finished' && game.winner) {
     router.navigate('winner', { roomCode });
     return;
   }
 
-  // Jua prize card — shown for all viewers when Jua is enabled
+  // Jua prize card — shown above the round heading so users can scroll up to view it
   if (game.config?.jua && !_editScoresMode) {
     const numPlayers = playerIds.length;
     const buyIn = game.config.juaBuyIn || 30;
@@ -382,6 +372,19 @@ function _render(container, roomCode) {
       <div class="mb-6"></div>
     `;
   }
+
+  html += `
+    <div id="round-heading" class="flex justify-between items-end mb-8">
+      <div>
+        <p class="font-mono text-xs uppercase tracking-widest text-outline">${_editScoresMode ? 'EDITING' : ''}</p>
+        <p class="font-mono text-3xl font-bold">${_editScoresMode ? `ROUND ${editingRoundIndex + 1}` : `ROUND ${rounds.length + 1}${game.type === 'papayoo' ? `/${game.config?.roundLimit || 5}` : ''}`}</p>
+      </div>
+      <div class="text-right">
+        <p class="font-mono text-xs uppercase tracking-widest text-outline">${gameModule.winMode === 'highest_total' ? 'TARGET' : game.type === 'cabo' ? 'BUST AT' : 'ROUNDS'}</p>
+        <p class="font-mono text-3xl font-bold">${gameModule.winMode === 'highest_total' ? game.config?.targetScore : game.type === 'cabo' ? '>100' : game.config?.roundLimit}</p>
+      </div>
+    </div>
+  `;
 
   // Sort: inactive players drop to the bottom regardless of score,
   // so active rankings stay visually clear.
@@ -554,6 +557,13 @@ function _render(container, roomCode) {
   }
 
   content.innerHTML = html;
+
+  // On first render, scroll the round heading into view so the winnings table
+  // is hidden above and users can scroll up to reveal it.
+  if (!_initialScrollDone && game.config?.jua) {
+    _initialScrollDone = true;
+    content.querySelector('#round-heading')?.scrollIntoView({ block: 'start', behavior: 'instant' });
+  }
 
   // Bind host actions
   if (isHost) {
