@@ -390,8 +390,7 @@ function _render(container, roomCode) {
   // Scoreboard controls bar (rounds toggle for all Flip7; sort toggle host-only)
   if (game.type === 'flip7') {
     html += `
-      <div class="flex items-center justify-between gap-3 mb-1">
-        <span class="font-mono text-[9px] uppercase tracking-widest text-on-surface">${isFlip7Host ? (_editScoresMode ? 'Tap a player to edit' : 'Tap a player to add score') : ''}</span>
+      <div class="flex items-center justify-end gap-3 mb-1">
         <div class="flex items-center gap-3">
           <div class="relative">
             <button id="btn-rounds-toggle" type="button"
