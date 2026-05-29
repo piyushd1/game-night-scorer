@@ -407,17 +407,37 @@ function _render(container, roomCode) {
       <div class="flex items-center justify-between gap-3 mb-1">
         <span class="font-mono text-[9px] uppercase tracking-widest text-on-surface">${isFlip7Host ? (_editScoresMode ? 'Tap a player to edit' : 'Tap a player to add score') : ''}</span>
         <div class="flex items-center gap-3">
-          <button id="btn-rounds-toggle" type="button"
-            class="font-mono text-[9px] uppercase tracking-widest flex items-center gap-0.5 transition-colors text-on-surface">
-            <span class="material-symbols-outlined text-sm" aria-hidden="true">history</span>
-            ${_roundsDisplayMode === 'none' ? 'NONE' : _roundsDisplayMode === 'all' ? 'ALL' : 'LAST 3'}
-          </button>
-          ${isFlip7Host ? `
-            <button id="btn-sort-toggle" type="button"
+          <div class="relative">
+            <button id="btn-rounds-toggle" type="button"
               class="font-mono text-[9px] uppercase tracking-widest flex items-center gap-0.5 transition-colors text-on-surface">
-              <span class="material-symbols-outlined text-sm" aria-hidden="true">swap_vert</span>
-              ${_playerSortMode === 'score' ? 'SCORE' : 'CUSTOM'}
+              <span class="material-symbols-outlined text-sm" aria-hidden="true">history</span>
+              ${_roundsDisplayMode === 'none' ? 'NONE' : _roundsDisplayMode === 'all' ? 'ALL' : 'LAST 3'}
+              <span class="material-symbols-outlined text-sm" aria-hidden="true">expand_more</span>
             </button>
+            <div id="rounds-dropdown" style="display:none;position:absolute;top:100%;right:0;margin-top:4px;background:#fff;border:1px solid #000;z-index:20;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
+              ${[['last3', 'LAST 3'], ['all', 'ALL'], ['none', 'NONE']].map(([mode, label]) =>
+                `<button type="button" data-rounds-mode="${mode}" class="rounds-dropdown-item"
+                  style="display:block;width:100%;text-align:left;padding:8px 14px;font-family:monospace;font-size:13px;text-transform:uppercase;letter-spacing:0.05em;color:#000;background:${mode === _roundsDisplayMode ? '#f0f0f0' : '#fff'};border:none;cursor:pointer;white-space:nowrap"
+                >${label}</button>`
+              ).join('')}
+            </div>
+          </div>
+          ${isFlip7Host ? `
+            <div class="relative">
+              <button id="btn-sort-toggle" type="button"
+                class="font-mono text-[9px] uppercase tracking-widest flex items-center gap-0.5 transition-colors text-on-surface">
+                <span class="material-symbols-outlined text-sm" aria-hidden="true">swap_vert</span>
+                ${_playerSortMode === 'score' ? 'SCORE' : 'CUSTOM'}
+                <span class="material-symbols-outlined text-sm" aria-hidden="true">expand_more</span>
+              </button>
+              <div id="sort-dropdown" style="display:none;position:absolute;top:100%;right:0;margin-top:4px;background:#fff;border:1px solid #000;z-index:20;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
+                ${[['score', 'SCORE'], ['custom', 'CUSTOM']].map(([mode, label]) =>
+                  `<button type="button" data-sort-mode="${mode}" class="sort-dropdown-item"
+                    style="display:block;width:100%;text-align:left;padding:8px 14px;font-family:monospace;font-size:13px;text-transform:uppercase;letter-spacing:0.05em;color:#000;background:${mode === _playerSortMode ? '#f0f0f0' : '#fff'};border:none;cursor:pointer;white-space:nowrap"
+                  >${label}</button>`
+                ).join('')}
+              </div>
+            </div>
           ` : ''}
         </div>
       </div>
@@ -665,18 +685,34 @@ function _render(container, roomCode) {
         });
       });
 
-      content.querySelector('#btn-sort-toggle')?.addEventListener('click', () => {
-        if (_playerSortMode === 'score') {
-          _playerSortMode = 'custom';
-          if (!_customPlayerOrder) {
-            _customPlayerOrder = playerIds.filter((id) => !isInactive(id));
+      const sortDropdownEl = content.querySelector('#sort-dropdown');
+      const sortToggleBtn = content.querySelector('#btn-sort-toggle');
+      if (sortToggleBtn && sortDropdownEl) {
+        const closeSortDropdown = () => {
+          sortDropdownEl.style.display = 'none';
+          document.removeEventListener('click', closeSortDropdown);
+        };
+        sortToggleBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const open = sortDropdownEl.style.display !== 'none';
+          if (open) { closeSortDropdown(); } else {
+            sortDropdownEl.style.display = 'block';
+            document.addEventListener('click', closeSortDropdown);
           }
-        } else {
-          _playerSortMode = 'score';
-        }
-        _saveSortState(roomCode, game.gameId);
-        _render(container, roomCode);
-      });
+        });
+        sortDropdownEl.querySelectorAll('.sort-dropdown-item').forEach((item) => {
+          item.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeSortDropdown();
+            _playerSortMode = item.dataset.sortMode;
+            if (_playerSortMode === 'custom' && !_customPlayerOrder) {
+              _customPlayerOrder = playerIds.filter((id) => !isInactive(id));
+            }
+            _saveSortState(roomCode, game.gameId);
+            _render(container, roomCode);
+          });
+        });
+      }
 
       content.querySelector('#btn-confirm-round')?.addEventListener('click', () => {
         _confirmFlip7Round(container, roomCode, game, gameModule);
@@ -684,13 +720,31 @@ function _render(container, roomCode) {
     }
   }
 
-  content.querySelector('#btn-rounds-toggle')?.addEventListener('click', () => {
-    if (_roundsDisplayMode === 'last3') _roundsDisplayMode = 'all';
-    else if (_roundsDisplayMode === 'all') _roundsDisplayMode = 'none';
-    else _roundsDisplayMode = 'last3';
-    _saveSortState(roomCode, game.gameId);
-    _render(container, roomCode);
-  });
+  const roundsDropdownEl = content.querySelector('#rounds-dropdown');
+  const roundsToggleBtn = content.querySelector('#btn-rounds-toggle');
+  if (roundsToggleBtn && roundsDropdownEl) {
+    const closeRoundsDropdown = () => {
+      roundsDropdownEl.style.display = 'none';
+      document.removeEventListener('click', closeRoundsDropdown);
+    };
+    roundsToggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const open = roundsDropdownEl.style.display !== 'none';
+      if (open) { closeRoundsDropdown(); } else {
+        roundsDropdownEl.style.display = 'block';
+        document.addEventListener('click', closeRoundsDropdown);
+      }
+    });
+    roundsDropdownEl.querySelectorAll('.rounds-dropdown-item').forEach((item) => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeRoundsDropdown();
+        _roundsDisplayMode = item.dataset.roundsMode;
+        _saveSortState(roomCode, game.gameId);
+        _render(container, roomCode);
+      });
+    });
+  }
 }
 
 // ── Flip 7 tappable player row ──
