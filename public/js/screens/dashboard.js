@@ -395,11 +395,11 @@ function _render(container, roomCode) {
           <div class="relative">
             <button id="btn-rounds-toggle" type="button"
               class="font-mono text-[9px] uppercase tracking-widest flex items-center gap-0.5 transition-colors text-on-surface">
-              <span class="material-symbols-outlined text-sm" aria-hidden="true">history</span>
-              ${_roundsDisplayMode === 'none' ? 'NONE' : _roundsDisplayMode === 'all' ? 'ALL' : 'LAST 3'}
+              VIEW
               <span class="material-symbols-outlined text-sm" aria-hidden="true">expand_more</span>
             </button>
             <div id="rounds-dropdown" style="display:none;position:absolute;top:100%;right:0;margin-top:4px;background:#fff;border:1px solid #000;z-index:20;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
+              <p style="padding:8px 14px 4px;font-family:monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#888;white-space:nowrap">VIEW</p>
               ${[['last3', 'LAST 3'], ['all', 'ALL'], ['none', 'NONE']].map(([mode, label]) =>
                 `<button type="button" data-rounds-mode="${mode}" class="rounds-dropdown-item"
                   style="display:block;width:100%;text-align:left;padding:8px 14px;font-family:monospace;font-size:13px;text-transform:uppercase;letter-spacing:0.05em;color:#000;background:${mode === _roundsDisplayMode ? '#f0f0f0' : '#fff'};border:none;cursor:pointer;white-space:nowrap"
@@ -411,11 +411,11 @@ function _render(container, roomCode) {
             <div class="relative">
               <button id="btn-sort-toggle" type="button"
                 class="font-mono text-[9px] uppercase tracking-widest flex items-center gap-0.5 transition-colors text-on-surface">
-                <span class="material-symbols-outlined text-sm" aria-hidden="true">swap_vert</span>
-                ${_playerSortMode === 'score' ? 'SCORE' : 'CUSTOM'}
+                SORT
                 <span class="material-symbols-outlined text-sm" aria-hidden="true">expand_more</span>
               </button>
               <div id="sort-dropdown" style="display:none;position:absolute;top:100%;right:0;margin-top:4px;background:#fff;border:1px solid #000;z-index:20;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
+                <p style="padding:8px 14px 4px;font-family:monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#888;white-space:nowrap">SORT</p>
                 ${[['score', 'SCORE'], ['custom', 'CUSTOM']].map(([mode, label]) =>
                   `<button type="button" data-sort-mode="${mode}" class="sort-dropdown-item"
                     style="display:block;width:100%;text-align:left;padding:8px 14px;font-family:monospace;font-size:13px;text-transform:uppercase;letter-spacing:0.05em;color:#000;background:${mode === _playerSortMode ? '#f0f0f0' : '#fff'};border:none;cursor:pointer;white-space:nowrap"
