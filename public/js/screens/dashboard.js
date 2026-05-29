@@ -356,26 +356,17 @@ function _render(container, roomCode) {
   }
 
   html += `
-    <div class="flex justify-between items-end mb-4">
+    <div class="flex justify-between items-end mb-8">
       <div>
         <p class="font-mono text-xs uppercase tracking-widest text-outline">${_editScoresMode ? 'EDITING' : ''}</p>
         <p class="font-mono text-3xl font-bold">${_editScoresMode ? `ROUND ${editingRoundIndex + 1}` : `ROUND ${rounds.length + 1}${game.type === 'papayoo' ? `/${game.config?.roundLimit || 5}` : ''}`}</p>
+        ${juaPrizeData ? `<p class="font-mono text-xs text-outline mt-0.5">Winnings: ${juaPrizeData.positions.map(p => `₹${p.amount}`).join(' / ')}</p>` : ''}
       </div>
       <div class="text-right">
         <p class="font-mono text-xs uppercase tracking-widest text-outline">${gameModule.winMode === 'highest_total' ? 'TARGET' : game.type === 'cabo' ? 'BUST AT' : 'ROUNDS'}</p>
         <p class="font-mono text-3xl font-bold">${gameModule.winMode === 'highest_total' ? game.config?.targetScore : game.type === 'cabo' ? '>100' : game.config?.roundLimit}</p>
       </div>
     </div>
-    ${juaPrizeData ? `
-      <div class="flex border border-outline mb-4">
-        ${juaPrizeData.positions.map((pos, i) => `
-          <div class="flex-1 p-3 text-center ${i < 2 ? 'border-r border-outline' : ''}">
-            <p class="font-mono text-[9px] uppercase tracking-widest text-outline">${['1ST','2ND','3RD'][i]}</p>
-            <p class="font-mono text-2xl font-bold">₹${pos.amount}</p>
-          </div>
-        `).join('')}
-      </div>
-    ` : ''}
   `;
 
   // Sort: inactive players drop to the bottom regardless of score,
