@@ -399,7 +399,8 @@ function _render(container, roomCode) {
         ${isFlip7Host ? `
           <button id="btn-sort-toggle" type="button"
             class="font-mono text-xs uppercase tracking-widest flex items-center gap-0.5 transition-colors text-on-surface">
-            SORT BY: ${_playerSortMode === 'score' ? 'LEADERBOARD' : 'FIXED'}
+            <span class="material-symbols-outlined text-sm" aria-hidden="true">swap_vert</span>
+            ${_playerSortMode === 'score' ? 'LEADER' : 'FIXED'}
           </button>
         ` : ''}
       </div>
