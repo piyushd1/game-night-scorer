@@ -540,6 +540,12 @@ function _render(container, roomCode) {
 
   content.innerHTML = html;
 
+  const closeAllDropdowns = () => {
+    content.querySelectorAll('#round-dropdown, #rounds-dropdown, #sort-dropdown').forEach((el) => {
+      el.style.display = 'none';
+    });
+  };
+
   // Bind host actions
   if (isHost) {
     content.querySelector('#btn-undo')?.addEventListener('click', () => _undoRound(roomCode, game, gameModule));
@@ -560,6 +566,7 @@ function _render(container, roomCode) {
           if (open) {
             closeDropdown();
           } else {
+            closeAllDropdowns();
             dropdownEl.style.display = 'block';
             document.addEventListener('click', closeDropdown);
           }
@@ -681,6 +688,7 @@ function _render(container, roomCode) {
           e.stopPropagation();
           const open = sortDropdownEl.style.display !== 'none';
           if (open) { closeSortDropdown(); } else {
+            closeAllDropdowns();
             sortDropdownEl.style.display = 'block';
             document.addEventListener('click', closeSortDropdown);
           }
@@ -716,6 +724,7 @@ function _render(container, roomCode) {
       e.stopPropagation();
       const open = roundsDropdownEl.style.display !== 'none';
       if (open) { closeRoundsDropdown(); } else {
+        closeAllDropdowns();
         roundsDropdownEl.style.display = 'block';
         document.addEventListener('click', closeRoundsDropdown);
       }
