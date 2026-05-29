@@ -360,7 +360,7 @@ function _render(container, roomCode) {
       <div>
         <p class="font-mono text-xs uppercase tracking-widest text-outline">${_editScoresMode ? 'EDITING' : ''}</p>
         <p class="font-mono text-3xl font-bold">${_editScoresMode ? `ROUND ${editingRoundIndex + 1}` : `ROUND ${rounds.length + 1}${game.type === 'papayoo' ? `/${game.config?.roundLimit || 5}` : ''}`}</p>
-        ${juaPrizeData ? `<p class="font-mono text-xs text-outline mt-0.5">Winnings: ${juaPrizeData.positions.map(p => `₹${p.amount}`).join(' / ')}</p>` : ''}
+        ${juaPrizeData ? `<p class="font-mono text-xs text-outline mt-0.5">Prizes: ${juaPrizeData.positions.map(p => `₹${p.amount}`).join(' / ')}</p>` : ''}
       </div>
       <div class="text-right">
         <p class="font-mono text-xs uppercase tracking-widest text-outline">${gameModule.winMode === 'highest_total' ? 'TARGET' : game.type === 'cabo' ? 'BUST AT' : 'ROUNDS'}</p>
