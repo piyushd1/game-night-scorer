@@ -333,7 +333,6 @@ function _render(container, roomCode) {
       <div>
         <p class="font-mono text-xs uppercase tracking-widest text-outline">${_editScoresMode ? 'EDITING' : ''}</p>
         <p class="font-mono text-3xl font-bold">${_editScoresMode ? `ROUND ${editingRoundIndex + 1}` : `ROUND ${rounds.length + 1}${game.type === 'papayoo' ? `/${game.config?.roundLimit || 5}` : ''}`}</p>
-        ${isFlip7Host ? `<p class="font-mono text-xs text-outline mt-0.5">${_editScoresMode ? 'Tap a player to edit' : 'Tap a player to add score'}</p>` : ''}
       </div>
       <div class="text-right">
         <p class="font-mono text-xs uppercase tracking-widest text-outline">${gameModule.winMode === 'highest_total' ? 'TARGET' : game.type === 'cabo' ? 'BUST AT' : 'ROUNDS'}</p>
@@ -405,19 +404,22 @@ function _render(container, roomCode) {
   // Scoreboard controls bar (rounds toggle for all Flip7; sort toggle host-only)
   if (game.type === 'flip7') {
     html += `
-      <div class="flex items-center justify-end gap-3 mb-1">
-        <button id="btn-rounds-toggle" type="button"
-          class="font-mono text-[9px] uppercase tracking-widest flex items-center gap-0.5 transition-colors ${_roundsDisplayMode !== 'last3' ? 'text-on-surface' : 'text-outline hover:text-on-surface'}">
-          <span class="material-symbols-outlined text-sm" aria-hidden="true">history</span>
-          ${_roundsDisplayMode === 'none' ? 'NONE' : _roundsDisplayMode === 'all' ? 'ALL' : 'LAST 3'}
-        </button>
-        ${isFlip7Host ? `
-          <button id="btn-sort-toggle" type="button"
-            class="font-mono text-[9px] uppercase tracking-widest flex items-center gap-0.5 transition-colors ${_playerSortMode === 'custom' ? 'text-on-surface' : 'text-outline hover:text-on-surface'}">
-            <span class="material-symbols-outlined text-sm" aria-hidden="true">swap_vert</span>
-            ${_playerSortMode === 'score' ? 'SCORE' : 'CUSTOM'}
+      <div class="flex items-center justify-between gap-3 mb-1">
+        <p class="font-mono text-[9px] uppercase tracking-widest text-outline">${isFlip7Host ? (_editScoresMode ? 'Tap a player to edit' : 'Tap a player to add score') : ''}</p>
+        <div class="flex items-center gap-3">
+          <button id="btn-rounds-toggle" type="button"
+            class="font-mono text-[9px] uppercase tracking-widest flex items-center gap-0.5 transition-colors ${_roundsDisplayMode !== 'last3' ? 'text-on-surface' : 'text-outline hover:text-on-surface'}">
+            <span class="material-symbols-outlined text-sm" aria-hidden="true">history</span>
+            ${_roundsDisplayMode === 'none' ? 'NONE' : _roundsDisplayMode === 'all' ? 'ALL' : 'LAST 3'}
           </button>
-        ` : ''}
+          ${isFlip7Host ? `
+            <button id="btn-sort-toggle" type="button"
+              class="font-mono text-[9px] uppercase tracking-widest flex items-center gap-0.5 transition-colors ${_playerSortMode === 'custom' ? 'text-on-surface' : 'text-outline hover:text-on-surface'}">
+              <span class="material-symbols-outlined text-sm" aria-hidden="true">swap_vert</span>
+              ${_playerSortMode === 'score' ? 'SCORE' : 'CUSTOM'}
+            </button>
+          ` : ''}
+        </div>
       </div>
     `;
   }
