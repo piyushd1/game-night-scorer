@@ -405,7 +405,7 @@ function _render(container, roomCode) {
   if (game.type === 'flip7') {
     html += `
       <div class="flex items-center justify-between gap-3 mb-1">
-        <p class="font-mono text-[9px] uppercase tracking-widest text-outline">${isFlip7Host ? (_editScoresMode ? 'Tap a player to edit' : 'Tap a player to add score') : ''}</p>
+        <span class="font-mono text-[9px] uppercase tracking-widest text-outline">${isFlip7Host ? (_editScoresMode ? 'Tap a player to edit' : 'Tap a player to add score') : ''}</span>
         <div class="flex items-center gap-3">
           <button id="btn-rounds-toggle" type="button"
             class="font-mono text-[9px] uppercase tracking-widest flex items-center gap-0.5 transition-colors ${_roundsDisplayMode !== 'last3' ? 'text-on-surface' : 'text-outline hover:text-on-surface'}">
