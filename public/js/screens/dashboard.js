@@ -371,7 +371,7 @@ function _render(container, roomCode) {
       <div class="flex border border-outline">
         ${positions.map((pos, i) => `
           <div class="flex-1 p-3 text-center ${i < 2 ? 'border-r border-outline' : ''}">
-            <p class="font-mono text-[11px] uppercase tracking-widest text-outline">${rankLabels[i]}</p>
+            <p class="font-mono text-[9px] uppercase tracking-widest text-outline">${rankLabels[i]}</p>
             <p class="font-mono text-2xl font-bold">₹${pos.amount}</p>
           </div>
         `).join('')}
@@ -405,11 +405,11 @@ function _render(container, roomCode) {
   if (game.type === 'flip7') {
     html += `
       <div class="flex items-center justify-between gap-3 mb-1">
-        <span class="font-mono text-[11px] uppercase tracking-widest text-on-surface">${isFlip7Host ? (_editScoresMode ? 'Tap a player to edit' : 'Tap a player to add score') : ''}</span>
+        <span class="font-mono text-[9px] uppercase tracking-widest text-on-surface">${isFlip7Host ? (_editScoresMode ? 'Tap a player to edit' : 'Tap a player to add score') : ''}</span>
         <div class="flex items-center gap-3">
           <div class="relative">
             <button id="btn-rounds-toggle" type="button"
-              class="font-mono text-[11px] uppercase tracking-widest flex items-center gap-0.5 transition-colors text-on-surface">
+              class="font-mono text-[9px] uppercase tracking-widest flex items-center gap-0.5 transition-colors text-on-surface">
               <span class="material-symbols-outlined text-sm" aria-hidden="true">history</span>
               ${_roundsDisplayMode === 'none' ? 'NONE' : _roundsDisplayMode === 'all' ? 'ALL' : 'LAST 3'}
               <span class="material-symbols-outlined text-sm" aria-hidden="true">expand_more</span>
@@ -425,7 +425,7 @@ function _render(container, roomCode) {
           ${isFlip7Host ? `
             <div class="relative">
               <button id="btn-sort-toggle" type="button"
-                class="font-mono text-[11px] uppercase tracking-widest flex items-center gap-0.5 transition-colors text-on-surface">
+                class="font-mono text-[9px] uppercase tracking-widest flex items-center gap-0.5 transition-colors text-on-surface">
                 <span class="material-symbols-outlined text-sm" aria-hidden="true">swap_vert</span>
                 ${_playerSortMode === 'score' ? 'SCORE' : 'CUSTOM'}
                 <span class="material-symbols-outlined text-sm" aria-hidden="true">expand_more</span>
@@ -1031,7 +1031,7 @@ function _openFlip7Drawer(container, roomCode, playerId, snapshot, game) {
         <div class="relative flex justify-center pt-3 pb-1">
           <div class="w-10 h-1 rounded-full bg-outline-variant"></div>
           <button id="flip7-arrange-toggle" type="button" aria-pressed="${_flip7DragMode}"
-            class="absolute right-4 top-1.5 font-mono text-[11px] uppercase tracking-widest flex items-center gap-0.5 transition-colors ${_flip7DragMode ? 'text-on-surface' : 'text-outline hover:text-on-surface'}"
+            class="absolute right-4 top-1.5 font-mono text-[9px] uppercase tracking-widest flex items-center gap-0.5 transition-colors ${_flip7DragMode ? 'text-on-surface' : 'text-outline hover:text-on-surface'}"
             style="display:none">
             <span class="material-symbols-outlined text-sm" aria-hidden="true">drag_indicator</span>
             ${_flip7DragMode ? 'DONE' : 'ARRANGE'}
@@ -1044,7 +1044,7 @@ function _openFlip7Drawer(container, roomCode, playerId, snapshot, game) {
               <p id="flip7-header-score" class="font-mono text-4xl font-bold leading-none">0</p>
               <span id="flip7-header-emoji" class="text-4xl leading-none" style="display:none">🔥</span>
             </div>
-            <p id="flip7-header-label" class="font-mono text-[11px] text-outline mt-0.5 uppercase tracking-widest">THIS ROUND</p>
+            <p id="flip7-header-label" class="font-mono text-[9px] text-outline mt-0.5 uppercase tracking-widest">THIS ROUND</p>
           </div>
         </div>
         ${game.config?.jua ? `
@@ -1247,7 +1247,7 @@ function _bindDrawerEvents(container, roomCode, playerId, draftSnapshot) {
     if (!arrangeBtn) return;
     arrangeBtn.setAttribute('aria-pressed', String(_flip7DragMode));
     arrangeBtn.innerHTML = `<span class="material-symbols-outlined text-sm" aria-hidden="true">drag_indicator</span>${_flip7DragMode ? 'DONE' : 'ARRANGE'}`;
-    arrangeBtn.className = `absolute right-4 top-1.5 font-mono text-[11px] uppercase tracking-widest flex items-center gap-0.5 transition-colors ${_flip7DragMode ? 'text-on-surface' : 'text-outline hover:text-on-surface'}`;
+    arrangeBtn.className = `absolute right-4 top-1.5 font-mono text-[9px] uppercase tracking-widest flex items-center gap-0.5 transition-colors ${_flip7DragMode ? 'text-on-surface' : 'text-outline hover:text-on-surface'}`;
   }
 
   arrangeBtn?.addEventListener('click', () => {
@@ -1597,7 +1597,7 @@ function _openJuaFineCounter(pid, game, roomCode) {
     <div class="relative w-full bg-surface-container-lowest border-t-2 border-outline">
       <div class="flex justify-center pt-3 pb-1"><div class="w-10 h-1 rounded-full bg-outline-variant"></div></div>
       <div class="px-4 pb-3 border-b border-outline-variant">
-        <p class="font-mono text-[11px] uppercase tracking-widest text-outline mb-1">RECORD FINES</p>
+        <p class="font-mono text-[9px] uppercase tracking-widest text-outline mb-1">RECORD FINES</p>
         <div class="flex items-center justify-between gap-3">
           <p class="font-headline font-bold text-2xl uppercase truncate">${name}</p>
           <p id="jua-fine-rupees" class="font-mono text-2xl font-bold shrink-0">₹${_totalRupees()}</p>
