@@ -37,7 +37,6 @@ let _playerSortMode = 'score'; // 'score' | 'custom'
 let _customPlayerOrder = null; // ordered array of active playerIds; null until first save
 let _playerDragCleanup = null; // cleanup fn for any in-progress drag
 let _roundsDisplayMode = 'last3'; // 'none' | 'last3' | 'all'
-let _prizesExpanded = false;
 
 // Jua round tracking state (reset each round)
 let _juaRoundData = { firstSavePid: null };
@@ -163,7 +162,6 @@ export function unmount() {
   _playerSortMode = 'score';
   _customPlayerOrder = null;
   _roundsDisplayMode = 'last3';
-  _prizesExpanded = false;
   if (_playerDragCleanup) { _playerDragCleanup(); _playerDragCleanup = null; }
   if (_juaModalEl) {
     _juaModalEl.remove();
@@ -368,15 +366,14 @@ function _render(container, roomCode) {
         <p class="font-mono text-3xl font-bold">${gameModule.winMode === 'highest_total' ? game.config?.targetScore : game.type === 'cabo' ? '>100' : game.config?.roundLimit}</p>
       </div>
     </div>
-    ${juaPrizeData && _prizesExpanded ? `
-      <div class="flex gap-x-5 flex-wrap font-mono mb-3">
+    ${juaPrizeData ? `
+      <div class="flex border border-outline mb-4">
         ${juaPrizeData.positions.map((pos, i) => `
-          <span>
-            <span class="text-[9px] uppercase tracking-widest text-outline">${['1ST','2ND','3RD'][i]}</span>
-            <span class="font-bold"> ₹${pos.amount}</span>
-            <span class="text-xs text-outline"> ${escapeHTML(pos.name)}</span>
-          </span>
-        `).join('<span class="text-outline mx-1">·</span>')}
+          <div class="flex-1 p-3 text-center ${i < 2 ? 'border-r border-outline' : ''}">
+            <p class="font-mono text-[9px] uppercase tracking-widest text-outline">${['1ST','2ND','3RD'][i]}</p>
+            <p class="font-mono text-2xl font-bold">₹${pos.amount}</p>
+          </div>
+        `).join('')}
       </div>
     ` : ''}
   `;
@@ -405,13 +402,6 @@ function _render(container, roomCode) {
       <div class="flex items-center justify-between gap-3 mb-1">
         <span class="font-mono text-[9px] uppercase tracking-widest text-on-surface">${isFlip7Host ? (_editScoresMode ? 'Tap a player to edit' : 'Tap a player to add score') : ''}</span>
         <div class="flex items-center gap-3">
-          ${juaPrizeData ? `
-            <button id="btn-prizes-toggle" type="button"
-              class="font-mono text-[9px] uppercase tracking-widest flex items-center gap-0.5 transition-colors text-on-surface">
-              <span class="material-symbols-outlined text-sm" aria-hidden="true">${_prizesExpanded ? 'expand_less' : 'expand_more'}</span>
-              PRIZES
-            </button>
-          ` : ''}
           <div class="relative">
             <button id="btn-rounds-toggle" type="button"
               class="font-mono text-[9px] uppercase tracking-widest flex items-center gap-0.5 transition-colors text-on-surface">
@@ -753,10 +743,6 @@ function _render(container, roomCode) {
     });
   }
 
-  content.querySelector('#btn-prizes-toggle')?.addEventListener('click', () => {
-    _prizesExpanded = !_prizesExpanded;
-    _render(container, roomCode);
-  });
 }
 
 // ── Flip 7 tappable player row ──
