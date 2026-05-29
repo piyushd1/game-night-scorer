@@ -819,8 +819,10 @@ function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundInd
             <div class="flex-1 min-w-0">
               <p class="font-headline font-extrabold text-xl uppercase truncate">${name}</p>
               ${(() => {
-                const fineChip = fineCount > 0 ? `<span class="inline-block font-mono text-sm px-1.5 py-0.5" style="border:1px solid #c00;color:#c00">×${fineCount} FINE</span>` : '';
-                const all = [...chipList, ...(draftChip ? [draftChip] : []), ...(fineChip ? [fineChip] : [])];
+                const fineChips = Array.from({ length: fineCount }, () =>
+                  `<span class="inline-block font-mono text-sm bg-surface-container-low border border-outline-variant px-1.5 py-0.5 text-on-surface">👎</span>`
+                );
+                const all = [...fineChips, ...chipList, ...(draftChip ? [draftChip] : [])];
                 if (all.length === 0) return '';
                 let rows = '';
                 for (let i = 0; i < all.length; i += 5) {

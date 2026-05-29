@@ -59,10 +59,10 @@ export function renderRow({
     }
     return `<span class="inline-block font-mono text-sm bg-surface-container-low border border-outline-variant px-1.5 py-0.5 text-on-surface">${label}</span>`;
   });
-  const fineChip = fineCount > 0
-    ? `<span class="inline-block font-mono text-sm px-1.5 py-0.5" style="border:1px solid #c00;color:#c00">×${fineCount} FINE</span>`
-    : '';
-  const allChips = fineChip ? [...chipList, fineChip] : chipList;
+  const fineChips = Array.from({ length: fineCount }, () =>
+    `<span class="inline-block font-mono text-sm bg-surface-container-low border border-outline-variant px-1.5 py-0.5 text-on-surface">👎</span>`
+  );
+  const allChips = [...fineChips, ...chipList];
   const roundChips = allChips.length === 0 ? '' : (() => {
     let rows = '';
     for (let i = 0; i < allChips.length; i += 5) {
