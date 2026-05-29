@@ -394,7 +394,8 @@ function _render(container, roomCode) {
         <div class="relative">
           <button id="btn-rounds-toggle" type="button"
             class="font-mono text-xs uppercase tracking-widest flex items-center gap-0.5 transition-colors text-on-surface">
-            VIEW
+            <span class="material-symbols-outlined text-sm" aria-hidden="true">history</span>
+            VIEW: ${_roundsDisplayMode === 'none' ? 'NONE' : _roundsDisplayMode === 'all' ? 'ALL' : 'LAST 3'}
             <span class="material-symbols-outlined text-sm" aria-hidden="true">expand_more</span>
           </button>
           <div id="rounds-dropdown" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:#fff;border:1px solid #000;z-index:20;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
