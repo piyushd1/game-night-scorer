@@ -37,6 +37,7 @@ let _playerSortMode = 'score'; // 'score' | 'custom'
 let _customPlayerOrder = null; // ordered array of active playerIds; null until first save
 let _playerDragCleanup = null; // cleanup fn for any in-progress drag
 let _roundsDisplayMode = 'last3'; // 'none' | 'last3' | 'all'
+let _prizesExpanded = false;
 
 // Jua round tracking state (reset each round)
 let _juaRoundData = { firstSavePid: null };
@@ -161,6 +162,8 @@ export function unmount() {
   _juaRoundTracked = -1;
   _playerSortMode = 'score';
   _customPlayerOrder = null;
+  _roundsDisplayMode = 'last3';
+  _prizesExpanded = false;
   if (_playerDragCleanup) { _playerDragCleanup(); _playerDragCleanup = null; }
   if (_juaModalEl) {
     _juaModalEl.remove();
@@ -328,8 +331,34 @@ function _render(container, roomCode) {
   const isFlip7Host = game.type === 'flip7' && isHost
     && game.status !== 'finished' && game.status !== 'abandoned';
 
+  // Check winner redirect
+  if (game.status === 'finished' && game.winner) {
+    router.navigate('winner', { roomCode });
+    return;
+  }
+
+  // Compute Jua prize data once — used in header and player rows
+  let juaPrizeData = null;
+  if (game.config?.jua && !_editScoresMode) {
+    const numPlayers = playerIds.length;
+    const buyIn = game.config.juaBuyIn || 30;
+    const totalPot = buyIn * numPlayers;
+    const prize1 = game.config.juaPrize1 || 0;
+    const prize2 = game.config.juaPrize2 || 0;
+    const prize3 = totalPot - prize1 - prize2;
+    const juaPool = _computeJuaPool(game);
+    juaPrizeData = {
+      positions: [1, 2, 3].map((rank) => {
+        const s = standings.find((x) => x.rank === rank);
+        const pName = s ? (snapshot[s.playerId]?.name || s.playerId) : '—';
+        const amount = rank === 1 ? prize1 + juaPool : rank === 2 ? prize2 : prize3;
+        return { rank, name: pName, amount };
+      }),
+    };
+  }
+
   html += `
-    <div class="flex justify-between items-end mb-8">
+    <div class="flex justify-between items-end mb-4">
       <div>
         <p class="font-mono text-xs uppercase tracking-widest text-outline">${_editScoresMode ? 'EDITING' : ''}</p>
         <p class="font-mono text-3xl font-bold">${_editScoresMode ? `ROUND ${editingRoundIndex + 1}` : `ROUND ${rounds.length + 1}${game.type === 'papayoo' ? `/${game.config?.roundLimit || 5}` : ''}`}</p>
@@ -339,49 +368,18 @@ function _render(container, roomCode) {
         <p class="font-mono text-3xl font-bold">${gameModule.winMode === 'highest_total' ? game.config?.targetScore : game.type === 'cabo' ? '>100' : game.config?.roundLimit}</p>
       </div>
     </div>
-  `;
-
-  // Check winner redirect
-  if (game.status === 'finished' && game.winner) {
-    router.navigate('winner', { roomCode });
-    return;
-  }
-
-  // Jua prize card — shown for all viewers when Jua is enabled
-  if (game.config?.jua && !_editScoresMode) {
-    const numPlayers = playerIds.length;
-    const buyIn = game.config.juaBuyIn || 30;
-    const totalPot = buyIn * numPlayers;
-    const prize1 = game.config.juaPrize1 || 0;
-    const prize2 = game.config.juaPrize2 || 0;
-    const prize3 = totalPot - prize1 - prize2;
-    const juaPool = _computeJuaPool(game);
-    const rankLabels = ['1ST', '2ND', '3RD'];
-    const positions = [1, 2, 3].map((rank) => {
-      const s = standings.find((x) => x.rank === rank);
-      const pName = s ? (snapshot[s.playerId]?.name || s.playerId) : '—';
-      const amount = rank === 1 ? prize1 + juaPool : rank === 2 ? prize2 : prize3;
-      return { rank, name: pName, amount };
-    });
-    const fineEntries = Object.entries(game.juaFines || {})
-      .filter(([, count]) => count > 0)
-      .sort(([, a], [, b]) => b - a)
-      .map(([pid, count]) => `${escapeHTML(snapshot[pid]?.name || pid)} x ${count}`);
-    html += `
-      <div class="flex border border-outline">
-        ${positions.map((pos, i) => `
-          <div class="flex-1 p-3 text-center ${i < 2 ? 'border-r border-outline' : ''}">
-            <p class="font-mono text-[9px] uppercase tracking-widest text-outline">${rankLabels[i]}</p>
-            <p class="font-mono text-2xl font-bold">₹${pos.amount}</p>
-          </div>
-        `).join('')}
+    ${juaPrizeData && _prizesExpanded ? `
+      <div class="flex gap-x-5 flex-wrap font-mono mb-3">
+        ${juaPrizeData.positions.map((pos, i) => `
+          <span>
+            <span class="text-[9px] uppercase tracking-widest text-outline">${['1ST','2ND','3RD'][i]}</span>
+            <span class="font-bold"> ₹${pos.amount}</span>
+            <span class="text-xs text-outline"> ${escapeHTML(pos.name)}</span>
+          </span>
+        `).join('<span class="text-outline mx-1">·</span>')}
       </div>
-      ${fineEntries.length > 0 ? `
-        <p class="font-mono text-xs text-outline px-1 pt-1">Fines: ${fineEntries.join(', ')}</p>
-      ` : ''}
-      <div class="mb-6"></div>
-    `;
-  }
+    ` : ''}
+  `;
 
   // Sort: inactive players drop to the bottom regardless of score,
   // so active rankings stay visually clear.
@@ -407,6 +405,13 @@ function _render(container, roomCode) {
       <div class="flex items-center justify-between gap-3 mb-1">
         <span class="font-mono text-[9px] uppercase tracking-widest text-on-surface">${isFlip7Host ? (_editScoresMode ? 'Tap a player to edit' : 'Tap a player to add score') : ''}</span>
         <div class="flex items-center gap-3">
+          ${juaPrizeData ? `
+            <button id="btn-prizes-toggle" type="button"
+              class="font-mono text-[9px] uppercase tracking-widest flex items-center gap-0.5 transition-colors text-on-surface">
+              <span class="material-symbols-outlined text-sm" aria-hidden="true">${_prizesExpanded ? 'expand_less' : 'expand_more'}</span>
+              PRIZES
+            </button>
+          ` : ''}
           <div class="relative">
             <button id="btn-rounds-toggle" type="button"
               class="font-mono text-[9px] uppercase tracking-widest flex items-center gap-0.5 transition-colors text-on-surface">
@@ -457,7 +462,8 @@ function _render(container, roomCode) {
         editingRoundIndex,
         _editScoresMode ? (displayRoundFlip7Meta[s.playerId] || []) : _applyRoundsDisplayLimit(displayRoundFlip7Meta[s.playerId] || []),
         _editScoresMode ? (roundJuaMeta[s.playerId] || []) : _applyRoundsDisplayLimit(roundJuaMeta[s.playerId] || []),
-        liveFirstSave
+        liveFirstSave,
+        game.juaFines?.[s.playerId] || 0
       );
     } else {
       const liveEntry = game.liveRound?.[s.playerId];
@@ -485,6 +491,7 @@ function _render(container, roomCode) {
         isLeader: s.rank === 1,
         winMode: gameModule.winMode,
         isInactive: isInactive(s.playerId),
+        fineCount: game.juaFines?.[s.playerId] || 0,
       });
     }
   });
@@ -745,11 +752,16 @@ function _render(container, roomCode) {
       });
     });
   }
+
+  content.querySelector('#btn-prizes-toggle')?.addEventListener('click', () => {
+    _prizesExpanded = !_prizesExpanded;
+    _render(container, roomCode);
+  });
 }
 
 // ── Flip 7 tappable player row ──
 
-function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundIndex = -1, roundFlip7 = [], roundJuaSave = [], isLiveFirstSave = false) {
+function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundIndex = -1, roundFlip7 = [], roundJuaSave = [], isLiveFirstSave = false, fineCount = 0) {
   const { playerId: pid, total, rank } = standing;
   const color = ACCENT_COLORS[playerData.accentIndex || 0];
   const name = escapeHTML(playerData.name || pid);
@@ -807,7 +819,8 @@ function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundInd
             <div class="flex-1 min-w-0">
               <p class="font-headline font-extrabold text-xl uppercase truncate">${name}</p>
               ${(() => {
-                const all = draftChip ? [...chipList, draftChip] : chipList;
+                const fineChip = fineCount > 0 ? `<span class="inline-block font-mono text-sm px-1.5 py-0.5" style="border:1px solid #c00;color:#c00">×${fineCount} FINE</span>` : '';
+                const all = [...chipList, ...(draftChip ? [draftChip] : []), ...(fineChip ? [fineChip] : [])];
                 if (all.length === 0) return '';
                 let rows = '';
                 for (let i = 0; i < all.length; i += 5) {
