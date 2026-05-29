@@ -393,7 +393,8 @@ function _render(container, roomCode) {
       <div class="flex items-center justify-between mb-1">
         <button id="btn-rounds-toggle" type="button"
           class="font-mono text-xs uppercase tracking-widest flex items-center gap-0.5 transition-colors text-on-surface">
-          SHOW ROUNDS: ${_roundsDisplayMode === 'none' ? 'NONE' : _roundsDisplayMode === 'all' ? 'ALL' : 'LAST 3'}
+          <span class="material-symbols-outlined text-sm" aria-hidden="true">history</span>
+          ${_roundsDisplayMode === 'none' ? 'NO ROUNDS' : _roundsDisplayMode === 'all' ? 'ALL ROUNDS' : 'LAST 3 ROUNDS'}
         </button>
         ${isFlip7Host ? `
           <button id="btn-sort-toggle" type="button"
