@@ -393,12 +393,12 @@ function _render(container, roomCode) {
       <div class="flex items-center justify-between mb-1">
         <button id="btn-rounds-toggle" type="button"
           class="font-mono text-xs uppercase tracking-widest flex items-center gap-0.5 transition-colors text-on-surface">
-          VIEW: ${_roundsDisplayMode === 'none' ? 'NONE' : _roundsDisplayMode === 'all' ? 'ALL' : 'LAST 3'}
+          SHOW ROUNDS: ${_roundsDisplayMode === 'none' ? 'NONE' : _roundsDisplayMode === 'all' ? 'ALL' : 'LAST 3'}
         </button>
         ${isFlip7Host ? `
           <button id="btn-sort-toggle" type="button"
             class="font-mono text-xs uppercase tracking-widest flex items-center gap-0.5 transition-colors text-on-surface">
-            SORT: ${_playerSortMode === 'score' ? 'SCORE' : 'CUSTOM'}
+            SORT BY: ${_playerSortMode === 'score' ? 'LEADERBOARD' : 'FIXED'}
           </button>
         ` : ''}
       </div>
