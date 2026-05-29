@@ -289,15 +289,24 @@ function _render(container, roomCode) {
     });
   }
 
-  // Clear Flip 7 draft when the round count changes (undo or fresh mount after submit)
+  // Sync Flip 7 draft with the current round
   if (game.type === 'flip7' && rounds.length !== _flip7RoundCount) {
-    _flip7Draft = {};
+    if (_flip7RoundCount === -1) {
+      // First render after mount — restore saved draft if available
+      _restoreDraft(roomCode, game.gameId, rounds.length);
+    } else {
+      // Round count changed (submit or undo) — discard stale draft
+      _clearDraft(roomCode, game.gameId, _flip7RoundCount);
+      _flip7Draft = {};
+    }
     _flip7RoundCount = rounds.length;
   }
 
-  // Clear Jua round data when round count changes
+  // Sync Jua round data with the current round
   if (game.type === 'flip7' && game.config?.jua && rounds.length !== _juaRoundTracked) {
-    _juaRoundData = { firstSavePid: null };
+    if (_juaRoundTracked !== -1) {
+      _juaRoundData = { firstSavePid: null };
+    }
     _juaRoundTracked = rounds.length;
   }
 
@@ -611,7 +620,7 @@ function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundInd
     const chipLabel = `${roundPts}${flip7 ? ' 🔥' : ''}${isLiveFirstSave ? ' ❤️' : ''}`;
     draftChip = `<span class="inline-block font-mono text-sm px-1.5 py-0.5" style="background:#000;color:#fff;border:1px solid #000">${chipLabel}</span>`;
   } else if (isLiveFirstSave) {
-    draftChip = `<span class="inline-block font-mono text-sm px-1.5 py-0.5 border border-outline-variant">❤️</span>`;
+    draftChip = `<span class="inline-block font-mono text-sm px-1.5 py-0.5 border border-outline-variant">0 ❤️</span>`;
   }
 
   return `
@@ -672,6 +681,42 @@ function _computeFlip7Score(draft) {
   const actionSum = actions.reduce((s, n) => s + n, 0);
   const subtotal = numberSum * (draft.x2 ? 2 : 1) + actionSum;
   return { basePoints: subtotal, flip7: numbers.length === 7 };
+}
+
+// ── Flip 7 draft persistence ──
+
+function _draftKey(roomCode, gameId, roundIndex) {
+  return `gns_rdraft_${roomCode}_${gameId}_${roundIndex}`;
+}
+
+function _saveDraft(roomCode, gameId, roundIndex) {
+  const serialized = {};
+  for (const [pid, d] of Object.entries(_flip7Draft)) {
+    serialized[pid] = { numbers: [...d.numbers], actions: [...d.actions], x2: d.x2 };
+  }
+  try {
+    localStorage.setItem(_draftKey(roomCode, gameId, roundIndex), JSON.stringify({
+      draft: serialized,
+      firstSavePid: _juaRoundData.firstSavePid,
+    }));
+  } catch {}
+}
+
+function _restoreDraft(roomCode, gameId, roundIndex) {
+  try {
+    const raw = localStorage.getItem(_draftKey(roomCode, gameId, roundIndex));
+    if (!raw) return;
+    const { draft, firstSavePid } = JSON.parse(raw);
+    _flip7Draft = {};
+    for (const [pid, d] of Object.entries(draft)) {
+      _flip7Draft[pid] = { numbers: new Set(d.numbers), actions: new Set(d.actions), x2: d.x2 };
+    }
+    _juaRoundData.firstSavePid = firstSavePid;
+  } catch {}
+}
+
+function _clearDraft(roomCode, gameId, roundIndex) {
+  try { localStorage.removeItem(_draftKey(roomCode, gameId, roundIndex)); } catch {}
 }
 
 // ── Flip 7 live totals ──
@@ -931,6 +976,7 @@ function _bindDrawerEvents(container, roomCode, playerId, draftSnapshot) {
       if (game) {
         _pushLiveTotals(roomCode, game).catch(() => {});
         fb.updateJuaLive(roomCode, game.gameId, _juaRoundData.firstSavePid).catch(() => {});
+        _saveDraft(roomCode, game.gameId, game.rounds ? Object.values(game.rounds).length : 0);
       }
       _closeFlip7Drawer();
       _render(container, roomCode);
@@ -949,6 +995,8 @@ function _bindDrawerEvents(container, roomCode, playerId, draftSnapshot) {
       btn.classList.remove('bg-primary', 'text-on-primary', 'border-primary');
       btn.classList.add('border-outline', 'hover:border-primary');
     }
+    const game = state.currentGame();
+    if (game) _saveDraft(roomCode, game.gameId, game.rounds ? Object.values(game.rounds).length : 0);
   });
 
   _flip7DrawerEl.querySelector('#flip7-fine-btn')?.addEventListener('click', () => {
@@ -1106,6 +1154,7 @@ async function _confirmFlip7Round(container, roomCode, initialGame, gameModule) 
     _juaRoundData = { firstSavePid: null };
     _juaRoundTracked = rounds.length + 1;
     fb.updateJuaLive(roomCode, game.gameId, null).catch(() => {});
+    _clearDraft(roomCode, game.gameId, rounds.length);
 
     if (endResult.ended) {
       router.navigate('winner', { roomCode });
