@@ -32,6 +32,11 @@ let _flip7DrawerPlayerId = null; // Which player's drawer is currently open
 let _flip7Grayscale = false; // false = colour (default); true = grayscale (toggle hidden for now)
 let _flip7DragMode = false; // Drag-to-rearrange mode for the card grid
 
+// ── Scoreboard sort state ──
+let _playerSortMode = 'score'; // 'score' | 'custom'
+let _customPlayerOrder = null; // ordered array of active playerIds; null until first save
+let _playerDragCleanup = null; // cleanup fn for any in-progress drag
+
 // Jua round tracking state (reset each round)
 let _juaRoundData = { firstSavePid: null };
 let _juaRoundTracked = -1;
@@ -153,6 +158,9 @@ export function unmount() {
   _editFirstSavePid = undefined;
   _juaRoundData = { firstSavePid: null };
   _juaRoundTracked = -1;
+  _playerSortMode = 'score';
+  _customPlayerOrder = null;
+  if (_playerDragCleanup) { _playerDragCleanup(); _playerDragCleanup = null; }
   if (_juaModalEl) {
     _juaModalEl.remove();
     _juaModalEl = null;
@@ -162,6 +170,8 @@ export function unmount() {
 function _render(container, roomCode) {
   const content = container.querySelector('#dash-content');
   if (!content) return;
+
+  if (_playerDragCleanup) { _playerDragCleanup(); _playerDragCleanup = null; }
 
   const game = state.currentGame();
   const meta = state.get('roomMeta') || {};
@@ -294,6 +304,7 @@ function _render(container, roomCode) {
     if (_flip7RoundCount === -1) {
       // First render after mount — restore saved draft if available
       _restoreDraft(roomCode, game.gameId, rounds.length);
+      _restoreSortState(roomCode, game.gameId);
     } else {
       // Round count changed (submit or undo) — discard stale draft
       _clearDraft(roomCode, game.gameId, _flip7RoundCount);
@@ -376,10 +387,32 @@ function _render(container, roomCode) {
   // so active rankings stay visually clear.
   const playersMap = state.get('players') || {};
   const isInactive = (pid) => playersMap[pid]?.isActive === false;
-  const orderedStandings = [
-    ...standings.filter((s) => !isInactive(s.playerId)),
-    ...standings.filter((s) => isInactive(s.playerId)),
-  ];
+  let orderedStandings;
+  if (_playerSortMode === 'custom' && _customPlayerOrder) {
+    const orderMap = new Map(_customPlayerOrder.map((id, i) => [id, i]));
+    const active = standings
+      .filter((s) => !isInactive(s.playerId))
+      .sort((a, b) => (orderMap.get(a.playerId) ?? Infinity) - (orderMap.get(b.playerId) ?? Infinity));
+    orderedStandings = [...active, ...standings.filter((s) => isInactive(s.playerId))];
+  } else {
+    orderedStandings = [
+      ...standings.filter((s) => !isInactive(s.playerId)),
+      ...standings.filter((s) => isInactive(s.playerId)),
+    ];
+  }
+
+  // Scoreboard sort controls (Flip 7 host only)
+  if (isFlip7Host) {
+    html += `
+      <div class="flex items-center justify-end gap-3 mb-1">
+        <button id="btn-sort-toggle" type="button"
+          class="font-mono text-[9px] uppercase tracking-widest flex items-center gap-0.5 transition-colors ${_playerSortMode === 'custom' ? 'text-on-surface' : 'text-outline hover:text-on-surface'}">
+          <span class="material-symbols-outlined text-sm" aria-hidden="true">swap_vert</span>
+          ${_playerSortMode === 'score' ? 'SCORE' : 'CUSTOM'}
+        </button>
+      </div>
+    `;
+  }
 
   // Scoreboard
   html += `<div class="flex flex-col gap-1">`;
@@ -608,6 +641,26 @@ function _render(container, roomCode) {
         });
       });
 
+      // Drag-to-reorder on sort handles (custom sort mode only)
+      content.querySelectorAll('.flip7-sort-handle').forEach((handle) => {
+        handle.addEventListener('pointerdown', (e) => {
+          _startPlayerDrag(e, handle, content, roomCode, game.gameId);
+        });
+      });
+
+      content.querySelector('#btn-sort-toggle')?.addEventListener('click', () => {
+        if (_playerSortMode === 'score') {
+          _playerSortMode = 'custom';
+          if (!_customPlayerOrder) {
+            _customPlayerOrder = playerIds.filter((id) => !isInactive(id));
+          }
+        } else {
+          _playerSortMode = 'score';
+        }
+        _saveSortState(roomCode, game.gameId);
+        _render(container, roomCode);
+      });
+
       content.querySelector('#btn-confirm-round')?.addEventListener('click', () => {
         _confirmFlip7Round(container, roomCode, game, gameModule);
       });
@@ -654,12 +707,19 @@ function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundInd
   }
 
   return `
-    <div class="flex flex-col border border-outline ${bgClass}">
+    <div class="flex flex-col border border-outline ${bgClass}" data-row-player-id="${escapeHTML(pid)}">
       <div class="accent-bar" style="background:${color}"></div>
       <div class="flex items-stretch flex-1">
-        <div class="flex items-center justify-center shrink-0 min-w-[2.5rem] border-r border-outline">
-          <span class="font-mono text-2xl font-bold">${rank}</span>
-        </div>
+        ${_playerSortMode === 'custom'
+          ? `<button type="button" class="flip7-sort-handle flex items-center justify-center shrink-0 min-w-[2.5rem] border-r border-outline cursor-grab active:cursor-grabbing"
+              style="touch-action:none"
+              data-player-id="${escapeHTML(pid)}" aria-label="Drag to reorder ${name}">
+              <span class="material-symbols-outlined text-outline select-none" aria-hidden="true">drag_indicator</span>
+            </button>`
+          : `<div class="flex items-center justify-center shrink-0 min-w-[2.5rem] border-r border-outline">
+              <span class="font-mono text-2xl font-bold">${rank}</span>
+            </div>`
+        }
         <button type="button"
           class="flip7-player-row flex-1 text-left hover:bg-surface-container-high transition-colors"
           data-player-id="${escapeHTML(pid)}"
@@ -747,6 +807,28 @@ function _restoreDraft(roomCode, gameId, roundIndex) {
 
 function _clearDraft(roomCode, gameId, roundIndex) {
   try { localStorage.removeItem(_draftKey(roomCode, gameId, roundIndex)); } catch {}
+}
+
+// ── Scoreboard sort persistence ──
+
+function _sortKey(roomCode, gameId) {
+  return `gns_sort_${roomCode}_${gameId}`;
+}
+
+function _saveSortState(roomCode, gameId) {
+  try {
+    localStorage.setItem(_sortKey(roomCode, gameId), JSON.stringify({ mode: _playerSortMode, order: _customPlayerOrder }));
+  } catch {}
+}
+
+function _restoreSortState(roomCode, gameId) {
+  try {
+    const raw = localStorage.getItem(_sortKey(roomCode, gameId));
+    if (!raw) return;
+    const { mode, order } = JSON.parse(raw);
+    _playerSortMode = mode || 'score';
+    _customPlayerOrder = order || null;
+  } catch {}
 }
 
 // ── Flip 7 live totals ──
@@ -1120,6 +1202,90 @@ function _swapGridCells(a, b) {
   parent.insertBefore(a, b);
   parent.insertBefore(b, ph);
   ph.remove();
+}
+
+function _swapPlayerRows(a, b) {
+  const parent = a.parentNode;
+  const ph = document.createComment('swap');
+  parent.insertBefore(ph, a);
+  parent.insertBefore(a, b);
+  parent.insertBefore(b, ph);
+  ph.remove();
+}
+
+// ── Scoreboard drag-to-reorder ──
+
+function _startPlayerDrag(e, handle, content, roomCode, gameId) {
+  e.preventDefault();
+
+  const pid = handle.dataset.playerId;
+  const rowEl = content.querySelector(`[data-row-player-id="${pid}"]`);
+  if (!rowEl) return;
+
+  const rowRect = rowEl.getBoundingClientRect();
+  const offsetY = e.clientY - rowRect.top;
+
+  // Ghost follows the pointer
+  const ghost = rowEl.cloneNode(true);
+  Object.assign(ghost.style, {
+    position: 'fixed',
+    left: `${rowRect.left}px`,
+    top: `${rowRect.top}px`,
+    width: `${rowRect.width}px`,
+    opacity: '0.85',
+    pointerEvents: 'none',
+    zIndex: '9999',
+    boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+    transition: 'none',
+  });
+  document.body.appendChild(ghost);
+
+  // Dim the source row in place
+  rowEl.style.opacity = '0.25';
+
+  const onMove = (ev) => {
+    ghost.style.top = `${ev.clientY - offsetY}px`;
+
+    const rows = [...content.querySelectorAll('[data-row-player-id]')];
+    const myIdx = rows.indexOf(rowEl);
+    const ghostMidY = ev.clientY - offsetY + rowRect.height / 2;
+
+    for (let i = 0; i < rows.length; i++) {
+      if (rows[i] === rowEl) continue;
+      const r = rows[i].getBoundingClientRect();
+      const mid = r.top + r.height / 2;
+      if (i < myIdx && ghostMidY < mid) {
+        rows[i].before(rowEl);
+        break;
+      } else if (i > myIdx && ghostMidY > mid) {
+        rows[i].after(rowEl);
+        break;
+      }
+    }
+  };
+
+  const onEnd = () => {
+    ghost.remove();
+    rowEl.style.opacity = '';
+    _customPlayerOrder = [...content.querySelectorAll('[data-row-player-id]')].map((el) => el.dataset.rowPlayerId);
+    _saveSortState(roomCode, gameId);
+    _playerDragCleanup = null;
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onEnd);
+    document.removeEventListener('pointercancel', onEnd);
+  };
+
+  _playerDragCleanup = () => {
+    ghost.remove();
+    rowEl.style.opacity = '';
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onEnd);
+    document.removeEventListener('pointercancel', onEnd);
+  };
+
+  document.addEventListener('pointermove', onMove);
+  document.addEventListener('pointerup', onEnd);
+  document.addEventListener('pointercancel', onEnd);
 }
 
 // ── Confirm Flip 7 Round ──
