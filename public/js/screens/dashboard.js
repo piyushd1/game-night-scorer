@@ -11,7 +11,7 @@ import * as toast from '../components/toast.js';
 import * as hostMenu from '../components/host-menu.js';
 import { renderRow } from '../components/player-row.js';
 import { getGame } from '../games/registry.js';
-import { escapeHTML } from '../utils.js';
+import { escapeHTML, confirmRoundDialog } from '../utils.js';
 
 // Bolt Optimization: Memoize O(R*P) round points calculation
 // The dashboard re-renders frequently on Firebase state syncs.
@@ -1086,6 +1086,16 @@ async function _confirmFlip7Round(container, roomCode, initialGame, gameModule) 
   const newTotals = gameModule.applyRound({ ...totals }, draft, game);
   const newRoundCount = rounds.length + 1;
   const endResult = gameModule.checkEnd(newTotals, game.config, playerIds, newRoundCount);
+
+  const activePlayerIds = playerIds.filter((pid) => playersMap[pid]?.isActive !== false);
+  const playerScores = activePlayerIds.map((pid) => ({
+    name: playersMap[pid]?.name || pid,
+    score: (newTotals[pid] || 0) - (totals[pid] || 0),
+    flip7: entries[pid]?.flip7 || false,
+    firstSave: (game.config?.jua && _juaRoundData.firstSavePid === pid) || false,
+  }));
+  const confirmed = await confirmRoundDialog(playerScores);
+  if (!confirmed) return;
 
   const btn = container.querySelector('#btn-confirm-round');
   if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner mx-auto"></div>'; }
