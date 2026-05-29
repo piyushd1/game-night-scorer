@@ -1,0 +1,6 @@
+interface:
+  display_name: "Game Night Scorer"
+  short_description: "Repo-specific patterns and workflows for game-night-scorer"
+  default_prompt: "Use the game-night-scorer repo skill to follow existing architecture, testing, and workflow conventions."
+policy:
+  allow_implicit_invocation: true
