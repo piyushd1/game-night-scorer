@@ -238,6 +238,7 @@ function _renderConfigField(game, f, playerCount) {
             type="button"
             role="switch"
             id="config-${f.key}"
+            aria-label="${escapeHTML(f.label)}"
             aria-checked="${String(!!game.defaultConfig[f.key])}"
             class="w-12 h-7 border transition-colors relative focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${game.defaultConfig[f.key] ? 'bg-primary border-primary' : 'bg-surface-container-high border-outline'}"
           ><span class="toggle-thumb absolute top-0.5 left-0.5 w-6 h-6 transition-all ${game.defaultConfig[f.key] ? 'bg-on-primary translate-x-5' : 'bg-outline'}"></span></button>
