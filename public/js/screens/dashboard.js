@@ -391,11 +391,13 @@ function _render(container, roomCode) {
   if (game.type === 'flip7') {
     html += `
       <div class="flex items-center justify-end gap-4 mb-1">
+        ${rounds.length > 0 ? `
         <button id="btn-rounds-toggle" type="button"
           class="font-mono text-xs uppercase tracking-widest flex items-center gap-0.5 transition-colors text-on-surface">
           <span class="material-symbols-outlined text-sm" aria-hidden="true">history</span>
           ${_roundsDisplayMode === 'none' ? 'NO ROUNDS' : _roundsDisplayMode === 'all' ? 'ALL ROUNDS' : 'LAST 3 ROUNDS'}
         </button>
+        ` : ''}
         ${isFlip7Host ? `
           <button id="btn-sort-toggle" type="button"
             class="font-mono text-xs uppercase tracking-widest flex items-center gap-0.5 transition-colors text-on-surface">
@@ -421,7 +423,7 @@ function _render(container, roomCode) {
         _editScoresMode ? (displayRoundFlip7Meta[s.playerId] || []) : _applyRoundsDisplayLimit(displayRoundFlip7Meta[s.playerId] || []),
         _editScoresMode ? (roundJuaMeta[s.playerId] || []) : _applyRoundsDisplayLimit(roundJuaMeta[s.playerId] || []),
         liveFirstSave,
-        game.juaFines?.[s.playerId] || 0
+        _editScoresMode ? 0 : (game.juaFines?.[s.playerId] || 0)
       );
     } else {
       const liveEntry = game.liveRound?.[s.playerId];
@@ -666,8 +668,8 @@ function _render(container, roomCode) {
   }
 
   content.querySelector('#btn-rounds-toggle')?.addEventListener('click', () => {
-    if (_roundsDisplayMode === 'last3') _roundsDisplayMode = 'all';
-    else if (_roundsDisplayMode === 'all') _roundsDisplayMode = 'none';
+    if (_roundsDisplayMode === 'last3') _roundsDisplayMode = 'none';
+    else if (_roundsDisplayMode === 'none') _roundsDisplayMode = 'all';
     else _roundsDisplayMode = 'last3';
     _saveSortState(roomCode, game.gameId);
     _render(container, roomCode);
@@ -735,14 +737,18 @@ function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundInd
             <div class="flex-1 min-w-0">
               <p class="font-headline font-extrabold text-xl uppercase truncate">${name}</p>
               ${(() => {
-                const fineChips = fineCount > 0
-                  ? [`<span class="inline-block font-mono text-sm bg-surface-container-low border border-outline-variant px-1.5 py-0.5 text-on-surface">👎 ${fineCount}</span>`]
-                  : [];
-                const all = [...fineChips, ...chipList, ...(draftChip ? [draftChip] : [])];
-                if (all.length === 0) return '';
+                const scoreChips = [...chipList, ...(draftChip ? [draftChip] : [])];
+                if (fineCount === 0 && scoreChips.length === 0) return '';
+                const fineChip = fineCount > 0
+                  ? `<span class="inline-block font-mono text-sm bg-surface-container-low border border-outline-variant px-1.5 py-0.5 text-on-surface">👎 ${fineCount}</span>`
+                  : '';
                 let rows = '';
-                for (let i = 0; i < all.length; i += 5) {
-                  rows += `<div class="flex gap-1">${all.slice(i, i + 5).join('')}</div>`;
+                for (let i = 0; i < scoreChips.length; i += 5) {
+                  const prefix = i === 0 ? fineChip : '';
+                  rows += `<div class="flex gap-1">${prefix}${scoreChips.slice(i, i + 5).join('')}</div>`;
+                }
+                if (fineChip && scoreChips.length === 0) {
+                  rows = `<div class="flex gap-1">${fineChip}</div>`;
                 }
                 return `<div class="flex flex-col gap-1 mt-2">${rows}</div>`;
               })()}

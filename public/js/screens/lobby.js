@@ -625,9 +625,9 @@ function _showSuggestions(container, roomCode) {
   }
 
   suggestionsEl.innerHTML = `
-    <span class="font-mono text-[10px] uppercase tracking-widest text-outline self-center mr-1">Quick add:</span>
+    <span class="font-mono text-xs uppercase tracking-widest text-outline self-center mr-1">Quick add:</span>
     ${matches.map((n) => `
-      <button class="suggestion-chip font-mono text-[10px] uppercase tracking-widest border border-outline pl-2 pr-1 py-1 hover:bg-surface-container-high transition-colors inline-flex items-center gap-1.5" data-name="${escapeHTML(n)}">
+      <button class="suggestion-chip font-mono text-xs uppercase tracking-widest border border-outline pl-2 pr-1 py-1 hover:bg-surface-container-high transition-colors inline-flex items-center gap-1.5" data-name="${escapeHTML(n)}">
         ${escapeHTML(n)}
         <span class="remove-chip text-outline hover:text-on-surface leading-none" aria-label="Remove ${escapeHTML(n)}">&#x2715;</span>
       </button>
