@@ -469,7 +469,7 @@ function _render(container, roomCode) {
     if (isFlip7Host) {
       const roundDropdownItems = roundKeys.map((key, i) => `
         <button type="button" data-round-key="${key}"
-          style="display:block;width:100%;text-align:left;padding:10px 16px;font-family:monospace;font-size:20px;text-transform:uppercase;letter-spacing:0.05em;color:#000;background:${key === _editLastRoundKey ? '#f0f0f0' : '#fff'};border:none;cursor:pointer;white-space:nowrap"
+          style="display:block;width:100%;text-align:left;padding:10px 16px;font-family:monospace;font-size:16px;text-transform:uppercase;letter-spacing:0.05em;color:#000;background:${key === _editLastRoundKey ? '#f0f0f0' : '#fff'};border:none;${i < roundKeys.length - 1 ? 'border-bottom:1px solid #c6c6c6;' : ''}cursor:pointer;white-space:nowrap"
           class="round-dropdown-item">
           Round ${i + 1}
         </button>
@@ -478,9 +478,9 @@ function _render(container, roomCode) {
       html += `
         <div class="flex gap-2 mt-6">
           ${_editScoresMode ? `
-            <button id="btn-edit-cancel"
-              class="flex-1 bg-surface-container-lowest border border-outline py-3 font-headline font-bold text-sm uppercase tracking-widest flex items-center justify-center transition-colors hover:bg-surface-container-high">
-              CANCEL
+            <button id="btn-edit-cancel" aria-label="Cancel" title="Cancel"
+              class="shrink-0 self-stretch bg-surface-container-low border border-outline flex items-center justify-center transition-colors hover:bg-surface-container-high">
+              <span class="material-symbols-outlined" style="font-size:24px" aria-hidden="true">close</span>
             </button>
             <button id="btn-edit-save"
               class="flex-1 btn-primary flex items-center justify-center">
@@ -529,20 +529,32 @@ function _render(container, roomCode) {
       const dropdownEl = content.querySelector('#round-dropdown');
       const pencilBtn = content.querySelector('#btn-edit-scores');
       if (pencilBtn && dropdownEl) {
+        let backdropEl = null;
+
         const closeDropdown = () => {
+          if (backdropEl) { backdropEl.remove(); backdropEl = null; }
           dropdownEl.style.display = 'none';
-          document.removeEventListener('click', closeDropdown);
         };
 
         pencilBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          const open = dropdownEl.style.display !== 'none';
-          if (open) {
-            closeDropdown();
-          } else {
-            dropdownEl.style.display = 'block';
-            document.addEventListener('click', closeDropdown);
-          }
+          if (backdropEl) { closeDropdown(); return; }
+
+          // Darkening backdrop (matches the header overflow menu); the dropdown is
+          // reparented onto it and positioned against the pencil button.
+          backdropEl = document.createElement('div');
+          backdropEl.style.cssText = 'position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,0.15)';
+          backdropEl.addEventListener('click', closeDropdown);
+          document.body.appendChild(backdropEl);
+
+          const rect = pencilBtn.getBoundingClientRect();
+          dropdownEl.style.position = 'fixed';
+          dropdownEl.style.zIndex = '9999';
+          dropdownEl.style.left = `${rect.left}px`;
+          dropdownEl.style.bottom = `${window.innerHeight - rect.top + 4}px`;
+          dropdownEl.style.margin = '0';
+          dropdownEl.style.display = 'block';
+          backdropEl.appendChild(dropdownEl);
         });
 
         dropdownEl.querySelectorAll('.round-dropdown-item').forEach((item) => {
@@ -565,7 +577,12 @@ function _render(container, roomCode) {
         _editLastRoundKey = null;
         _render(container, roomCode);
       };
-      content.querySelector('#btn-edit-cancel')?.addEventListener('click', exitEditMode);
+      const editCancelBtn = content.querySelector('#btn-edit-cancel');
+      if (editCancelBtn) {
+        editCancelBtn.addEventListener('click', exitEditMode);
+        // Square it: width follows the rendered height (set by the SAVE button).
+        requestAnimationFrame(() => { editCancelBtn.style.width = editCancelBtn.offsetHeight + 'px'; });
+      }
 
       content.querySelector('#btn-edit-save')?.addEventListener('click', async () => {
         const hasScoreAdjustments = Object.keys(_editAdjustments).length > 0;

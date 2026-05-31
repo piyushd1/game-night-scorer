@@ -160,7 +160,7 @@ function _bindEvents(container, roomCode) {
         if (!document.contains(qrEl)) return; // unmounted before layout
         const rect = qrEl.getBoundingClientRect();
         const size = Math.min(rect.width, rect.height) - 6;
-        new window.QRCode(qrEl, { text: url, width: size, height: size, colorDark: '#000000', colorLight: '#ffffff', correctLevel: window.QRCode.CorrectLevel.L });
+        new window.QRCode(qrEl, { text: url, width: size, height: size, colorDark: '#000000', colorLight: '#f4f4f2', correctLevel: window.QRCode.CorrectLevel.L });
         const canvas = qrEl.querySelector('canvas');
         if (canvas) _qrCache[roomCode] = canvas.toDataURL();
       }));
@@ -682,7 +682,7 @@ function _showJuaPrizeSplitModal(container, roomCode, gameId, config, prevPlayer
 
   const prize3Init = _computePrize3();
   modalEl.innerHTML = `
-    <div class="w-full max-w-sm bg-surface-container-lowest border border-outline shadow-lg">
+    <div class="w-full max-w-sm bg-surface-container-low border border-outline shadow-lg">
 
       <div class="px-5 pt-5 pb-4 border-b border-outline-variant">
         <h2 class="font-headline font-extrabold text-xl uppercase">Add ${escapeHTML(playerName)}</h2>
@@ -727,7 +727,7 @@ function _showJuaPrizeSplitModal(container, roomCode, gameId, config, prevPlayer
       </div>
 
       <div class="px-5 pb-5 flex gap-3 border-t border-outline-variant pt-4">
-        <button id="prize-split-cancel" type="button" aria-label="Cancel" class="btn-secondary flex-none flex items-center justify-center self-stretch" style="padding:0">
+        <button id="prize-split-cancel" type="button" aria-label="Cancel" class="btn-secondary flex-none flex items-center justify-center self-stretch" style="padding:0;background:#f4f4f2">
           <span class="material-symbols-outlined" style="font-size:20px">close</span>
         </button>
         <button id="prize-split-confirm" type="button" class="btn-primary" style="flex:3">ADD PLAYER</button>

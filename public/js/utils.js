@@ -43,7 +43,7 @@ export function confirmRoundDialog(playerScores) {
     el.style.cssText = 'backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);';
     el.innerHTML = `
       <div id="crd-backdrop" class="absolute inset-0 bg-black/50"></div>
-      <div class="relative w-full max-w-sm bg-surface-container-lowest border-2 border-outline">
+      <div class="relative w-full max-w-sm bg-surface-container-low border-2 border-outline">
         <div class="px-5 pt-5 pb-3 border-b border-outline-variant">
           <p class="font-headline font-extrabold text-xl uppercase">
             Confirm round
@@ -68,7 +68,7 @@ export function confirmRoundDialog(playerScores) {
           </table>
         </div>
         <div class="px-5 pb-5 pt-3 flex gap-2">
-          <button id="crd-cancel" type="button" aria-label="Cancel" class="btn-secondary flex-none flex items-center justify-center self-stretch" style="padding:0">
+          <button id="crd-cancel" type="button" aria-label="Cancel" class="btn-secondary flex-none flex items-center justify-center self-stretch" style="padding:0;background:#f4f4f2">
             <span class="material-symbols-outlined" style="font-size:20px">close</span>
           </button>
           <button id="crd-confirm" type="button" class="btn-primary" style="flex:3">CONFIRM</button>
@@ -113,7 +113,7 @@ export function confirmSaveDialog(changes) {
     el.style.cssText = 'backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);';
     el.innerHTML = `
       <div id="csd-backdrop" class="absolute inset-0 bg-black/50"></div>
-      <div class="relative w-full max-w-sm bg-surface-container-lowest border-2 border-outline">
+      <div class="relative w-full max-w-sm bg-surface-container-low border-2 border-outline">
         <div class="px-5 pt-5 pb-3 border-b border-outline-variant">
           <p class="font-headline font-extrabold text-xl uppercase">Save changes?</p>
         </div>
@@ -130,7 +130,7 @@ export function confirmSaveDialog(changes) {
           </div>
         </div>
         <div class="px-5 pb-5 pt-3 flex gap-2">
-          <button id="csd-cancel" type="button" aria-label="Cancel" class="btn-secondary flex-none flex items-center justify-center self-stretch" style="padding:0">
+          <button id="csd-cancel" type="button" aria-label="Cancel" class="btn-secondary flex-none flex items-center justify-center self-stretch" style="padding:0;background:#f4f4f2">
             <span class="material-symbols-outlined" style="font-size:20px">close</span>
           </button>
           <button id="csd-confirm" type="button" class="btn-primary" style="flex:3">SAVE</button>
