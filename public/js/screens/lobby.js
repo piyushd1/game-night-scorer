@@ -274,6 +274,24 @@ async function _addPlayer(container, roomCode) {
   const count = Object.keys(players).length;
   const accentIndex = count % ACCENT_COLORS.length;
 
+  // For flip7+jua mid-game adds, show the prize split modal before any Firebase writes.
+  // If there is an active game but we can't read it yet, block the add entirely rather
+  // than falling through to fb.addPlayer without the modal.
+  const meta = state.get('roomMeta') || {};
+  if (meta.status === 'playing' && meta.activeGameId) {
+    const game = state.currentGame();
+    if (!game) {
+      toast.show('Game data not loaded yet, try again');
+      return;
+    }
+    if (game.type === 'flip7' && game.config?.jua) {
+      input.value = '';
+      _showSuggestions(container, roomCode);
+      _showJuaPrizeSplitModal(container, roomCode, meta.activeGameId, game.config, game.playerIds || [], nameUpper, count, accentIndex);
+      return;
+    }
+  }
+
   try {
     const newPlayerId = await fb.addPlayer(roomCode, name, count, accentIndex);
     _savePlayerName(nameUpper);
@@ -281,8 +299,6 @@ async function _addPlayer(container, roomCode) {
     input.focus();
     _showSuggestions(container, roomCode);
 
-    // If a game is in progress, add the player to that game too
-    const meta = state.get('roomMeta') || {};
     if (meta.status === 'playing' && meta.activeGameId && newPlayerId) {
       const game = state.currentGame();
       if (game) {
@@ -645,5 +661,118 @@ function _showSuggestions(container, roomCode) {
       _removePlayerName(chip.dataset.name);
       _showSuggestions(container, roomCode);
     });
+  });
+}
+
+function _showJuaPrizeSplitModal(container, roomCode, gameId, config, prevPlayerIds, playerName, seatOrder, accentIndex) {
+  const newPlayerCount = prevPlayerIds.length + 1;
+  const buyIn = config.juaBuyIn || 30;
+  const totalPot = buyIn * newPlayerCount;
+
+  const baseShare = buyIn === 30
+    ? Math.round(newPlayerCount * buyIn / 3)
+    : Math.ceil(newPlayerCount * buyIn / 3);
+  let prize1 = buyIn === 30 ? baseShare + 20 : baseShare;
+  let prize2 = baseShare;
+
+  const _computePrize3 = () => totalPot - prize1 - prize2;
+
+  const modalEl = document.createElement('div');
+  modalEl.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:1.5rem;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);';
+
+  const prize3Init = _computePrize3();
+  modalEl.innerHTML = `
+    <div class="w-full max-w-sm bg-surface-container-lowest border border-outline shadow-lg">
+
+      <div class="px-5 pt-5 pb-4 border-b border-outline-variant">
+        <h2 class="font-headline font-extrabold text-xl uppercase">Add ${escapeHTML(playerName)}</h2>
+        <p class="font-mono text-[10px] text-outline mt-1 uppercase tracking-wide">Readjust prize money to add player</p>
+      </div>
+
+      <div class="px-5 py-3 border-b border-outline-variant">
+        <p class="font-mono text-sm text-outline">
+          ₹${buyIn} × ${newPlayerCount} players = <span class="font-bold text-on-surface">₹${totalPot}</span>
+        </p>
+      </div>
+
+      <div class="px-5 py-4 flex flex-col gap-0">
+        <div class="flex items-center justify-between py-2 border-b border-outline-variant">
+          <label for="prize-split-1" class="font-headline font-bold text-xs uppercase">1st Place</label>
+          <div class="flex items-center gap-1">
+            <span class="font-mono text-lg text-outline">₹</span>
+            <input type="number" id="prize-split-1" value="${prize1}" min="0"
+              class="w-20 bg-transparent border-0 border-b-2 border-primary font-mono text-lg text-right py-1 px-0 focus:outline-none focus:border-secondary">
+          </div>
+        </div>
+        <div class="flex items-center justify-between py-2 border-b border-outline-variant">
+          <label for="prize-split-2" class="font-headline font-bold text-xs uppercase">2nd Place</label>
+          <div class="flex items-center gap-1">
+            <span class="font-mono text-lg text-outline">₹</span>
+            <input type="number" id="prize-split-2" value="${prize2}" min="0"
+              class="w-20 bg-transparent border-0 border-b-2 border-primary font-mono text-lg text-right py-1 px-0 focus:outline-none focus:border-secondary">
+          </div>
+        </div>
+        <div class="flex items-center justify-between py-2">
+          <label class="font-headline font-bold text-xs uppercase text-outline">3rd Place</label>
+          <div class="flex items-center gap-1">
+            <span class="font-mono text-lg text-outline">₹</span>
+            <span id="prize-split-3" class="w-20 font-mono text-lg text-right py-1 ${prize3Init < 0 ? 'text-red-600' : 'text-outline'}">${prize3Init}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-5 pb-5 flex gap-3 border-t border-outline-variant pt-4">
+        <button id="prize-split-cancel" type="button" class="flex-1 btn-secondary">CANCEL</button>
+        <button id="prize-split-confirm" type="button" class="flex-1 btn-primary">ADD PLAYER</button>
+      </div>
+
+    </div>
+  `;
+
+  document.body.appendChild(modalEl);
+  document.body.style.overflow = 'hidden';
+
+  const p1El = modalEl.querySelector('#prize-split-1');
+  const p2El = modalEl.querySelector('#prize-split-2');
+  const p3El = modalEl.querySelector('#prize-split-3');
+
+  const _updatePrize3 = () => {
+    prize1 = parseInt(p1El.value) || 0;
+    prize2 = parseInt(p2El.value) || 0;
+    const prize3 = _computePrize3();
+    p3El.textContent = prize3;
+    p3El.classList.toggle('text-red-600', prize3 < 0);
+    p3El.classList.toggle('text-outline', prize3 >= 0);
+  };
+
+  p1El.addEventListener('input', _updatePrize3);
+  p2El.addEventListener('input', _updatePrize3);
+
+  const _close = () => { modalEl.remove(); document.body.style.overflow = ''; };
+
+  modalEl.querySelector('#prize-split-cancel').addEventListener('click', () => {
+    _close();
+    container.querySelector('#input-player-name')?.focus();
+  });
+
+  modalEl.querySelector('#prize-split-confirm').addEventListener('click', async () => {
+    if (_computePrize3() < 0) {
+      toast.show('Prize splits exceed total pot');
+      return;
+    }
+    const confirmBtn = modalEl.querySelector('#prize-split-confirm');
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'ADDING…';
+    try {
+      const newPlayerId = await fb.addPlayer(roomCode, playerName, seatOrder, accentIndex);
+      _savePlayerName(playerName);
+      await fb.addPlayerToGame(roomCode, gameId, newPlayerId, playerName, accentIndex, prevPlayerIds);
+      await fb.updateGameConfig(roomCode, gameId, { juaPrize1: prize1, juaPrize2: prize2 });
+      _close();
+    } catch (e) {
+      toast.show('Failed to add player');
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'ADD PLAYER';
+    }
   });
 }

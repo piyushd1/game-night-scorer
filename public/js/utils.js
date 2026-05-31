@@ -32,11 +32,12 @@ export function confirmRoundDialog(playerScores) {
 
     const el = document.createElement('div');
     el.className = 'fixed inset-0 z-50 flex items-center justify-center px-6';
+    el.style.cssText = 'backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);';
     el.innerHTML = `
       <div id="crd-backdrop" class="absolute inset-0 bg-black/50"></div>
       <div class="relative w-full max-w-sm bg-surface-container-lowest border-2 border-outline">
         <div class="px-5 pt-5 pb-3 border-b border-outline-variant">
-          <p class="font-headline font-bold text-xl uppercase">
+          <p class="font-headline font-extrabold text-xl uppercase">
             ${allZero ? 'All players scored zero?' : 'Scores this round'}
           </p>
         </div>
@@ -56,8 +57,8 @@ export function confirmRoundDialog(playerScores) {
           ` : ''}
         </div>
         <div class="px-5 pb-5 pt-3 flex gap-2">
-          <button id="crd-cancel" type="button" class="flex-1 btn-secondary py-2 text-sm">CANCEL</button>
-          <button id="crd-confirm" type="button" class="flex-1 btn-primary py-2 text-sm flex items-center justify-center gap-1">
+          <button id="crd-cancel" type="button" class="flex-1 btn-secondary">CANCEL</button>
+          <button id="crd-confirm" type="button" class="flex-1 btn-primary flex items-center justify-center gap-1">
             CONFIRM
             <span aria-hidden="true" class="material-symbols-outlined text-base">check</span>
           </button>
@@ -97,11 +98,12 @@ export function confirmSaveDialog(changes) {
   return new Promise((resolve) => {
     const el = document.createElement('div');
     el.className = 'fixed inset-0 z-50 flex items-center justify-center px-6';
+    el.style.cssText = 'backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);';
     el.innerHTML = `
       <div id="csd-backdrop" class="absolute inset-0 bg-black/50"></div>
       <div class="relative w-full max-w-sm bg-surface-container-lowest border-2 border-outline">
         <div class="px-5 pt-5 pb-3 border-b border-outline-variant">
-          <p class="font-headline font-bold text-xl uppercase">Save changes?</p>
+          <p class="font-headline font-extrabold text-xl uppercase">Save changes?</p>
         </div>
         <div class="px-5 pt-3 pb-2 max-h-48 overflow-y-auto">
           <div style="display:grid;grid-template-columns:1fr auto auto;column-gap:2rem;row-gap:0.5rem;align-items:center;">
@@ -116,8 +118,8 @@ export function confirmSaveDialog(changes) {
           </div>
         </div>
         <div class="px-5 pb-5 pt-3 flex gap-2">
-          <button id="csd-cancel" type="button" class="flex-1 btn-secondary py-2 text-sm">CANCEL</button>
-          <button id="csd-confirm" type="button" class="flex-1 btn-primary py-2 text-sm flex items-center justify-center gap-1">
+          <button id="csd-cancel" type="button" class="flex-1 btn-secondary">CANCEL</button>
+          <button id="csd-confirm" type="button" class="flex-1 btn-primary flex items-center justify-center gap-1">
             SAVE
             <span aria-hidden="true" class="material-symbols-outlined text-base">check</span>
           </button>

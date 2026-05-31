@@ -109,7 +109,7 @@ export function mount(container, params = {}) {
   _juaModalEl = document.createElement('div');
   _juaModalEl.id = 'jua-modal';
   _juaModalEl.className = 'fixed inset-0 z-50 flex items-end';
-  _juaModalEl.style.display = 'none';
+  _juaModalEl.style.cssText = 'display:none;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);';
   document.body.appendChild(_juaModalEl);
 
   // Watch for state changes
@@ -1431,7 +1431,7 @@ function _openAdjustDrawer(container, roomCode, game, pid, snapshot) {
         <div class="w-10 h-1 rounded-full bg-outline-variant"></div>
       </div>
       <div class="px-4 pb-3 border-b border-outline-variant">
-        <p class="font-headline font-bold text-4xl uppercase truncate">${name}</p>
+        <p class="font-headline font-extrabold text-xl uppercase truncate">${name}</p>
       </div>
       ${game.config?.jua ? `
       <div class="px-4 pt-2 pb-0 flex justify-center">
@@ -1536,7 +1536,7 @@ function _openJuaFineCounter(pid, game, roomCode) {
       <div class="px-4 pb-3 border-b border-outline-variant">
         <p class="font-mono text-[9px] uppercase tracking-widest text-outline mb-1">RECORD FINES</p>
         <div class="flex items-center justify-between gap-3">
-          <p class="font-headline font-bold text-2xl uppercase truncate">${name}</p>
+          <p class="font-headline font-extrabold text-xl uppercase truncate">${name}</p>
           <p id="jua-fine-rupees" class="font-mono text-2xl font-bold shrink-0">₹${_totalRupees()}</p>
         </div>
       </div>
@@ -1549,7 +1549,7 @@ function _openJuaFineCounter(pid, game, roomCode) {
           class="w-16 h-16 border-2 border-outline font-mono text-3xl flex items-center justify-center hover:bg-surface-container-high transition-colors">+</button>
       </div>
       <div class="px-4 pb-8">
-        <button id="jua-fine-done" type="button" class="w-full btn-primary py-3">DONE</button>
+        <button id="jua-fine-done" type="button" class="w-full btn-primary">DONE</button>
       </div>
     </div>
   `;

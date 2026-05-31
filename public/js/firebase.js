@@ -369,6 +369,15 @@ export async function addPlayerToGame(roomCode, gameId, playerId, playerName, ac
   });
 }
 
+export async function updateGameConfig(roomCode, gameId, configUpdates) {
+  if (!db) return;
+  const updates = { [`rooms/${roomCode}/meta/updatedAt`]: Date.now() };
+  for (const [key, value] of Object.entries(configUpdates)) {
+    updates[`rooms/${roomCode}/games/${gameId}/config/${key}`] = value;
+  }
+  await db.ref().update(updates);
+}
+
 // ── Night Lifecycle ──
 
 export async function endNight(roomCode) {
