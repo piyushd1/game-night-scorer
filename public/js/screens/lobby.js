@@ -367,13 +367,15 @@ function _startWatching(roomCode, container) {
     }
     container.querySelector('#start-section').style.display = isHost ? 'block' : 'none';
 
-    // Render player list. Mid-game: Add is allowed (new player joins the
-    // next game — the active game's playerIds/snapshot are frozen), but
-    // Remove is still hidden per-row to protect active participants.
+    // Render player list. Add is always allowed for the host. Remove is allowed
+    // except while a game is actually in progress — once a game is finished or
+    // abandoned (or the night has ended) the game's playerIds/snapshot are
+    // frozen, so removing a player from the roster can't affect jua/standings.
     const isPlaying = lobby.status === 'playing';
+    const gameInProgress = state.currentGame()?.status === 'active';
     const addRow = container.querySelector('#add-player-row');
     if (addRow) addRow.style.display = isHost ? 'flex' : 'none';
-    _renderPlayers(container, players, isHost, roomCode, isPlaying);
+    _renderPlayers(container, players, isHost, roomCode, gameInProgress);
     _showSuggestions(container, roomCode);
 
     // The 3-dot overflow menu (Change Host, Call it a Night) is host-only.
@@ -384,7 +386,7 @@ function _startWatching(roomCode, container) {
     if (becomeHostSection) becomeHostSection.style.display = (!lobby.hostKey && !isHost) ? 'block' : 'none';
 
     // Enable/disable start
-    const activeCount = Object.values(players).filter((p) => p.isActive).length;
+    const activeCount = Object.values(players).length;
     const activeGame = state.currentGame();
     const isGameFinished = isPlaying && activeGame?.status === 'finished';
 
@@ -456,7 +458,7 @@ function _renderFinishedGameActions(el, roomCode, game) {
   });
 }
 
-function _renderPlayers(container, players, isHost, roomCode, isPlaying = false) {
+function _renderPlayers(container, players, isHost, roomCode, gameInProgress = false) {
   const list = container.querySelector('#player-list');
   const sorted = Object.values(players).sort((a, b) => a.seatOrder - b.seatOrder);
   if (sorted.length === 0) {
@@ -472,26 +474,17 @@ function _renderPlayers(container, players, isHost, roomCode, isPlaying = false)
   list.innerHTML = sorted
     .map((p) => {
       const color = ACCENT_COLORS[p.accentIndex % ACCENT_COLORS.length];
-      const inactive = !p.isActive ? 'opacity-40' : '';
       return `
-        <div class="bg-surface-container-lowest border border-outline ${inactive} flex items-center">
+        <div class="bg-surface-container-lowest border border-outline flex items-center">
           <div class="w-1.5 self-stretch" style="background:${color}"></div>
           <div class="flex-1 p-4 flex items-center gap-3">
             <div class="flex-1 min-w-0">
               <p class="font-headline font-extrabold text-xl uppercase truncate">${escapeHTML(p.name)}</p>
-              <p class="font-mono text-[10px] text-outline uppercase">${p.isActive ? 'ACTIVE' : 'INACTIVE'}</p>
             </div>
-            ${isHost ? `
-              <div class="flex gap-1">
-                <button class="player-toggle p-1.5 hover:bg-surface-container-high transition-colors" data-id="${escapeHTML(p.id)}" data-active="${p.isActive}" title="${p.isActive ? 'Deactivate' : 'Activate'}" aria-label="${p.isActive ? 'Deactivate' : 'Activate'} ${escapeHTML(p.name)}">
-                  <span aria-hidden="true" class="material-symbols-outlined text-[21px]">${p.isActive ? 'person_off' : 'person_add'}</span>
-                </button>
-                ${isPlaying ? '' : `
-                <button class="player-remove p-1.5 hover:bg-surface-container-high transition-colors" data-id="${escapeHTML(p.id)}" title="Remove" aria-label="Remove ${escapeHTML(p.name)}">
-                  <span aria-hidden="true" class="material-symbols-outlined text-[21px] text-error">close</span>
-                </button>
-                `}
-              </div>
+            ${(isHost && !gameInProgress) ? `
+              <button class="player-remove p-1.5 hover:bg-surface-container-high transition-colors" data-id="${escapeHTML(p.id)}" title="Remove" aria-label="Remove ${escapeHTML(p.name)}">
+                <span aria-hidden="true" class="material-symbols-outlined text-[21px] text-error">close</span>
+              </button>
             ` : ''}
           </div>
         </div>
@@ -501,14 +494,6 @@ function _renderPlayers(container, players, isHost, roomCode, isPlaying = false)
 
   // Bind player action buttons
   if (isHost) {
-    list.querySelectorAll('.player-toggle').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const id = btn.dataset.id;
-        const isActive = btn.dataset.active === 'true';
-        fb.updatePlayer(roomCode, id, { isActive: !isActive });
-      });
-    });
-
     list.querySelectorAll('.player-remove').forEach((btn) => {
       btn.addEventListener('click', () => {
         const id = btn.dataset.id;

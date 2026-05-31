@@ -70,9 +70,7 @@ export function currentGame() {
 export function activePlayers() {
   const players = get('players');
   if (!players) return [];
-  return Object.values(players)
-    .filter((p) => p.isActive)
-    .sort((a, b) => a.seatOrder - b.seatOrder);
+  return Object.values(players).sort((a, b) => a.seatOrder - b.seatOrder);
 }
 
 // ── Accent colors ──

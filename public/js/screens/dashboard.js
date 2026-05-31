@@ -372,22 +372,14 @@ function _render(container, roomCode) {
     </div>
   `;
 
-  // Sort: inactive players drop to the bottom regardless of score,
-  // so active rankings stay visually clear.
-  const playersMap = state.get('players') || {};
-  const isInactive = (pid) => playersMap[pid]?.isActive === false;
   let orderedStandings;
   if (_playerSortMode === 'custom' && _customPlayerOrder) {
     const orderMap = new Map(_customPlayerOrder.map((id, i) => [id, i]));
-    const active = standings
-      .filter((s) => !isInactive(s.playerId))
-      .sort((a, b) => (orderMap.get(a.playerId) ?? Infinity) - (orderMap.get(b.playerId) ?? Infinity));
-    orderedStandings = [...active, ...standings.filter((s) => isInactive(s.playerId))];
+    orderedStandings = [...standings].sort(
+      (a, b) => (orderMap.get(a.playerId) ?? Infinity) - (orderMap.get(b.playerId) ?? Infinity)
+    );
   } else {
-    orderedStandings = [
-      ...standings.filter((s) => !isInactive(s.playerId)),
-      ...standings.filter((s) => isInactive(s.playerId)),
-    ];
+    orderedStandings = standings;
   }
 
   // Scoreboard controls bar (rounds toggle for all Flip7; sort toggle host-only)
@@ -416,8 +408,8 @@ function _render(container, roomCode) {
   html += `<div class="flex flex-col gap-1">`;
   orderedStandings.forEach((s) => {
     const p = snapshot[s.playerId] || {};
-    if (isFlip7Host && !isInactive(s.playerId)) {
-      // Tappable row for active players — host enters cards via drawer
+    if (isFlip7Host) {
+      // Tappable row — host enters cards via drawer
       const liveFirstSave = game.config?.jua && game.juaLive?.firstSavePid === s.playerId;
       html += _renderFlip7HostRow(
         s, p,
@@ -453,7 +445,6 @@ function _render(container, roomCode) {
         progressPct: getProgress(s.total),
         isLeader: s.rank === 1,
         winMode: gameModule.winMode,
-        isInactive: isInactive(s.playerId),
         fineCount: game.juaFines?.[s.playerId] || 0,
       });
     }
@@ -673,7 +664,7 @@ function _render(container, roomCode) {
       content.querySelector('#btn-sort-toggle')?.addEventListener('click', () => {
         _playerSortMode = _playerSortMode === 'score' ? 'custom' : 'score';
         if (_playerSortMode === 'custom' && !_customPlayerOrder) {
-          _customPlayerOrder = playerIds.filter((id) => !isInactive(id));
+          _customPlayerOrder = [...playerIds];
         }
         _saveSortState(roomCode, game.gameId);
         _render(container, roomCode);
@@ -879,23 +870,18 @@ function _restoreSortState(roomCode, gameId) {
 async function _pushLiveTotals(roomCode, game) {
   const playerIds = game.playerIds || [];
   const committedTotals = game.totals || {};
-  const playersMap = state.get('players') || {};
   const liveTotals = {};
   const liveRound = {};
   playerIds.forEach((pid) => {
     const committed = committedTotals[pid] || 0;
-    if (playersMap[pid]?.isActive === false) {
-      liveTotals[pid] = committed;
+    const draft = _flip7Draft[pid];
+    if (draft) {
+      const { basePoints, flip7 } = _computeFlip7Score(draft);
+      const roundPts = basePoints + (flip7 ? 15 : 0);
+      liveTotals[pid] = committed + roundPts;
+      liveRound[pid] = { pts: roundPts, flip7 };
     } else {
-      const draft = _flip7Draft[pid];
-      if (draft) {
-        const { basePoints, flip7 } = _computeFlip7Score(draft);
-        const roundPts = basePoints + (flip7 ? 15 : 0);
-        liveTotals[pid] = committed + roundPts;
-        liveRound[pid] = { pts: roundPts, flip7 };
-      } else {
-        liveTotals[pid] = committed;
-      }
+      liveTotals[pid] = committed;
     }
   });
   await fb.updateLiveTotals(roomCode, game.gameId, liveTotals, liveRound);
@@ -1343,7 +1329,6 @@ async function _confirmFlip7Round(container, roomCode, initialGame, gameModule) 
   // Build draft entries from the local Flip 7 card selections
   const entries = {};
   playerIds.forEach((pid) => {
-    if (playersMap[pid]?.isActive === false) return;
     const draftEntry = _flip7Draft[pid] || { numbers: new Set(), actions: new Set(), x2: false };
     const { basePoints, flip7 } = _computeFlip7Score(draftEntry);
     entries[pid] = {
@@ -1374,7 +1359,7 @@ async function _confirmFlip7Round(container, roomCode, initialGame, gameModule) 
   const newRoundCount = rounds.length + 1;
   const endResult = gameModule.checkEnd(newTotals, game.config, playerIds, newRoundCount);
 
-  const activePlayerIds = playerIds.filter((pid) => playersMap[pid]?.isActive !== false);
+  const activePlayerIds = playerIds;
   const playerScores = activePlayerIds.map((pid) => ({
     name: playersMap[pid]?.name || pid,
     score: (newTotals[pid] || 0) - (totals[pid] || 0),

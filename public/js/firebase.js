@@ -175,7 +175,6 @@ export async function addPlayer(roomCode, name, seatOrder, accentIndex) {
   await db.ref(`rooms/${roomCode}/players/${id}`).set({
     id,
     name: name.toUpperCase(),
-    isActive: true,
     seatOrder,
     accentIndex,
   });

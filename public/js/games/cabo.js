@@ -32,9 +32,8 @@ export default {
     if (!draft.callerId) return { valid: false, error: 'Select who called Cabo' };
     if (!draft.entries) return { valid: false, error: 'No scores entered' };
 
-    // Iterate the draft entries (active players only — inactive players aren't
-    // rendered in the form post-P2 and aren't in the draft). The caller must
-    // be among those entries, otherwise scoring is inconsistent.
+    // Iterate the draft entries. The caller must be among those entries,
+    // otherwise scoring is inconsistent.
     for (const entry of Object.values(draft.entries)) {
       if (!Number.isFinite(entry.cardTotal)) return { valid: false, error: 'Card total must be a number' };
       if (entry.cardTotal < 0) return { valid: false, error: 'Card totals cannot be negative' };
