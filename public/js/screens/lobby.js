@@ -109,13 +109,6 @@ export function mount(container, params = {}) {
         <p class="font-mono text-[10px] text-outline text-center mt-2 uppercase">LOCKS THE NIGHT AND SHOWS THE RECAP TO EVERYONE</p>
       </div>
 
-      <!-- Change Host (host only) -->
-      <div id="change-host-section" class="mt-6" style="display:none">
-        <button id="btn-change-host" class="w-full border border-red-600 text-red-600 py-3 font-headline font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-red-600 hover:text-white transition-colors">
-          CHANGE HOST
-        </button>
-      </div>
-
       <!-- Become Host (visible to all when no host) -->
       <div id="become-host-section" class="mt-4" style="display:none">
         <button id="btn-become-host" class="w-full bg-surface-container-lowest border border-outline py-3 font-headline font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-surface-container-high transition-colors">
@@ -137,12 +130,15 @@ function _renderTopBarActions(roomCode) {
   const actionsEl = document.getElementById('top-bar-actions');
   if (!actionsEl) return;
 
+  _closeLobbyMenu(); // clear any leftover overlay from a previous mount
+
   actionsEl.innerHTML = `
     <button id="btn-copy-link" aria-label="Copy join link" title="Copy join link"
       class="font-mono text-xs text-outline border border-outline px-2 py-1 hover:bg-surface-container-high transition-colors">
       ${roomCode}
     </button>
     <button id="btn-qr-share" aria-label="Show QR code" title="Share room QR" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 ml-1" style="font-size:22px">qr_code_2</button>
+    <button id="btn-lobby-menu-trigger" aria-label="Open menu" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 ml-1" style="font-size:22px;display:none">more_vert</button>
   `;
 
   const url = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
@@ -162,6 +158,49 @@ function _renderTopBarActions(roomCode) {
   document.getElementById('btn-qr-share')?.addEventListener('click', () => {
     qrModal.show(url, roomCode);
   });
+
+  document.getElementById('btn-lobby-menu-trigger')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (document.getElementById('lobby-menu-overlay')) {
+      _closeLobbyMenu();
+    } else {
+      _openLobbyMenu(roomCode);
+    }
+  });
+}
+
+// Host-only overflow menu for the lobby — mirrors the game screen's 3-dot menu.
+function _openLobbyMenu(roomCode) {
+  _closeLobbyMenu();
+  const overlay = document.createElement('div');
+  overlay.id = 'lobby-menu-overlay';
+  overlay.className = 'fixed inset-0 z-[200]';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.innerHTML = `
+    <div id="lobby-menu-backdrop" class="absolute inset-0" style="background:rgba(0,0,0,0.15)"></div>
+    <div class="absolute top-14 right-4 max-w-[250px] w-[220px] bg-surface-container-low border border-outline" style="max-width:min(250px, calc(100vw - 32px))">
+      <button id="lobby-menu-change-host" class="w-full text-left px-4 py-3 font-headline font-bold text-xs uppercase tracking-widest text-red-600 hover:bg-surface-container-high transition-colors flex items-center gap-3">
+        <span aria-hidden="true" class="material-symbols-outlined text-sm">swap_horiz</span>
+        CHANGE HOST
+      </button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('#lobby-menu-backdrop').addEventListener('click', _closeLobbyMenu);
+  overlay.querySelector('#lobby-menu-change-host').addEventListener('click', async () => {
+    _closeLobbyMenu();
+    try {
+      await fb.releaseHost(roomCode);
+    } catch (e) {
+      toast.show('Failed to release host');
+    }
+  });
+}
+
+function _closeLobbyMenu() {
+  document.getElementById('lobby-menu-overlay')?.remove();
 }
 
 function _bindEvents(container, roomCode) {
@@ -191,14 +230,6 @@ function _bindEvents(container, roomCode) {
     } catch (e) {
       console.error('End night failed:', e);
       toast.show('Failed to end night');
-    }
-  });
-
-  container.querySelector('#btn-change-host')?.addEventListener('click', async () => {
-    try {
-      await fb.releaseHost(roomCode);
-    } catch (e) {
-      toast.show('Failed to release host');
     }
   });
 
@@ -330,23 +361,14 @@ function _startWatching(roomCode, container) {
         const isGameActive = lobby.status === 'playing' && lobby.activeGameId;
         const showRecap = trackStats && hasPlayedGames;
         viewerLabelEl.innerHTML = isGameActive
-          ? `<div class="flex flex-col gap-3">
-               <button id="btn-go-to-game" class="btn-primary w-full flex items-center justify-center gap-2">
-                 GO TO GAME
-                 <span aria-hidden="true" class="material-symbols-outlined text-lg">arrow_forward</span>
-               </button>
-               ${showRecap ? `<button id="btn-spectator-recap" class="w-full bg-surface-container-lowest border border-outline py-3 font-headline font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-surface-container-high transition-colors">
+          ? `${showRecap ? `<button id="btn-spectator-recap" class="w-full bg-surface-container-lowest border border-outline py-3 font-headline font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-surface-container-high transition-colors">
                  <span aria-hidden="true" class="material-symbols-outlined text-sm">bar_chart</span>
                  VIEW NIGHT RECAP
-               </button>` : ''}
-             </div>`
+               </button>` : ''}`
           : `<div class="bg-surface-container-high border border-outline p-4 text-center">
                <p class="font-mono text-[10px] uppercase tracking-widest text-outline">SPECTATOR MODE</p>
                <p class="font-body text-sm text-on-surface-variant mt-1">Waiting for the host to start a game...</p>
              </div>`;
-        viewerLabelEl.querySelector('#btn-go-to-game')?.addEventListener('click', () => {
-          router.navigate('dashboard', { roomCode });
-        });
         viewerLabelEl.querySelector('#btn-spectator-recap')?.addEventListener('click', () => {
           router.navigate('recap', { roomCode });
         });
@@ -396,8 +418,9 @@ function _startWatching(roomCode, container) {
       callNightSection.style.display = show ? 'block' : 'none';
     }
 
-    const changeHostSection = container.querySelector('#change-host-section');
-    if (changeHostSection) changeHostSection.style.display = isHost ? 'block' : 'none';
+    // The 3-dot overflow menu (with Change Host) is host-only.
+    const lobbyMenuTrigger = document.getElementById('btn-lobby-menu-trigger');
+    if (lobbyMenuTrigger) lobbyMenuTrigger.style.display = isHost ? '' : 'none';
 
     const becomeHostSection = container.querySelector('#become-host-section');
     if (becomeHostSection) becomeHostSection.style.display = (!lobby.hostKey && !isHost) ? 'block' : 'none';
@@ -409,27 +432,22 @@ function _startWatching(roomCode, container) {
 
     const returnSection = container.querySelector('#return-game-section');
     if (returnSection) {
-      if (isHost && isPlaying && !isGameFinished) {
+      // The bottom-nav game tab handles returning to the live game now, so the
+      // section only carries the optional night-recap shortcut while playing.
+      if (isHost && isPlaying && !isGameFinished && trackStats && hasPlayedGames) {
         returnSection.style.display = 'flex';
         returnSection.innerHTML = `
-          <button id="btn-return-game" class="btn-primary w-full flex items-center justify-center gap-2">
-            GO TO GAME
-            <span aria-hidden="true" class="material-symbols-outlined text-lg">arrow_forward</span>
-          </button>
-          ${(trackStats && hasPlayedGames) ? `
           <button id="btn-host-playing-recap" class="w-full bg-surface-container-lowest border border-outline py-3 font-headline font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-surface-container-high transition-colors">
             <span aria-hidden="true" class="material-symbols-outlined text-sm">bar_chart</span>
             VIEW NIGHT RECAP
-          </button>` : ''}
+          </button>
         `;
-        returnSection.querySelector('#btn-return-game')?.addEventListener('click', () => {
-          router.navigate('dashboard');
-        });
         returnSection.querySelector('#btn-host-playing-recap')?.addEventListener('click', () => {
           router.navigate('recap', { roomCode });
         });
       } else {
         returnSection.style.display = 'none';
+        returnSection.innerHTML = '';
       }
     }
 

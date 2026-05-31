@@ -20,19 +20,33 @@ const TABS = {
   ],
 };
 
-// Flip 7 uses inline scoring and has no rules tab — just Lobby + the game itself.
-// The game tab (labeled with the game's name, e.g. "FLIP 7") only appears while
-// the game is in progress; once it's finished only the Lobby tab remains.
+// Flip 7 uses inline scoring and has no rules tab. The tab set is:
+//   Lobby · <game> (while a game is in progress) · Recap (once stats exist).
 function flip7Tabs(game) {
   const lobby = state.get('roomLobby') || {};
+  const games = state.get('games') || {};
+  const trackStats = lobby.trackStats !== false;
+  const hasPlayedGames = Object.values(games).some((g) => g.rounds && Object.keys(g.rounds).length > 0);
+
   const tabs = [LOBBY_TAB];
-  // The game tab only appears while a game is actually in progress. Ending a
-  // game flips lobby.status back to 'waiting' (the game may linger as activeGameId),
-  // so gate on that rather than the game's own status alone.
+
+  // The game tab is always labeled with the game's name (e.g. "FLIP 7"). While
+  // in progress it opens the board; once finished (but no new game started yet)
+  // it opens the winner screen. Gate "in progress" on lobby.status rather than
+  // the game's own status, since ending flips lobby.status back to 'waiting'.
+  const gameLabel = (getGame(game?.type)?.label || 'Game').toUpperCase();
   if (lobby.status === 'playing' && game?.status === 'active') {
-    const gameLabel = (getGame(game?.type)?.label || 'Game').toUpperCase();
     tabs.push({ id: 'dashboard', icon: 'dashboard', label: gameLabel });
+  } else if (game?.status === 'finished' && game?.winner) {
+    tabs.push({ id: 'winner', icon: 'dashboard', label: gameLabel });
   }
+
+  // Night recap appears once there's something to show (stats tracking on and
+  // at least one game played).
+  if (trackStats && hasPlayedGames) {
+    tabs.push({ id: 'recap', icon: 'bar_chart', label: 'RECAP' });
+  }
+
   return tabs;
 }
 
@@ -81,11 +95,15 @@ export function getActive() {
 function render() {
   const nav = document.getElementById('bottom-nav');
   const game = state.currentGame();
+  const games = state.get('games') || {};
 
-  // Flip 7 swaps the rules tab for a Lobby tab and renames Dashboard to "Game".
-  // On the lobby with no active Flip 7 game, only the Lobby tab is shown.
+  // We're in the Flip 7 nav experience if a Flip 7 game is active OR one has
+  // been played this night (so the Lobby/Recap tabs persist between games).
+  const isFlip7Context = game?.type === 'flip7'
+    || Object.values(games).some((g) => g.type === 'flip7');
+
   let tabs;
-  if (game?.type === 'flip7') {
+  if (isFlip7Context) {
     tabs = flip7Tabs(game);
   } else if (_activeTab === 'lobby') {
     tabs = [LOBBY_TAB];

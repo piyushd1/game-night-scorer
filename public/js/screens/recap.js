@@ -17,7 +17,14 @@ export function mount(container, params = {}) {
   const locked = lobby.status === 'night-ended';
   const isHost = state.isHost();
 
-  bottomNav.hide();
+  // Recap is a bottom-nav tab only in a Flip 7 night, and only while unlocked
+  // (a locked night is a terminal screen). All other cases keep the old no-nav.
+  const isFlip7Night = Object.values(state.get('games') || {}).some((g) => g.type === 'flip7');
+  if (!locked && isFlip7Night) {
+    bottomNav.show('recap');
+  } else {
+    bottomNav.hide();
+  }
   const topBar = document.getElementById('top-bar');
   topBar.style.display = 'flex';
   document.getElementById('top-bar-title').textContent = locked ? 'NIGHT LOCKED' : 'NIGHT RECAP';

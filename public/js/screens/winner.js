@@ -12,10 +12,9 @@ import { escapeHTML } from '../utils.js';
 export function mount(container, params = {}) {
   const roomCode = params.roomCode || state.get('roomCode');
 
-  bottomNav.hide();
-  document.getElementById('top-bar').style.display = 'none';
-
   if (!roomCode) {
+    bottomNav.hide();
+    document.getElementById('top-bar').style.display = 'none';
     router.navigate('home');
     return;
   }
@@ -26,10 +25,22 @@ export function mount(container, params = {}) {
     return;
   }
 
+  // Winner is part of the Flip 7 tabbed flow: show the header + bottom nav so
+  // it stays reachable (and navigable) after a game finishes.
+  const topBar = document.getElementById('top-bar');
+  topBar.style.display = 'flex';
+  document.getElementById('top-bar-title').textContent = 'WINNER';
+  const backBtn = document.getElementById('top-bar-back');
+  backBtn.classList.remove('hidden');
+  backBtn.textContent = 'arrow_back';
+  backBtn.setAttribute('aria-label', 'Go back');
+  backBtn.onclick = () => router.navigate('lobby', { roomCode });
+  document.getElementById('top-bar-actions').innerHTML = '';
+  bottomNav.show('winner');
+
   const gameModule = getGame(game.type);
   const snapshot = game.playerSnapshot || {};
   const totals = game.totals || {};
-  const trackStats = state.get('roomLobby')?.trackStats || false;
   const juaOn = !!(game.config?.jua);
 
   // Derive standings
@@ -40,15 +51,8 @@ export function mount(container, params = {}) {
 
   container.innerHTML = `
     <div class="h-full flex flex-col bg-primary text-on-primary">
-      <!-- Back button -->
-      <div class="flex items-center px-4 pt-4 shrink-0">
-        <button id="btn-back-lobby" aria-label="Back to lobby" class="flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest opacity-70 hover:opacity-100 transition-opacity">
-          <span aria-hidden="true" class="material-symbols-outlined text-base">arrow_back</span>
-          LOBBY
-        </button>
-      </div>
       <!-- Hero -->
-      <main class="flex-1 flex flex-col items-center overflow-y-auto min-h-0 px-6 pt-4 pb-8">
+      <main class="flex-1 flex flex-col items-center overflow-y-auto min-h-0 px-6 pt-6 pb-8">
         <div id="hero-section" class="text-center w-full max-w-sm mx-auto mb-12">
           <div class="flex items-center justify-center gap-2 mb-4">
             <span aria-hidden="true" class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">emoji_events</span>
@@ -256,38 +260,16 @@ export function mount(container, params = {}) {
 
       </main>
 
-      <!-- Actions -->
-      <footer class="p-6 space-y-3 shrink-0">
-        ${juaOn ? `
+      <!-- Actions (jua winnings toggle; Lobby/Recap live in the bottom nav) -->
+      ${juaOn ? `
+      <footer class="p-6 shrink-0">
         <button id="btn-toggle-view" class="w-full py-4 bg-white text-primary font-headline font-extrabold uppercase tracking-widest text-base transition-opacity hover:opacity-90">
           VIEW WINNINGS
         </button>
-        ` : ''}
-        ${trackStats ? `
-        <button id="btn-recap" class="w-full py-4 border border-white/40 text-white font-headline font-extrabold uppercase tracking-widest text-base transition-colors hover:bg-white/10 flex items-center justify-center gap-2">
-          <span class="material-symbols-outlined text-lg" aria-hidden="true">bar_chart</span>
-          VIEW NIGHT RECAP
-        </button>
-        ` : ''}
-        <button id="btn-lobby" class="w-full py-4 border border-white/40 text-white font-headline font-extrabold uppercase tracking-widest text-base transition-colors hover:bg-white/10 flex items-center justify-center gap-2">
-          <span aria-hidden="true" class="material-symbols-outlined text-lg">arrow_back</span>
-          BACK TO LOBBY
-        </button>
       </footer>
+      ` : ''}
     </div>
   `;
-
-  container.querySelector('#btn-back-lobby')?.addEventListener('click', () => {
-    router.navigate('lobby', { roomCode });
-  });
-
-  container.querySelector('#btn-lobby')?.addEventListener('click', () => {
-    router.navigate('lobby', { roomCode });
-  });
-
-  container.querySelector('#btn-recap')?.addEventListener('click', () => {
-    router.navigate('recap', { roomCode });
-  });
 
   const _applyView = (showWinnings) => {
     const btn = container.querySelector('#btn-toggle-view');
