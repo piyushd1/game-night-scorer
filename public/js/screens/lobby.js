@@ -42,9 +42,6 @@ export function mount(container, params = {}) {
   container.innerHTML = `
     <div class="p-6 pb-32">
 
-      <!-- In-progress game actions (host only, while a game is running) -->
-      <div id="return-game-section" class="mb-6 flex flex-col gap-3" style="display:none"></div>
-
       <!-- Finished game actions (host only, after a game ends) -->
       <div id="finished-game-section" class="mb-6 flex flex-col gap-3" style="display:none"></div>
 
@@ -69,7 +66,7 @@ export function mount(container, params = {}) {
             <span class="material-symbols-outlined text-lg" aria-hidden="true">add</span>
           </button>
         </div>
-        <div id="name-suggestions" class="mb-4"></div>
+        <div id="name-suggestions" class="mb-4 flex flex-wrap items-center gap-2"></div>
       </div>
 
       <!-- Viewer label -->
@@ -98,15 +95,6 @@ export function mount(container, params = {}) {
           <span aria-hidden="true" class="material-symbols-outlined text-lg">arrow_forward</span>
         </button>
         <p id="start-hint" class="font-mono text-[10px] text-outline text-center mt-2 uppercase">ADD AT LEAST 3 PLAYERS</p>
-      </div>
-
-      <!-- Call it a Night (host only, visible after at least 1 finished game, between games) -->
-      <div id="call-night-section" class="mt-3" style="display:none">
-        <button id="btn-call-night" class="w-full bg-surface-container-lowest border border-outline py-3 font-headline font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-surface-container-high transition-colors">
-          <span aria-hidden="true" class="material-symbols-outlined text-sm">bedtime</span>
-          CALL IT A NIGHT
-        </button>
-        <p class="font-mono text-[10px] text-outline text-center mt-2 uppercase">LOCKS THE NIGHT AND SHOWS THE RECAP TO EVERYONE</p>
       </div>
 
       <!-- Become Host (visible to all when no host) -->
@@ -172,6 +160,16 @@ function _renderTopBarActions(roomCode) {
 // Host-only overflow menu for the lobby — mirrors the game screen's 3-dot menu.
 function _openLobbyMenu(roomCode) {
   _closeLobbyMenu();
+
+  // "Call it a Night" appears once stats are tracked and a game has finished.
+  const lobby = state.get('roomLobby') || {};
+  const games = state.get('games') || {};
+  const trackStats = lobby.trackStats !== false;
+  const hasFinishedGame = Object.values(games).some((g) => g.status === 'finished');
+  const canCallNight = trackStats && hasFinishedGame;
+
+  const itemClass = 'w-full text-left px-4 py-3 font-headline font-bold text-xs uppercase tracking-widest hover:bg-surface-container-high transition-colors flex items-center gap-3';
+
   const overlay = document.createElement('div');
   overlay.id = 'lobby-menu-overlay';
   overlay.className = 'fixed inset-0 z-[200]';
@@ -180,7 +178,13 @@ function _openLobbyMenu(roomCode) {
   overlay.innerHTML = `
     <div id="lobby-menu-backdrop" class="absolute inset-0" style="background:rgba(0,0,0,0.15)"></div>
     <div class="absolute top-14 right-4 max-w-[250px] w-[220px] bg-surface-container-low border border-outline" style="max-width:min(250px, calc(100vw - 32px))">
-      <button id="lobby-menu-change-host" class="w-full text-left px-4 py-3 font-headline font-bold text-xs uppercase tracking-widest text-red-600 hover:bg-surface-container-high transition-colors flex items-center gap-3">
+      ${canCallNight ? `
+      <button id="lobby-menu-call-night" class="${itemClass} border-b border-outline-variant">
+        <span aria-hidden="true" class="material-symbols-outlined text-sm">bedtime</span>
+        CALL IT A NIGHT
+      </button>
+      ` : ''}
+      <button id="lobby-menu-change-host" class="${itemClass} text-red-600">
         <span aria-hidden="true" class="material-symbols-outlined text-sm">swap_horiz</span>
         CHANGE HOST
       </button>
@@ -189,6 +193,12 @@ function _openLobbyMenu(roomCode) {
   document.body.appendChild(overlay);
 
   overlay.querySelector('#lobby-menu-backdrop').addEventListener('click', _closeLobbyMenu);
+
+  overlay.querySelector('#lobby-menu-call-night')?.addEventListener('click', () => {
+    _closeLobbyMenu();
+    _callItANight(roomCode);
+  });
+
   overlay.querySelector('#lobby-menu-change-host').addEventListener('click', async () => {
     _closeLobbyMenu();
     try {
@@ -203,6 +213,21 @@ function _closeLobbyMenu() {
   document.getElementById('lobby-menu-overlay')?.remove();
 }
 
+async function _callItANight(roomCode) {
+  if (!state.isHost()) {
+    toast.show('Only the host can do that');
+    return;
+  }
+  const confirmed = window.confirm('Call it a night? This locks the room and shows the recap to everyone.');
+  if (!confirmed) return;
+  try {
+    await fb.endNight(roomCode);
+  } catch (e) {
+    console.error('End night failed:', e);
+    toast.show('Failed to end night');
+  }
+}
+
 function _bindEvents(container, roomCode) {
   // Add player — inline always-visible
   container.querySelector('#btn-confirm-add')?.addEventListener('click', () => _addPlayer(container, roomCode));
@@ -215,22 +240,6 @@ function _bindEvents(container, roomCode) {
   // Start game
   container.querySelector('#btn-start-game')?.addEventListener('click', () => {
     router.navigate('game-select', { roomCode });
-  });
-
-  // Call it a Night — host only, between games
-  container.querySelector('#btn-call-night')?.addEventListener('click', async () => {
-    if (!state.isHost()) {
-      toast.show('Only the host can do that');
-      return;
-    }
-    const confirmed = window.confirm('Call it a night? This locks the room and shows the recap to everyone.');
-    if (!confirmed) return;
-    try {
-      await fb.endNight(roomCode);
-    } catch (e) {
-      console.error('End night failed:', e);
-      toast.show('Failed to end night');
-    }
   });
 
   container.querySelector('#btn-become-host')?.addEventListener('click', async () => {
@@ -409,16 +418,7 @@ function _startWatching(roomCode, container) {
       }
     }
 
-    // Show "Call it a Night" to host only, once at least one game has finished, while in lobby.
-    // Gated on trackStats — without tracking there's no "night" to end.
-    const callNightSection = container.querySelector('#call-night-section');
-    if (callNightSection) {
-      const hasFinishedGame = Object.values(games).some((g) => g.status === 'finished');
-      const show = isHost && trackStats && hasFinishedGame && lobby.status === 'waiting';
-      callNightSection.style.display = show ? 'block' : 'none';
-    }
-
-    // The 3-dot overflow menu (with Change Host) is host-only.
+    // The 3-dot overflow menu (Change Host, Call it a Night) is host-only.
     const lobbyMenuTrigger = document.getElementById('btn-lobby-menu-trigger');
     if (lobbyMenuTrigger) lobbyMenuTrigger.style.display = isHost ? '' : 'none';
 
@@ -430,32 +430,11 @@ function _startWatching(roomCode, container) {
     const activeGame = state.currentGame();
     const isGameFinished = isPlaying && activeGame?.status === 'finished';
 
-    const returnSection = container.querySelector('#return-game-section');
-    if (returnSection) {
-      // The bottom-nav game tab handles returning to the live game now, so the
-      // section only carries the optional night-recap shortcut while playing.
-      if (isHost && isPlaying && !isGameFinished && trackStats && hasPlayedGames) {
-        returnSection.style.display = 'flex';
-        returnSection.innerHTML = `
-          <button id="btn-host-playing-recap" class="w-full bg-surface-container-lowest border border-outline py-3 font-headline font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-surface-container-high transition-colors">
-            <span aria-hidden="true" class="material-symbols-outlined text-sm">bar_chart</span>
-            VIEW NIGHT RECAP
-          </button>
-        `;
-        returnSection.querySelector('#btn-host-playing-recap')?.addEventListener('click', () => {
-          router.navigate('recap', { roomCode });
-        });
-      } else {
-        returnSection.style.display = 'none';
-        returnSection.innerHTML = '';
-      }
-    }
-
     const finishedSection = container.querySelector('#finished-game-section');
     if (finishedSection) {
       if (isHost && isGameFinished) {
         finishedSection.style.display = 'flex';
-        _renderFinishedGameActions(finishedSection, roomCode, activeGame, trackStats);
+        _renderFinishedGameActions(finishedSection, roomCode, activeGame);
       } else {
         finishedSection.style.display = 'none';
       }
@@ -472,10 +451,12 @@ function _startWatching(roomCode, container) {
   });
 }
 
-function _renderFinishedGameActions(el, roomCode, game, trackStats) {
+function _renderFinishedGameActions(el, roomCode, game) {
   const gameModule = getGame(game.type);
   const secondaryBtn = 'w-full bg-surface-container-lowest border border-outline py-3 font-headline font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-surface-container-high transition-colors';
 
+  // The winner, recap, and "call it a night" actions live in the bottom nav and
+  // overflow menu now — the finished-game section just offers replay / new game.
   el.innerHTML = `
     <button id="btn-replay" class="btn-primary w-full flex items-center justify-center gap-2">
       <span aria-hidden="true" class="material-symbols-outlined text-lg">loop</span>
@@ -485,25 +466,7 @@ function _renderFinishedGameActions(el, roomCode, game, trackStats) {
       <span aria-hidden="true" class="material-symbols-outlined text-sm">add</span>
       START NEW GAME
     </button>
-    <button id="btn-back-to-game" class="${secondaryBtn}">
-      <span aria-hidden="true" class="material-symbols-outlined text-sm">arrow_back</span>
-      GO BACK TO GAME
-    </button>
-    ${trackStats ? `
-    <button id="btn-view-recap" class="${secondaryBtn}">
-      <span aria-hidden="true" class="material-symbols-outlined text-sm">bar_chart</span>
-      VIEW NIGHT RECAP
-    </button>
-    <button id="btn-call-night-finished" class="${secondaryBtn}">
-      <span aria-hidden="true" class="material-symbols-outlined text-sm">bedtime</span>
-      CALL IT A NIGHT
-    </button>
-    ` : ''}
   `;
-
-  el.querySelector('#btn-back-to-game')?.addEventListener('click', () => {
-    router.navigate('winner', { roomCode });
-  });
 
   el.querySelector('#btn-replay')?.addEventListener('click', async () => {
     const players = state.activePlayers();
@@ -520,23 +483,11 @@ function _renderFinishedGameActions(el, roomCode, game, trackStats) {
     }
   });
 
-  el.querySelector('#btn-start-new-game')?.addEventListener('click', async () => {
-    await fb.updateRoomLobby(roomCode, { status: 'waiting', activeGameId: null });
+  el.querySelector('#btn-start-new-game')?.addEventListener('click', () => {
+    // Don't clear the current game yet — keep it referenced (so the Flip 7 /
+    // Winner tab stays available) until a new game is actually created.
+    // createGame overwrites activeGameId/status when the host picks a game.
     router.navigate('game-select', { roomCode });
-  });
-
-  el.querySelector('#btn-view-recap')?.addEventListener('click', () => {
-    router.navigate('recap', { roomCode });
-  });
-
-  el.querySelector('#btn-call-night-finished')?.addEventListener('click', async () => {
-    const confirmed = window.confirm('Call it a night? This locks the room and shows the recap to everyone.');
-    if (!confirmed) return;
-    try {
-      await fb.endNight(roomCode);
-    } catch (e) {
-      toast.show('Failed to end night');
-    }
   });
 }
 
@@ -626,7 +577,8 @@ function _showSuggestions(container, roomCode) {
   if (!input || !suggestionsEl) return;
 
   const existing = new Set(Object.values(state.get('players') || {}).map((p) => p.name));
-  const matches = _getKnownNames().filter((n) => !existing.has(n)).slice(0, 4);
+  // Render a generous pool of candidates, then trim to whatever fits in 2 rows.
+  const matches = _getKnownNames().filter((n) => !existing.has(n)).slice(0, 30);
 
   if (matches.length === 0) {
     suggestionsEl.innerHTML = '';
@@ -634,9 +586,9 @@ function _showSuggestions(container, roomCode) {
   }
 
   suggestionsEl.innerHTML = `
-    <span class="font-mono text-xs uppercase tracking-widest text-outline self-center mr-1">Quick add:</span>
+    <span class="font-label text-xs uppercase tracking-widest text-outline self-center">Quick add:</span>
     ${matches.map((n) => `
-      <button class="suggestion-chip font-mono text-xs uppercase tracking-widest border border-outline pl-2 pr-1 py-1 hover:bg-surface-container-high transition-colors inline-flex items-center gap-1.5" data-name="${escapeHTML(n)}">
+      <button class="suggestion-chip font-label text-xs uppercase tracking-widest border border-outline pl-2 pr-1 py-1 hover:bg-surface-container-high transition-colors inline-flex items-center gap-1.5" data-name="${escapeHTML(n)}">
         ${escapeHTML(n)}
         <span class="remove-chip text-outline hover:text-on-surface leading-none" aria-label="Remove ${escapeHTML(n)}">&#x2715;</span>
       </button>
@@ -653,6 +605,21 @@ function _showSuggestions(container, roomCode) {
       e.stopPropagation();
       _removePlayerName(chip.dataset.name);
       _showSuggestions(container, roomCode);
+    });
+  });
+
+  // Keep only the chips that fit within two rows (the label sits in row 1).
+  requestAnimationFrame(() => {
+    const items = Array.from(suggestionsEl.children);
+    if (items.length === 0) return;
+    const firstTop = items[0].offsetTop;
+    let secondTop = null;
+    for (const it of items) {
+      if (it.offsetTop > firstTop) { secondTop = it.offsetTop; break; }
+    }
+    const maxTop = secondTop !== null ? secondTop : firstTop;
+    items.forEach((it) => {
+      if (it.offsetTop > maxTop) it.remove();
     });
   });
 }

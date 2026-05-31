@@ -40,8 +40,9 @@ export function init() {
       const roomCode = state.get('roomCode');
 
       if (action === 'new-game') {
-        // The room activeGameId should also be cleared to ensure it goes back to a clean state.
-        await fb.updateRoomLobby(roomCode, { status: 'waiting', activeGameId: null });
+        // Keep the current game referenced until a new one is actually created
+        // (createGame overwrites activeGameId/status), so backing out of game
+        // select returns to the current game rather than orphaning it.
         router.navigate('game-select', { roomCode });
       } else if (action === 'lobby') {
         router.navigate('lobby', { roomCode });
