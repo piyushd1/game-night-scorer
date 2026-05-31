@@ -56,15 +56,15 @@ export function isHost() {
     _hostCache.set(roomCode, storedKey);
   }
 
-  const meta = get('roomMeta');
-  return storedKey && meta && storedKey === meta.hostKey;
+  const lobby = get('roomLobby');
+  return storedKey && lobby && storedKey === lobby.hostKey;
 }
 
 export function currentGame() {
   const games = get('games');
-  const meta = get('roomMeta');
-  if (!games || !meta || !meta.activeGameId) return null;
-  return games[meta.activeGameId] || null;
+  const lobby = get('roomLobby');
+  if (!games || !lobby || !lobby.activeGameId) return null;
+  return games[lobby.activeGameId] || null;
 }
 
 export function activePlayers() {

@@ -24,10 +24,10 @@ Build a vanilla multi-file Firebase app around persistent `rooms`, non-destructi
 
 ## Data Model And Room Lifecycle
 - Use RTDB paths:
-  `rooms/{roomCode}/meta`
+  `rooms/{roomCode}/lobby`
   `rooms/{roomCode}/players/{playerId}`
   `rooms/{roomCode}/games/{gameId}`
-- `meta` stores:
+- `lobby` stores:
   `roomCode`, `hostKey`, `status`, `activeGameId`, `createdAt`, `updatedAt`, `expiresAt`, `version`.
 - Persistent room players store:
   `id`, `name`, `isActive`, `seatOrder`, `accentKey`.

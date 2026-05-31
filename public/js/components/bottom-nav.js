@@ -4,6 +4,9 @@
 
 import * as state from '../state.js';
 import * as router from '../router.js';
+import { getGame } from '../games/registry.js';
+
+const LOBBY_TAB = { id: 'lobby', icon: 'group', label: 'LOBBY' };
 
 const TABS = {
   host: [
@@ -16,6 +19,22 @@ const TABS = {
     { id: 'rules', icon: 'menu_book', label: 'RULES' },
   ],
 };
+
+// Flip 7 uses inline scoring and has no rules tab — just Lobby + the game itself.
+// The game tab (labeled with the game's name, e.g. "FLIP 7") only appears while
+// the game is in progress; once it's finished only the Lobby tab remains.
+function flip7Tabs(game) {
+  const lobby = state.get('roomLobby') || {};
+  const tabs = [LOBBY_TAB];
+  // The game tab only appears while a game is actually in progress. Ending a
+  // game flips lobby.status back to 'waiting' (the game may linger as activeGameId),
+  // so gate on that rather than the game's own status alone.
+  if (lobby.status === 'playing' && game?.status === 'active') {
+    const gameLabel = (getGame(game?.type)?.label || 'Game').toUpperCase();
+    tabs.push({ id: 'dashboard', icon: 'dashboard', label: gameLabel });
+  }
+  return tabs;
+}
 
 let _activeTab = 'dashboard';
 
@@ -45,6 +64,16 @@ export function setActive(tabId) {
   render();
 }
 
+/**
+ * Re-render the nav (e.g. after game data loads so the tab set reflects the
+ * current game type). No-op when the nav is hidden.
+ */
+export function refresh() {
+  const nav = document.getElementById('bottom-nav');
+  if (!nav || nav.style.display === 'none') return;
+  render();
+}
+
 export function getActive() {
   return _activeTab;
 }
@@ -52,9 +81,17 @@ export function getActive() {
 function render() {
   const nav = document.getElementById('bottom-nav');
   const game = state.currentGame();
-  // Flip 7 uses inline scoring on the dashboard — no separate scoring tab needed
-  const hostTabs = game?.type === 'flip7' ? TABS.viewer : TABS.host;
-  const tabs = state.isHost() ? hostTabs : TABS.viewer;
+
+  // Flip 7 swaps the rules tab for a Lobby tab and renames Dashboard to "Game".
+  // On the lobby with no active Flip 7 game, only the Lobby tab is shown.
+  let tabs;
+  if (game?.type === 'flip7') {
+    tabs = flip7Tabs(game);
+  } else if (_activeTab === 'lobby') {
+    tabs = [LOBBY_TAB];
+  } else {
+    tabs = state.isHost() ? TABS.host : TABS.viewer;
+  }
 
   // Add ARIA attributes to indicate it is a tablist
   nav.setAttribute('role', 'tablist');

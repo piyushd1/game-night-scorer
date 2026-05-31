@@ -41,7 +41,7 @@ export function init() {
 
       if (action === 'new-game') {
         // The room activeGameId should also be cleared to ensure it goes back to a clean state.
-        await fb.updateRoomMeta(roomCode, { status: 'lobby', activeGameId: null });
+        await fb.updateRoomLobby(roomCode, { status: 'waiting', activeGameId: null });
         router.navigate('game-select', { roomCode });
       } else if (action === 'lobby') {
         router.navigate('lobby', { roomCode });
@@ -50,8 +50,8 @@ export function init() {
         router.navigate('lobby', { roomCode });
       } else if (action === 'home') {
         // Mid-game leave deserves a stronger warning since it strands other clients.
-        const meta = state.get('roomMeta') || {};
-        const midGame = meta.status === 'playing' && meta.activeGameId;
+        const lobby = state.get('roomLobby') || {};
+        const midGame = lobby.status === 'playing' && lobby.activeGameId;
         const message = midGame
           ? "You're mid-game. Leaving means the game can't continue from this device. Proceed?"
           : 'Leave this room?';
@@ -161,7 +161,7 @@ function _leaveRoom(roomCode) {
 async function _endGameWithWinner(roomCode) {
   const game = state.currentGame();
   if (!game) {
-    fb.setRoomStatus(roomCode, 'lobby');
+    fb.setRoomStatus(roomCode, 'waiting');
     toast.show('Game ended');
     return;
   }
@@ -171,9 +171,11 @@ async function _endGameWithWinner(roomCode) {
   const playerIds = game.playerIds || [];
   const rounds = Object.keys(game.rounds || {}).length;
 
-  // If no rounds played, just abandon
+  // No rounds played (or unknown game) — mark the game itself abandoned so it
+  // doesn't linger as 'active' under activeGameId, then return the room to waiting.
   if (rounds === 0 || !gameModule) {
-    fb.setRoomStatus(roomCode, 'lobby');
+    await fb.submitGameAbandon(roomCode, game.gameId);
+    fb.setRoomStatus(roomCode, 'waiting');
     toast.show('Game ended');
     return;
   }
@@ -192,7 +194,7 @@ async function _endGameWithWinner(roomCode) {
     toast.show('Game ended (no clear winner)');
   }
 
-  fb.setRoomStatus(roomCode, 'lobby');
+  fb.setRoomStatus(roomCode, 'waiting');
 }
 
 function _winnerName(game, playerId) {

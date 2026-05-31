@@ -29,7 +29,7 @@ export function mount(container, params = {}) {
   const gameModule = getGame(game.type);
   const snapshot = game.playerSnapshot || {};
   const totals = game.totals || {};
-  const trackStats = state.get('roomMeta')?.trackStats || false;
+  const trackStats = state.get('roomLobby')?.trackStats || false;
   const juaOn = !!(game.config?.jua);
 
   // Derive standings

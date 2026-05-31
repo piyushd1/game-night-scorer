@@ -13,8 +13,8 @@ import { escapeHTML } from '../utils.js';
 
 export function mount(container, params = {}) {
   const roomCode = params.roomCode || state.get('roomCode');
-  const meta = state.get('roomMeta') || {};
-  const locked = meta.status === 'night-ended';
+  const lobby = state.get('roomLobby') || {};
+  const locked = lobby.status === 'night-ended';
   const isHost = state.isHost();
 
   bottomNav.hide();
@@ -44,7 +44,7 @@ export function mount(container, params = {}) {
   const stats = computeNightStats(games, players);
 
   if (!stats) {
-    const trackOn = !!meta.trackStats;
+    const trackOn = !!lobby.trackStats;
     container.innerHTML = `
       <div class="p-6 text-center py-20">
         <span class="material-symbols-outlined text-5xl text-outline mb-4" aria-hidden="true">bar_chart</span>

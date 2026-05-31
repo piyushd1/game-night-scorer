@@ -243,7 +243,7 @@ At minimum, your repository secrets must include a Firebase service account cred
 
 ```text
 rooms/{roomCode}/
-  meta/
+  lobby/
   players/
   games/
 ```

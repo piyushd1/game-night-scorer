@@ -13,7 +13,6 @@ import { ACCENT_COLORS } from '../state.js';
 import { escapeHTML } from '../utils.js';
 
 let _unsub = null;
-const _qrCache = {};
 
 export function mount(container, params = {}) {
   bottomNav.hide();
@@ -38,21 +37,10 @@ export function mount(container, params = {}) {
     fb.unwatchRoom();
     router.navigate('home', {}, 'back');
   };
-  document.getElementById('top-bar-actions').innerHTML = '';
+  _renderTopBarActions(roomCode);
 
   container.innerHTML = `
     <div class="p-6 pb-32">
-      <!-- Room Code -->
-      <div class="relative mb-6">
-        <button id="btn-lobby-pin" class="w-3/5 bg-surface-container-lowest border border-outline p-4 text-left transition-colors">
-          <p class="font-mono text-[10px] uppercase tracking-widest text-outline mb-2">CLICK TO COPY URL</p>
-          <span class="font-mono text-3xl font-bold tracking-[0.3em]">${roomCode}</span>
-        </button>
-        <div id="lobby-qr" class="absolute left-[60%] right-0 top-0 bottom-0 flex items-center justify-center" style="padding:3px"></div>
-      </div>
-
-      <!-- Current game card (shown when a game is active) -->
-      <div id="current-game-card" class="mb-6"></div>
 
       <!-- In-progress game actions (host only, while a game is running) -->
       <div id="return-game-section" class="mb-6 flex flex-col gap-3" style="display:none"></div>
@@ -145,43 +133,38 @@ export function unmount() {
   // Keep the room watcher alive — we still need it
 }
 
-function _bindEvents(container, roomCode) {
-  // Inline QR code — generated once per session per room code, then reused
-  const qrEl = container.querySelector('#lobby-qr');
-  if (qrEl && window.QRCode) {
-    const url = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
-    if (_qrCache[roomCode]) {
-      const img = document.createElement('img');
-      img.src = _qrCache[roomCode];
-      img.style.display = 'block';
-      qrEl.appendChild(img);
-    } else {
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        if (!document.contains(qrEl)) return; // unmounted before layout
-        const rect = qrEl.getBoundingClientRect();
-        const size = Math.min(rect.width, rect.height) - 6;
-        new window.QRCode(qrEl, { text: url, width: size, height: size, colorDark: '#000000', colorLight: '#f4f4f2', correctLevel: window.QRCode.CorrectLevel.L });
-        const canvas = qrEl.querySelector('canvas');
-        if (canvas) _qrCache[roomCode] = canvas.toDataURL();
-      }));
-    }
-  }
+function _renderTopBarActions(roomCode) {
+  const actionsEl = document.getElementById('top-bar-actions');
+  if (!actionsEl) return;
 
-  // Lobby PIN card — click to copy join URL
-  container.querySelector('#btn-lobby-pin')?.addEventListener('click', (e) => {
-    const btn = e.currentTarget;
-    btn.blur();
-    btn.style.background = 'var(--color-surface-container-high, #e0e0e0)';
-    setTimeout(() => { btn.style.background = ''; }, 150);
-    const url = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
-    navigator.clipboard.writeText(url).then(() => toast.show('Link copied')).catch(() => toast.show('Copy failed'));
+  actionsEl.innerHTML = `
+    <button id="btn-copy-link" aria-label="Copy join link" title="Copy join link"
+      class="font-mono text-xs text-outline border border-outline px-2 py-1 hover:bg-surface-container-high transition-colors">
+      ${roomCode}
+    </button>
+    <button id="btn-qr-share" aria-label="Show QR code" title="Share room QR" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 ml-1" style="font-size:22px">qr_code_2</button>
+  `;
+
+  const url = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
+
+  const copyBtn = document.getElementById('btn-copy-link');
+  copyBtn?.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      const orig = copyBtn.textContent.trim();
+      copyBtn.textContent = 'COPIED!';
+      setTimeout(() => { copyBtn.textContent = orig; }, 1500);
+    } catch {
+      toast.show('Could not copy link');
+    }
   });
 
-  container.querySelector('#lobby-qr')?.addEventListener('click', () => {
-    const url = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
+  document.getElementById('btn-qr-share')?.addEventListener('click', () => {
     qrModal.show(url, roomCode);
   });
+}
 
+function _bindEvents(container, roomCode) {
   // Add player — inline always-visible
   container.querySelector('#btn-confirm-add')?.addEventListener('click', () => _addPlayer(container, roomCode));
   const nameInput = container.querySelector('#input-player-name');
@@ -248,7 +231,7 @@ function _bindEvents(container, roomCode) {
         dot.style.background = '';
       }
       // Save to Firebase
-      fb.updateRoomMeta(roomCode, { trackStats: newVal });
+      fb.updateRoomLobby(roomCode, { trackStats: newVal });
     });
   }
 }
@@ -277,8 +260,8 @@ async function _addPlayer(container, roomCode) {
   // For flip7+jua mid-game adds, show the prize split modal before any Firebase writes.
   // If there is an active game but we can't read it yet, block the add entirely rather
   // than falling through to fb.addPlayer without the modal.
-  const meta = state.get('roomMeta') || {};
-  if (meta.status === 'playing' && meta.activeGameId) {
+  const lobby = state.get('roomLobby') || {};
+  if (lobby.status === 'playing' && lobby.activeGameId) {
     const game = state.currentGame();
     if (!game) {
       toast.show('Game data not loaded yet, try again');
@@ -287,7 +270,7 @@ async function _addPlayer(container, roomCode) {
     if (game.type === 'flip7' && game.config?.jua) {
       input.value = '';
       _showSuggestions(container, roomCode);
-      _showJuaPrizeSplitModal(container, roomCode, meta.activeGameId, game.config, game.playerIds || [], nameUpper, count, accentIndex);
+      _showJuaPrizeSplitModal(container, roomCode, lobby.activeGameId, game.config, game.playerIds || [], nameUpper, count, accentIndex);
       return;
     }
   }
@@ -299,10 +282,10 @@ async function _addPlayer(container, roomCode) {
     input.focus();
     _showSuggestions(container, roomCode);
 
-    if (meta.status === 'playing' && meta.activeGameId && newPlayerId) {
+    if (lobby.status === 'playing' && lobby.activeGameId && newPlayerId) {
       const game = state.currentGame();
       if (game) {
-        await fb.addPlayerToGame(roomCode, meta.activeGameId, newPlayerId, nameUpper, accentIndex, game.playerIds || []);
+        await fb.addPlayerToGame(roomCode, lobby.activeGameId, newPlayerId, nameUpper, accentIndex, game.playerIds || []);
       }
     }
   } catch (e) {
@@ -320,11 +303,21 @@ function _startWatching(roomCode, container) {
     }
 
     const isHost = state.isHost();
-    const meta = data.meta || {};
+    const lobby = data.lobby || {};
     const players = data.players || {};
     const games = data.games || {};
-    const trackStats = meta.trackStats !== false;
+    const trackStats = lobby.trackStats !== false;
     const hasPlayedGames = Object.values(games).some((g) => g.rounds && Object.keys(g.rounds).length > 0);
+
+    // The lobby is always a nav tab: it shows on its own when no game is active,
+    // and alongside the game tab during a Flip 7 game. Only a non-Flip 7 game in
+    // progress hides the nav (those games use their own tab set elsewhere).
+    const activeGameForNav = state.currentGame();
+    if (activeGameForNav && activeGameForNav.type !== 'flip7') {
+      bottomNav.hide();
+    } else {
+      bottomNav.show('lobby');
+    }
 
     // Show/hide host controls
     container.querySelector('#host-controls').style.display = isHost ? 'block' : 'none';
@@ -334,7 +327,7 @@ function _startWatching(roomCode, container) {
         viewerLabelEl.style.display = 'none';
       } else {
         viewerLabelEl.style.display = 'block';
-        const isGameActive = meta.status === 'playing' && meta.activeGameId;
+        const isGameActive = lobby.status === 'playing' && lobby.activeGameId;
         const showRecap = trackStats && hasPlayedGames;
         viewerLabelEl.innerHTML = isGameActive
           ? `<div class="flex flex-col gap-3">
@@ -361,28 +354,10 @@ function _startWatching(roomCode, container) {
     }
     container.querySelector('#start-section').style.display = isHost ? 'block' : 'none';
 
-    // Current game card
-    const gameCardEl = container.querySelector('#current-game-card');
-    if (gameCardEl) {
-      const activeGame = state.currentGame();
-      const gameDef = activeGame ? getGame(activeGame.type) : null;
-      if (gameDef && meta.status === 'playing') {
-        gameCardEl.innerHTML = `
-          <div class="bg-surface-container-lowest border border-outline p-6">
-            <span class="font-mono text-[10px] text-outline tracking-widest uppercase block mb-3">${gameDef.minPlayers}–${gameDef.maxPlayers} PLAYERS / ${gameDef.winMode === 'highest_total' ? 'HIGHEST WINS' : 'LOWEST WINS'}</span>
-            <h3 class="font-headline font-black text-3xl uppercase tracking-tighter mb-2">${escapeHTML(gameDef.label)}</h3>
-            <p class="text-on-surface-variant text-sm leading-relaxed">${escapeHTML(gameDef.description)}</p>
-          </div>
-        `;
-      } else {
-        gameCardEl.innerHTML = '';
-      }
-    }
-
     // Render player list. Mid-game: Add is allowed (new player joins the
     // next game — the active game's playerIds/snapshot are frozen), but
     // Remove is still hidden per-row to protect active participants.
-    const isPlaying = meta.status === 'playing';
+    const isPlaying = lobby.status === 'playing';
     const addRow = container.querySelector('#add-player-row');
     if (addRow) addRow.style.display = isHost ? 'flex' : 'none';
     _renderPlayers(container, players, isHost, roomCode, isPlaying);
@@ -417,7 +392,7 @@ function _startWatching(roomCode, container) {
     const callNightSection = container.querySelector('#call-night-section');
     if (callNightSection) {
       const hasFinishedGame = Object.values(games).some((g) => g.status === 'finished');
-      const show = isHost && trackStats && hasFinishedGame && meta.status === 'lobby';
+      const show = isHost && trackStats && hasFinishedGame && lobby.status === 'waiting';
       callNightSection.style.display = show ? 'block' : 'none';
     }
 
@@ -425,7 +400,7 @@ function _startWatching(roomCode, container) {
     if (changeHostSection) changeHostSection.style.display = isHost ? 'block' : 'none';
 
     const becomeHostSection = container.querySelector('#become-host-section');
-    if (becomeHostSection) becomeHostSection.style.display = (!meta.hostKey && !isHost) ? 'block' : 'none';
+    if (becomeHostSection) becomeHostSection.style.display = (!lobby.hostKey && !isHost) ? 'block' : 'none';
 
     // Enable/disable start
     const activeCount = Object.values(players).filter((p) => p.isActive).length;
@@ -528,7 +503,7 @@ function _renderFinishedGameActions(el, roomCode, game, trackStats) {
   });
 
   el.querySelector('#btn-start-new-game')?.addEventListener('click', async () => {
-    await fb.updateRoomMeta(roomCode, { status: 'lobby', activeGameId: null });
+    await fb.updateRoomLobby(roomCode, { status: 'waiting', activeGameId: null });
     router.navigate('game-select', { roomCode });
   });
 

@@ -59,7 +59,7 @@ async function init() {
   if (roomCode) {
     state.set('roomCode', roomCode);
     if (cached) {
-      state.set('roomMeta', cached.meta || {});
+      state.set('roomLobby', cached.lobby || {});
       state.set('players', cached.players || {});
       state.set('games', cached.games || {});
     }
@@ -69,15 +69,15 @@ async function init() {
   router.init('screen-container');
 
   // Auto-navigate on night-ended / night-resumed status changes
-  state.on('roomMeta', (newMeta, prevMeta) => {
-    if (!newMeta) return;
+  state.on('roomLobby', (newLobby, prevLobby) => {
+    if (!newLobby) return;
     const screen = router.currentScreen();
-    const roomCode = newMeta.roomCode || state.get('roomCode');
+    const roomCode = newLobby.roomCode || state.get('roomCode');
     if (!roomCode) return;
 
-    if (newMeta.status === 'night-ended' && screen !== 'recap') {
+    if (newLobby.status === 'night-ended' && screen !== 'recap') {
       router.navigate('recap', { roomCode });
-    } else if (prevMeta?.status === 'night-ended' && newMeta.status === 'lobby') {
+    } else if (prevLobby?.status === 'night-ended' && newLobby.status === 'waiting') {
       if (screen === 'recap') router.navigate('lobby', { roomCode });
     }
   });

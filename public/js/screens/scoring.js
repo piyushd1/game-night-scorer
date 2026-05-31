@@ -15,8 +15,8 @@ import { escapeHTML, confirmRoundDialog } from '../utils.js';
 export function mount(container, params = {}) {
   const roomCode = params.roomCode || state.get('roomCode');
 
-  const meta = state.get('roomMeta');
-  if (!meta || !state.isHost()) {
+  const lobby = state.get('roomLobby');
+  if (!lobby || !state.isHost()) {
     router.navigate('dashboard', { roomCode });
     return;
   }

@@ -20,7 +20,7 @@ import { escapeHTML, confirmRoundDialog, confirmSaveDialog } from '../utils.js';
 const _roundPointsCache = new WeakMap();
 
 let _unsubGames = null;
-let _unsubMeta = null;
+let _unsubLobby = null;
 let _unsubPlayers = null;
 
 // ── Flip 7 inline scoring state ──
@@ -113,16 +113,19 @@ export function mount(container, params = {}) {
   document.body.appendChild(_juaModalEl);
 
   // Watch for state changes
-  const renderHandler = () => _render(container, roomCode);
+  const renderHandler = () => {
+    bottomNav.refresh(); // tab set depends on game type, which may load after mount
+    _render(container, roomCode);
+  };
   _unsubGames = state.on('games', renderHandler);
-  _unsubMeta = state.on('roomMeta', renderHandler);
+  _unsubLobby = state.on('roomLobby', renderHandler);
   _unsubPlayers = state.on('players', renderHandler);
 
   // Ensure room is being watched
   if (!state.get('roomCode')) {
     state.set('roomCode', roomCode);
   }
-  // Guard on the actual watcher, not roomMeta — cache hydration sets roomMeta on
+  // Guard on the actual watcher, not roomLobby — cache hydration sets roomLobby on
   // page load which would otherwise skip watchRoom entirely after a refresh.
   if (!fb.isWatchingRoom()) {
     fb.watchRoom(roomCode, () => {});
@@ -135,8 +138,8 @@ export function mount(container, params = {}) {
 export function unmount() {
   if (_unsubGames) _unsubGames();
   _unsubGames = null;
-  if (_unsubMeta) _unsubMeta();
-  _unsubMeta = null;
+  if (_unsubLobby) _unsubLobby();
+  _unsubLobby = null;
   if (_unsubPlayers) _unsubPlayers();
   _unsubPlayers = null;
 
@@ -176,7 +179,7 @@ function _render(container, roomCode) {
   if (_playerDragCleanup) { _playerDragCleanup(); _playerDragCleanup = null; }
 
   const game = state.currentGame();
-  const meta = state.get('roomMeta') || {};
+  const lobby = state.get('roomLobby') || {};
   const isHost = state.isHost();
 
   if (!game) {

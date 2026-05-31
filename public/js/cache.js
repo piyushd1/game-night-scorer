@@ -2,20 +2,20 @@
 // Room State Cache — localStorage mirror
 // ═══════════════════════════════════════════
 //
-// Mirrors `roomMeta`, `players`, and `games` to localStorage so a cold open
+// Mirrors `roomLobby`, `players`, and `games` to localStorage so a cold open
 // renders instantly from the last-known snapshot while Firebase reconnects
 // in the background. Firebase's own socket handles deltas after reconnect.
 //
 // Two knobs:
-//   SCHEMA_VERSION — bump when the shape of meta/players/games changes in a
+//   SCHEMA_VERSION — bump when the shape of lobby/players/games changes in a
 //     breaking way. Any mismatch wipes every gns_cache_* entry on next boot.
 //     Independent of the service worker's asset VERSION (see docs/CACHING.md).
 //   TTL_MS — stale entries are evicted on read. Protects against a user
 //     rejoining a long-dead room and seeing a multi-day-old snapshot.
 //
-// Keys: `gns_cache_<roomCode>` → { ts, meta, players, games }
+// Keys: `gns_cache_<roomCode>` → { ts, lobby, players, games }
 
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 const SCHEMA_KEY = 'gns_schema_version';
 const PREFIX = 'gns_cache_';
 const TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
@@ -39,7 +39,7 @@ export function writeCache(roomCode, snapshot) {
   try {
     const entry = {
       ts: Date.now(),
-      meta: snapshot.meta || null,
+      lobby: snapshot.lobby || null,
       players: snapshot.players || null,
       games: snapshot.games || null,
     };
