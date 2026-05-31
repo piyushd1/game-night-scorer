@@ -686,37 +686,42 @@ function _showJuaPrizeSplitModal(container, roomCode, gameId, config, prevPlayer
 
       <div class="px-5 pt-5 pb-4 border-b border-outline-variant">
         <h2 class="font-headline font-extrabold text-xl uppercase">Add ${escapeHTML(playerName)}</h2>
-        <p class="font-mono text-[10px] text-outline mt-1 uppercase tracking-wide">Readjust prize money to add player</p>
       </div>
 
-      <div class="px-5 py-3 border-b border-outline-variant">
-        <p class="font-mono text-sm text-outline">
-          ₹${buyIn} × ${newPlayerCount} players = <span class="font-bold text-on-surface">₹${totalPot}</span>
-        </p>
-      </div>
-
-      <div class="px-5 py-4 flex flex-col gap-0">
-        <div class="flex items-center justify-between py-2 border-b border-outline-variant">
-          <label for="prize-split-1" class="font-headline font-bold text-xs uppercase">1st Place</label>
-          <div class="flex items-center gap-1">
-            <span class="font-mono text-lg text-outline">₹</span>
-            <input type="number" id="prize-split-1" value="${prize1}" min="0"
-              class="w-20 bg-transparent border-0 border-b-2 border-primary font-mono text-lg text-right py-1 px-0 focus:outline-none focus:border-secondary">
-          </div>
-        </div>
-        <div class="flex items-center justify-between py-2 border-b border-outline-variant">
-          <label for="prize-split-2" class="font-headline font-bold text-xs uppercase">2nd Place</label>
-          <div class="flex items-center gap-1">
-            <span class="font-mono text-lg text-outline">₹</span>
-            <input type="number" id="prize-split-2" value="${prize2}" min="0"
-              class="w-20 bg-transparent border-0 border-b-2 border-primary font-mono text-lg text-right py-1 px-0 focus:outline-none focus:border-secondary">
-          </div>
-        </div>
+      <div class="px-5 py-3">
         <div class="flex items-center justify-between py-2">
-          <label class="font-headline font-bold text-xs uppercase text-outline">3rd Place</label>
-          <div class="flex items-center gap-1">
-            <span class="font-mono text-lg text-outline">₹</span>
-            <span id="prize-split-3" class="w-20 font-mono text-lg text-right py-1 ${prize3Init < 0 ? 'text-red-600' : 'text-outline'}">${prize3Init}</span>
+          <label class="font-headline font-bold text-sm uppercase">Adjust prize money</label>
+        </div>
+        <div class="mt-2 pl-3 border-l-2 border-outline-variant">
+          <div class="flex items-center justify-between py-2 border-b border-outline-variant last:border-0">
+            <label class="font-headline font-bold text-xs uppercase">Total Pot Size</label>
+            <div class="flex items-center gap-1">
+              <span class="font-mono text-lg text-outline">₹</span>
+              <span class="font-mono text-lg w-20 text-right text-outline">${totalPot}</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between py-2 border-b border-outline-variant last:border-0">
+            <label for="prize-split-1" class="font-headline font-bold text-xs uppercase">1st Place</label>
+            <div class="flex items-center gap-1">
+              <span class="font-mono text-lg text-outline">₹</span>
+              <input type="number" id="prize-split-1" value="${prize1}" min="0"
+                class="w-20 bg-transparent border-0 border-b-2 border-primary font-mono text-lg text-right py-1 px-0 focus:outline-none focus:border-secondary">
+            </div>
+          </div>
+          <div class="flex items-center justify-between py-2 border-b border-outline-variant last:border-0">
+            <label for="prize-split-2" class="font-headline font-bold text-xs uppercase">2nd Place</label>
+            <div class="flex items-center gap-1">
+              <span class="font-mono text-lg text-outline">₹</span>
+              <input type="number" id="prize-split-2" value="${prize2}" min="0"
+                class="w-20 bg-transparent border-0 border-b-2 border-primary font-mono text-lg text-right py-1 px-0 focus:outline-none focus:border-secondary">
+            </div>
+          </div>
+          <div class="flex items-center justify-between py-2 border-b border-outline-variant last:border-0">
+            <label class="font-headline font-bold text-xs uppercase">3rd Place</label>
+            <div class="flex items-center gap-1">
+              <span class="font-mono text-lg text-outline">₹</span>
+              <span id="prize-split-3" class="font-mono text-lg w-20 text-right ${prize3Init < 0 ? 'text-red-600' : 'text-outline'}">${prize3Init}</span>
+            </div>
           </div>
         </div>
       </div>
