@@ -480,7 +480,7 @@ function _render(container, roomCode) {
           ${_editScoresMode ? `
             <button id="btn-edit-cancel" aria-label="Cancel" title="Cancel"
               class="shrink-0 self-stretch bg-surface-container-low border border-outline flex items-center justify-center transition-colors hover:bg-surface-container-high">
-              <span class="material-symbols-outlined" style="font-size:24px" aria-hidden="true">close</span>
+              <span class="material-symbols-outlined" style="font-size:24px" aria-hidden="true">delete</span>
             </button>
             <button id="btn-edit-save"
               class="flex-1 btn-primary flex items-center justify-center">
