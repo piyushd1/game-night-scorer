@@ -22,11 +22,11 @@ export function show(url, roomCode) {
         <h2 class="font-headline font-extrabold text-xl uppercase">Scan to Join</h2>
       </div>
       <div class="py-6 flex flex-col items-center gap-3 w-full">
+        <p class="font-mono text-base font-bold tracking-[0.3em]">${roomCode}</p>
         <div id="qr-canvas" class="p-3" style="background:#fff"></div>
-        <p class="font-mono text-sm font-bold tracking-[0.3em]">${roomCode}</p>
       </div>
       <div class="w-full px-4 pb-4 flex gap-3 border-t border-outline-variant pt-4">
-        <button id="qr-close" type="button" aria-label="Close" class="btn-secondary flex-none flex items-center justify-center" style="width:48px;height:48px;padding:0">
+        <button id="qr-close" type="button" aria-label="Close" class="btn-secondary flex-none flex items-center justify-center self-stretch" style="padding:0">
           <span class="material-symbols-outlined" style="font-size:20px">close</span>
         </button>
         <button id="qr-copy" type="button" class="btn-primary" style="flex:3">COPY LINK</button>
@@ -48,7 +48,9 @@ export function show(url, roomCode) {
   });
 
   _el.querySelector('#qr-backdrop').addEventListener('click', hide);
-  _el.querySelector('#qr-close').addEventListener('click', hide);
+  const closeBtn = _el.querySelector('#qr-close');
+  closeBtn.addEventListener('click', hide);
+  requestAnimationFrame(() => { closeBtn.style.width = closeBtn.offsetHeight + 'px'; });
 
   _el.querySelector('#qr-copy').addEventListener('click', () => {
     navigator.clipboard.writeText(url).then(() => {

@@ -690,44 +690,44 @@ function _showJuaPrizeSplitModal(container, roomCode, gameId, config, prevPlayer
 
       <div class="px-5 py-3">
         <div class="flex items-center justify-between py-2">
-          <label class="font-headline font-bold text-sm uppercase">Adjust prize money</label>
+          <label class="font-headline font-bold text-base uppercase">Adjust prize money</label>
         </div>
         <div class="mt-2 pl-3 border-l-2 border-outline-variant">
           <div class="flex items-center justify-between py-2 border-b border-outline-variant last:border-0">
-            <label class="font-headline font-bold text-xs uppercase">Total Pot Size</label>
+            <label class="font-headline font-bold text-base uppercase">Total Pot Size</label>
             <div class="flex items-center gap-1">
-              <span class="font-mono text-lg text-outline">₹</span>
-              <span class="font-mono text-lg w-20 text-right text-outline">${totalPot}</span>
+              <span class="font-mono text-base text-outline">₹</span>
+              <span class="font-mono text-base w-20 text-right text-outline">${totalPot}</span>
             </div>
           </div>
           <div class="flex items-center justify-between py-2 border-b border-outline-variant last:border-0">
-            <label for="prize-split-1" class="font-headline font-bold text-xs uppercase">1st Place</label>
+            <label for="prize-split-1" class="font-headline font-bold text-base uppercase">1st Place</label>
             <div class="flex items-center gap-1">
-              <span class="font-mono text-lg text-outline">₹</span>
+              <span class="font-mono text-base text-outline">₹</span>
               <input type="number" id="prize-split-1" value="${prize1}" min="0"
-                class="w-20 bg-transparent border-0 border-b-2 border-primary font-mono text-lg text-right py-1 px-0 focus:outline-none focus:border-secondary">
+                class="w-20 bg-transparent border-0 border-b-2 border-primary font-mono text-base text-right py-1 px-0 focus:outline-none focus:border-secondary">
             </div>
           </div>
           <div class="flex items-center justify-between py-2 border-b border-outline-variant last:border-0">
-            <label for="prize-split-2" class="font-headline font-bold text-xs uppercase">2nd Place</label>
+            <label for="prize-split-2" class="font-headline font-bold text-base uppercase">2nd Place</label>
             <div class="flex items-center gap-1">
-              <span class="font-mono text-lg text-outline">₹</span>
+              <span class="font-mono text-base text-outline">₹</span>
               <input type="number" id="prize-split-2" value="${prize2}" min="0"
-                class="w-20 bg-transparent border-0 border-b-2 border-primary font-mono text-lg text-right py-1 px-0 focus:outline-none focus:border-secondary">
+                class="w-20 bg-transparent border-0 border-b-2 border-primary font-mono text-base text-right py-1 px-0 focus:outline-none focus:border-secondary">
             </div>
           </div>
           <div class="flex items-center justify-between py-2 border-b border-outline-variant last:border-0">
-            <label class="font-headline font-bold text-xs uppercase">3rd Place</label>
+            <label class="font-headline font-bold text-base uppercase">3rd Place</label>
             <div class="flex items-center gap-1">
-              <span class="font-mono text-lg text-outline">₹</span>
-              <span id="prize-split-3" class="font-mono text-lg w-20 text-right ${prize3Init < 0 ? 'text-red-600' : 'text-outline'}">${prize3Init}</span>
+              <span class="font-mono text-base text-outline">₹</span>
+              <span id="prize-split-3" class="font-mono text-base w-20 text-right ${prize3Init < 0 ? 'text-red-600' : 'text-outline'}">${prize3Init}</span>
             </div>
           </div>
         </div>
       </div>
 
       <div class="px-5 pb-5 flex gap-3 border-t border-outline-variant pt-4">
-        <button id="prize-split-cancel" type="button" aria-label="Cancel" class="btn-secondary flex-none flex items-center justify-center" style="width:48px;height:48px;padding:0">
+        <button id="prize-split-cancel" type="button" aria-label="Cancel" class="btn-secondary flex-none flex items-center justify-center self-stretch" style="padding:0">
           <span class="material-symbols-outlined" style="font-size:20px">close</span>
         </button>
         <button id="prize-split-confirm" type="button" class="btn-primary" style="flex:3">ADD PLAYER</button>
@@ -738,6 +738,9 @@ function _showJuaPrizeSplitModal(container, roomCode, gameId, config, prevPlayer
 
   document.body.appendChild(modalEl);
   document.body.style.overflow = 'hidden';
+
+  const cancelBtn = modalEl.querySelector('#prize-split-cancel');
+  requestAnimationFrame(() => { cancelBtn.style.width = cancelBtn.offsetHeight + 'px'; });
 
   const p1El = modalEl.querySelector('#prize-split-1');
   const p2El = modalEl.querySelector('#prize-split-2');

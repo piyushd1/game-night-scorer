@@ -483,9 +483,8 @@ function _render(container, roomCode) {
               CANCEL
             </button>
             <button id="btn-edit-save"
-              class="flex-1 btn-primary flex items-center justify-center gap-2">
+              class="flex-1 btn-primary flex items-center justify-center">
               SAVE
-              <span class="material-symbols-outlined text-lg" aria-hidden="true">check</span>
             </button>
           ` : `
             <div class="relative shrink-0">
@@ -499,9 +498,8 @@ function _render(container, roomCode) {
               </div>
             </div>
             <button id="btn-confirm-round"
-              class="flex-1 btn-primary flex items-center justify-center gap-2">
+              class="flex-1 btn-primary flex items-center justify-center">
               CONFIRM ROUND
-              <span class="material-symbols-outlined text-lg" aria-hidden="true">check</span>
             </button>
           `}
         </div>
@@ -1388,7 +1386,7 @@ async function _confirmFlip7Round(container, roomCode, initialGame, gameModule) 
     toast.show('Submit failed');
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = 'CONFIRM ROUND <span aria-hidden="true" class="material-symbols-outlined text-lg">check</span>';
+      btn.innerHTML = 'CONFIRM ROUND';
     }
   }
 }
