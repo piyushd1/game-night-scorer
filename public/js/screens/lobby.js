@@ -722,8 +722,10 @@ function _showJuaPrizeSplitModal(container, roomCode, gameId, config, prevPlayer
       </div>
 
       <div class="px-5 pb-5 flex gap-3 border-t border-outline-variant pt-4">
-        <button id="prize-split-cancel" type="button" class="flex-1 btn-secondary">CANCEL</button>
-        <button id="prize-split-confirm" type="button" class="flex-1 btn-primary">ADD PLAYER</button>
+        <button id="prize-split-cancel" type="button" aria-label="Cancel" class="btn-secondary flex-none flex items-center justify-center" style="width:48px;height:48px;padding:0">
+          <span class="material-symbols-outlined" style="font-size:20px">close</span>
+        </button>
+        <button id="prize-split-confirm" type="button" class="btn-primary" style="flex:3">ADD PLAYER</button>
       </div>
 
     </div>

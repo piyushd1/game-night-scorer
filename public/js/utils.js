@@ -57,8 +57,10 @@ export function confirmRoundDialog(playerScores) {
           ` : ''}
         </div>
         <div class="px-5 pb-5 pt-3 flex gap-2">
-          <button id="crd-cancel" type="button" class="flex-1 btn-secondary">CANCEL</button>
-          <button id="crd-confirm" type="button" class="flex-1 btn-primary flex items-center justify-center gap-1">
+          <button id="crd-cancel" type="button" aria-label="Cancel" class="btn-secondary flex-none flex items-center justify-center" style="width:48px;height:48px;padding:0">
+            <span class="material-symbols-outlined" style="font-size:20px">close</span>
+          </button>
+          <button id="crd-confirm" type="button" class="btn-primary flex items-center justify-center gap-1" style="flex:3">
             CONFIRM
             <span aria-hidden="true" class="material-symbols-outlined text-base">check</span>
           </button>
@@ -118,8 +120,10 @@ export function confirmSaveDialog(changes) {
           </div>
         </div>
         <div class="px-5 pb-5 pt-3 flex gap-2">
-          <button id="csd-cancel" type="button" class="flex-1 btn-secondary">CANCEL</button>
-          <button id="csd-confirm" type="button" class="flex-1 btn-primary flex items-center justify-center gap-1">
+          <button id="csd-cancel" type="button" aria-label="Cancel" class="btn-secondary flex-none flex items-center justify-center" style="width:48px;height:48px;padding:0">
+            <span class="material-symbols-outlined" style="font-size:20px">close</span>
+          </button>
+          <button id="csd-confirm" type="button" class="btn-primary flex items-center justify-center gap-1" style="flex:3">
             SAVE
             <span aria-hidden="true" class="material-symbols-outlined text-base">check</span>
           </button>
