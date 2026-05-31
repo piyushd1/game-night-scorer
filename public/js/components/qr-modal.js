@@ -5,13 +5,21 @@
 // Appended to document.body so screen re-renders don't destroy it.
 
 let _el = null;
+let _triggerEl = null;
+let _bound = false;
 
 export function show(url, roomCode) {
+  // Store the element that triggered the modal to restore focus later
+  _triggerEl = document.activeElement;
+
   if (!_el) {
     _el = document.createElement('div');
     _el.id = 'qr-modal';
     _el.className = 'fixed inset-0 z-[300] flex items-center justify-center';
     _el.style.display = 'none';
+    _el.setAttribute('role', 'dialog');
+    _el.setAttribute('aria-modal', 'true');
+    _el.setAttribute('aria-label', 'QR Code');
     document.body.appendChild(_el);
   }
 
@@ -53,6 +61,21 @@ export function show(url, roomCode) {
       setTimeout(() => { btn.textContent = 'COPY LINK'; }, 2000);
     }).catch(() => {});
   });
+
+  // Manage focus: shift focus to first interactive element
+  requestAnimationFrame(() => {
+    const firstAction = _el.querySelector('#qr-close');
+    if (firstAction) firstAction.focus();
+  });
+
+  if (!_bound) {
+    _bound = true;
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && _el && _el.style.display !== 'none') {
+        hide();
+      }
+    });
+  }
 }
 
 export function hide() {
@@ -60,4 +83,10 @@ export function hide() {
   _el.style.display = 'none';
   _el.innerHTML = '';
   document.body.style.overflow = '';
+
+  // Return focus to the trigger element
+  if (_triggerEl && typeof _triggerEl.focus === 'function') {
+    _triggerEl.focus();
+  }
+  _triggerEl = null;
 }
