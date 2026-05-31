@@ -3,7 +3,6 @@
 // ═══════════════════════════════════════════
 
 import * as state from '../state.js';
-import { getGame } from '../games/registry.js';
 import * as fb from '../firebase.js';
 import * as router from '../router.js';
 import * as toast from '../components/toast.js';
@@ -79,18 +78,16 @@ export function mount(container, params = {}) {
       </div>
 
       <!-- Players heading (everyone) -->
-      <h2 class="font-headline font-extrabold uppercase text-lg tracking-widest mb-4">PLAYERS</h2>
+      <h2 class="font-headline font-extrabold uppercase text-lg tracking-widest mb-6">PLAYERS</h2>
 
       <!-- Player List -->
       <div id="player-list" class="flex flex-col gap-1"></div>
 
       <!-- Start Game (host only) -->
       <div id="start-section" class="mt-4" style="display:none">
-        <button id="btn-start-game" class="btn-primary flex items-center justify-center gap-2" disabled>
-          CHOOSE GAME
-          <span aria-hidden="true" class="material-symbols-outlined text-lg">arrow_forward</span>
+        <button id="btn-start-game" class="btn-primary flex items-center justify-center" disabled>
+          Start a new game
         </button>
-        <p id="start-hint" class="font-mono text-[10px] text-outline text-center mt-2 uppercase">ADD AT LEAST 3 PLAYERS</p>
       </div>
 
       <!-- Become Host (visible to all when no host) -->
@@ -118,7 +115,7 @@ function _renderTopBarActions(roomCode) {
 
   actionsEl.innerHTML = `
     <button id="btn-copy-link" aria-label="Copy join link" title="Copy join link"
-      class="font-mono text-xs text-outline border border-outline px-2 py-1 hover:bg-surface-container-high transition-colors">
+      class="font-mono text-xs border border-outline px-2 py-1 hover:bg-surface-container-high transition-colors">
       ${roomCode}
     </button>
     <button id="btn-qr-share" aria-label="Show QR code" title="Share room QR" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 ml-1" style="font-size:22px">qr_code_2</button>
@@ -274,9 +271,11 @@ async function _addPlayer(container, roomCode) {
   const count = Object.keys(players).length;
   const accentIndex = count % ACCENT_COLORS.length;
 
-  // For flip7+jua mid-game adds, show the prize split modal before any Firebase writes.
-  // If there is an active game but we can't read it yet, block the add entirely rather
-  // than falling through to fb.addPlayer without the modal.
+  // Mid-game joins only apply while a game is actually in progress (status
+  // 'active'). A finished/abandoned game is frozen — adding then just rosters
+  // the player for the next game (no prize-split modal, no game mutation).
+  // If a game is in progress but we can't read it yet, block rather than fall
+  // through to fb.addPlayer without the jua modal.
   const lobby = state.get('roomLobby') || {};
   if (lobby.status === 'playing' && lobby.activeGameId) {
     const game = state.currentGame();
@@ -284,7 +283,7 @@ async function _addPlayer(container, roomCode) {
       toast.show('Game data not loaded yet, try again');
       return;
     }
-    if (game.type === 'flip7' && game.config?.jua) {
+    if (game.status === 'active' && game.type === 'flip7' && game.config?.jua) {
       input.value = '';
       _showSuggestions(container, roomCode);
       _showJuaPrizeSplitModal(container, roomCode, lobby.activeGameId, game.config, game.playerIds || [], nameUpper, count, accentIndex);
@@ -301,7 +300,8 @@ async function _addPlayer(container, roomCode) {
 
     if (lobby.status === 'playing' && lobby.activeGameId && newPlayerId) {
       const game = state.currentGame();
-      if (game) {
+      // Only fold the new player into the current game while it's in progress.
+      if (game && game.status === 'active') {
         await fb.addPlayerToGame(roomCode, lobby.activeGameId, newPlayerId, nameUpper, accentIndex, game.playerIds || []);
       }
     }
@@ -394,7 +394,7 @@ function _startWatching(roomCode, container) {
     if (finishedSection) {
       if (isHost && isGameFinished) {
         finishedSection.style.display = 'flex';
-        _renderFinishedGameActions(finishedSection, roomCode, activeGame);
+        _renderFinishedGameActions(finishedSection, roomCode);
       } else {
         finishedSection.style.display = 'none';
       }
@@ -409,46 +409,20 @@ function _startWatching(roomCode, container) {
 
     const startSection = container.querySelector('#start-section');
     const btn = container.querySelector('#btn-start-game');
-    const hint = container.querySelector('#start-hint');
     if (startSection) startSection.style.display = (isHost && !isPlaying && !nightLocked) ? 'block' : 'none';
-    if (btn) {
-      btn.disabled = activeCount < 3;
-      hint.textContent = activeCount < 3 ? 'ADD AT LEAST 3 PLAYERS' : `${activeCount} PLAYERS READY`;
-    }
+    if (btn) btn.disabled = activeCount < 3;
   });
 }
 
-function _renderFinishedGameActions(el, roomCode, game) {
-  const gameModule = getGame(game.type);
-  const secondaryBtn = 'w-full bg-surface-container-lowest border border-outline py-3 font-headline font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-surface-container-high transition-colors';
-
+function _renderFinishedGameActions(el, roomCode) {
   // The winner, recap, and "call it a night" actions live in the bottom nav and
-  // overflow menu now — the finished-game section just offers replay / new game.
+  // overflow menu — the finished-game section just offers Start New Game.
   el.innerHTML = `
-    <button id="btn-replay" class="btn-primary w-full flex items-center justify-center gap-2">
-      <span aria-hidden="true" class="material-symbols-outlined text-lg">loop</span>
-      REPLAY ${escapeHTML(gameModule.label.toUpperCase())}
-    </button>
-    <button id="btn-start-new-game" class="${secondaryBtn}">
-      <span aria-hidden="true" class="material-symbols-outlined text-sm">add</span>
+    <button id="btn-start-new-game" class="btn-primary w-full flex items-center justify-center gap-2">
+      <span aria-hidden="true" class="material-symbols-outlined text-lg">add</span>
       START NEW GAME
     </button>
   `;
-
-  el.querySelector('#btn-replay')?.addEventListener('click', async () => {
-    const players = state.activePlayers();
-    const playerIds = players.map((p) => p.id);
-    const snapshot = {};
-    players.forEach((p) => {
-      snapshot[p.id] = { name: p.name, accentIndex: p.accentIndex, seatOrder: p.seatOrder };
-    });
-    try {
-      await fb.createGame(roomCode, game.type, game.config, playerIds, snapshot);
-      router.navigate('dashboard', { roomCode });
-    } catch (e) {
-      toast.show('Failed to start replay');
-    }
-  });
 
   el.querySelector('#btn-start-new-game')?.addEventListener('click', () => {
     // Don't clear the current game yet — keep it referenced (so the Flip 7 /
@@ -465,7 +439,7 @@ function _renderPlayers(container, players, isHost, roomCode, gameInProgress = f
     list.innerHTML = `
       <div class="text-center py-12">
         <span aria-hidden="true" class="material-symbols-outlined text-4xl text-outline mb-2">group_add</span>
-        <p class="font-body text-sm text-on-surface-variant">${isHost ? 'Add at least 2 players to start a game.<br>Names show up here in the order you add them.' : 'Waiting for the host to add players\u2026'}</p>
+        <p class="font-body text-base text-on-surface-variant">${isHost ? 'Add at least 3 players to start a game.' : 'Waiting for the host to add players\u2026'}</p>
       </div>
     `;
     return;
@@ -536,7 +510,7 @@ function _showSuggestions(container, roomCode) {
   }
 
   suggestionsEl.innerHTML = `
-    <span class="font-label text-xs uppercase tracking-widest text-outline shrink-0 py-1">Quick add:</span>
+    <span class="font-label text-xs uppercase tracking-widest shrink-0 py-1">Quick add:</span>
     <div id="name-suggestions-chips" class="flex flex-wrap gap-2 min-w-0">
       ${matches.map((n) => `
         <button class="suggestion-chip font-label text-xs uppercase tracking-widest border border-outline pl-2 pr-1 py-1 hover:bg-surface-container-high transition-colors inline-flex items-center gap-1.5" data-name="${escapeHTML(n)}">

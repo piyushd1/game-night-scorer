@@ -13,7 +13,8 @@ import { getGame, getAllGames } from '../games/registry.js';
 let _selectedGame = null;
 
 export function mount(container, params = {}) {
-  bottomNav.hide();
+  // Game select is a subscreen of the lobby — keep the bottom nav with Lobby active.
+  bottomNav.show('lobby');
   const roomCode = params.roomCode || state.get('roomCode');
 
   const topBar = document.getElementById('top-bar');
@@ -33,7 +34,7 @@ export function mount(container, params = {}) {
   const games = getAllGames();
 
   container.innerHTML = `
-    <div class="p-6 pb-24">
+    <div class="p-6 pb-32">
       <div class="flex justify-between items-end mb-6">
         <div>
           <p class="font-mono text-[10px] uppercase tracking-widest text-outline mb-1">CHOOSE YOUR GAME</p>
@@ -62,8 +63,8 @@ export function mount(container, params = {}) {
       </div>
     </div>
 
-    <!-- Start Button (floats up from bottom on selection) -->
-    <div id="btn-start-wrapper" class="fixed bottom-0 left-0 right-0 p-4 bg-surface border-t border-outline translate-y-full transition-transform duration-300 ease-out z-10">
+    <!-- Start Button (floats up from above the bottom nav on selection) -->
+    <div id="btn-start-wrapper" class="fixed left-0 right-0 p-4 bg-surface border-t border-outline translate-y-full transition-transform duration-300 ease-out z-10 max-w-[430px] mx-auto" style="bottom: calc(80px + env(safe-area-inset-bottom, 0px))">
       <button id="btn-start" class="btn-primary flex items-center justify-center gap-2 w-full">
         SELECT A GAME
       </button>
