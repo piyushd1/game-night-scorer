@@ -196,26 +196,41 @@ function _bindEvents(container, roomCode) {
   });
 
   // Call it a Night — host only, between games
-  container.querySelector('#btn-call-night')?.addEventListener('click', async () => {
+  container.querySelector('#btn-call-night')?.addEventListener('click', async (e) => {
     if (!state.isHost()) {
       toast.show('Only the host can do that');
       return;
     }
     const confirmed = window.confirm('Call it a night? This locks the room and shows the recap to everyone.');
     if (!confirmed) return;
+
+    const btn = e.currentTarget;
+    const originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner mx-auto"></div><span class="sr-only">Loading...</span>';
+
     try {
       await fb.endNight(roomCode);
-    } catch (e) {
-      console.error('End night failed:', e);
+    } catch (err) {
+      console.error('End night failed:', err);
       toast.show('Failed to end night');
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
     }
   });
 
-  container.querySelector('#btn-change-host')?.addEventListener('click', async () => {
+  container.querySelector('#btn-change-host')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    const originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner mx-auto"></div><span class="sr-only">Loading...</span>';
+
     try {
       await fb.releaseHost(roomCode);
-    } catch (e) {
+    } catch (err) {
       toast.show('Failed to release host');
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
     }
   });
 
@@ -520,13 +535,21 @@ function _renderFinishedGameActions(el, roomCode, game, trackStats) {
     router.navigate('recap', { roomCode });
   });
 
-  el.querySelector('#btn-call-night-finished')?.addEventListener('click', async () => {
+  el.querySelector('#btn-call-night-finished')?.addEventListener('click', async (e) => {
     const confirmed = window.confirm('Call it a night? This locks the room and shows the recap to everyone.');
     if (!confirmed) return;
+
+    const btn = e.currentTarget;
+    const originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner mx-auto"></div><span class="sr-only">Loading...</span>';
+
     try {
       await fb.endNight(roomCode);
-    } catch (e) {
+    } catch (err) {
       toast.show('Failed to end night');
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
     }
   });
 }
