@@ -23,3 +23,6 @@
 ## 2024-05-25 - Prefetch vs Preload for background assets
 **Learning:** Adding a `<link rel="preload">` for a heavy image asset that is NOT immediately visible on the initial screen (e.g., a sprite sheet for an overlay on a later page) is a performance anti-pattern. It forces the browser to prioritize that download, competing with critical CSS/JS and delaying the Largest Contentful Paint (LCP) of the initial screen.
 **Action:** Always use `<link rel="prefetch">` for assets that are required for subsequent interactions or screens, allowing the browser to download them in the background during idle time without blocking the critical render path.
+## 2024-05-30 - [Unified Memoization for Derived Collections]
+**Learning:** Found that even when caching one derived calculation inside an O(P*R) rendering loop, placing additional independent O(P*R) array calculations (like mapping `juaMeta`) right next to it negates the performance benefit. It results in repeated array allocations on every render cycle.
+**Action:** Always combine multiple separate derived calculations that share the same loop structure into a single, unified cache memoization block. This avoids redundant passes and array allocations during rapid synchronous render cycles.
