@@ -326,7 +326,7 @@ async function _submitRound(container, roomCode, initialGame, gameModule) {
     if (!connected) {
       btn.innerHTML = '<span class="font-mono text-[10px] uppercase tracking-widest">Waiting for connection…</span>';
     } else {
-      btn.innerHTML = '<div class="spinner mx-auto"></div>';
+      btn.innerHTML = '<div class="spinner mx-auto"></div><span class="sr-only">Loading...</span>';
     }
   });
 
