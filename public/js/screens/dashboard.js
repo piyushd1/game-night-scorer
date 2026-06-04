@@ -608,7 +608,7 @@ function _render(container, roomCode) {
         patchedRounds.forEach((rnd) => { newTotals = gameModule.applyRound(newTotals, rnd, game); });
         const saveBtn = content.querySelector('#btn-edit-save');
         saveBtn.disabled = true;
-        saveBtn.innerHTML = '<div class="spinner mx-auto"></div>';
+        saveBtn.innerHTML = '<div class="spinner mx-auto"></div><span class="sr-only">Loading...</span>';
         const pendingAdjustments = { ..._editAdjustments };
         const pendingFirstSavePid = _editFirstSavePid;
         _editAdjustments = {};
@@ -1367,7 +1367,7 @@ async function _confirmFlip7Round(container, roomCode, initialGame, gameModule) 
   if (!confirmed) return;
 
   const btn = container.querySelector('#btn-confirm-round');
-  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner mx-auto"></div>'; }
+  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner mx-auto"></div><span class="sr-only">Loading...</span>'; }
 
   try {
     await fb.submitRound(roomCode, game.gameId, rounds.length, draft, newTotals, endResult.ended ? endResult : null);
@@ -1451,7 +1451,7 @@ function _openAdjustDrawer(container, roomCode, game, pid, snapshot) {
         <input type="number" id="adj-amount-input" inputmode="numeric"
           class="score-input flex-1" placeholder="0" min="0"
           value="${initialAmount || ''}">
-        <button id="adj-apply-btn" class="btn-primary shrink-0 flex items-center justify-center" style="width:48px;height:48px;padding:0">
+        <button id="adj-apply-btn" aria-label="Apply adjustment" class="btn-primary shrink-0 flex items-center justify-center" style="width:48px;height:48px;padding:0">
           <span aria-hidden="true" class="material-symbols-outlined" style="font-size:20px;font-variation-settings:'FILL' 1">check</span>
         </button>
       </div>
