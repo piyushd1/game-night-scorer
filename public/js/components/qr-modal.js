@@ -5,14 +5,26 @@
 // Appended to document.body so screen re-renders don't destroy it.
 
 let _el = null;
+let _triggerElement = null;
 
 export function show(url, roomCode) {
+  _triggerElement = document.activeElement;
+
   if (!_el) {
     _el = document.createElement('div');
     _el.id = 'qr-modal';
     _el.className = 'fixed inset-0 z-[300] flex items-center justify-center';
+    _el.setAttribute('role', 'dialog');
+    _el.setAttribute('aria-modal', 'true');
+    _el.setAttribute('aria-label', 'Share QR Code');
     _el.style.display = 'none';
     document.body.appendChild(_el);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && _el && _el.style.display === 'flex') {
+        hide();
+      }
+    });
   }
 
   _el.innerHTML = `
@@ -53,6 +65,11 @@ export function show(url, roomCode) {
       setTimeout(() => { btn.textContent = 'COPY LINK'; }, 2000);
     }).catch(() => {});
   });
+
+  requestAnimationFrame(() => {
+    const closeBtn = _el.querySelector('#qr-close');
+    if (closeBtn) closeBtn.focus();
+  });
 }
 
 export function hide() {
@@ -60,4 +77,9 @@ export function hide() {
   _el.style.display = 'none';
   _el.innerHTML = '';
   document.body.style.overflow = '';
+
+  if (_triggerElement) {
+    _triggerElement.focus();
+    _triggerElement = null;
+  }
 }
