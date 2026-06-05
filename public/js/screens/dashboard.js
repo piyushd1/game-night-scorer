@@ -88,7 +88,7 @@ export function mount(container, params = {}) {
   // Bottom nav
   bottomNav.show('dashboard');
 
-  container.innerHTML = `<div id="dash-content" class="p-6 pb-8"></div>`;
+  container.innerHTML = `<div id="dash-content" class="p-6 pb-8 flex flex-col min-h-full"></div>`;
 
   // Kick off grayscale spritesheet conversion as early as possible
   _initGrayscaleSprite();
@@ -470,6 +470,9 @@ function _render(container, roomCode) {
       `).join('');
 
       html += `
+        <!-- Spacer: pushes the confirm/edit row to the bottom of the screen;
+             collapses when the scoreboard is tall enough to scroll. -->
+        <div class="flex-1 min-h-8"></div>
         <div class="flex gap-2 mt-6">
           ${_editScoresMode ? `
             <button id="btn-edit-cancel" aria-label="Cancel" title="Cancel"
