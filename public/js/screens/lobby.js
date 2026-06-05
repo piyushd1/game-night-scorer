@@ -322,9 +322,6 @@ function _startWatching(roomCode, container) {
     const isHost = state.isHost();
     const lobby = data.lobby || {};
     const players = data.players || {};
-    const games = data.games || {};
-    const trackStats = lobby.trackStats !== false;
-    const hasPlayedGames = Object.values(games).some((g) => g.rounds && Object.keys(g.rounds).length > 0);
 
     // The lobby is always a nav tab: it shows on its own when no game is active,
     // and alongside the game tab during a Flip 7 game. Only a non-Flip 7 game in
@@ -336,33 +333,35 @@ function _startWatching(roomCode, container) {
       bottomNav.show('lobby');
     }
 
-    // Show/hide host controls
-    container.querySelector('#host-controls').style.display = isHost ? 'block' : 'none';
+    // Show/hide host controls (add-player row + quick-add chips). Hidden once
+    // the night has ended — no more players can be added.
+    const canAdd = isHost && lobby.status !== 'night-ended';
+    container.querySelector('#host-controls').style.display = canAdd ? 'block' : 'none';
     const viewerLabelEl = container.querySelector('#viewer-label');
     if (viewerLabelEl) {
       if (isHost) {
         viewerLabelEl.style.display = 'none';
       } else {
         viewerLabelEl.style.display = 'block';
-        const isGameActive = lobby.status === 'playing' && lobby.activeGameId;
-        const showRecap = trackStats && hasPlayedGames;
-        const nightEnded = lobby.status === 'night-ended';
-        const spectatorSubLine = nightEnded
-          ? 'Host has ended the game night'
-          : 'Waiting for the host to start the game';
-        const spectatorSubSize = nightEnded ? 'text-sm' : 'text-base';
-        viewerLabelEl.innerHTML = isGameActive
-          ? `${showRecap ? `<button id="btn-spectator-recap" class="w-full bg-surface-container-lowest border border-outline py-3 font-headline font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-surface-container-high transition-colors">
-                 <span aria-hidden="true" class="material-symbols-outlined text-sm">bar_chart</span>
-                 VIEW NIGHT RECAP
-               </button>` : ''}`
-          : `<div class="bg-surface-container-high border border-outline p-4 text-center">
-               <p class="font-headline font-bold text-lg uppercase tracking-widest text-outline">SPECTATOR MODE</p>
-               <p class="font-body ${spectatorSubSize} text-on-surface-variant mt-1">${spectatorSubLine}</p>
-             </div>`;
-        viewerLabelEl.querySelector('#btn-spectator-recap')?.addEventListener('click', () => {
-          router.navigate('recap', { roomCode });
-        });
+        // Always show the Spectator Mode card; the sub-line reflects room state.
+        const gameActive = lobby.status === 'playing' && state.currentGame()?.status === 'active';
+        let spectatorSubLine, spectatorSubSize;
+        if (gameActive) {
+          spectatorSubLine = 'Host has started the game...';
+          spectatorSubSize = 'text-base';
+        } else if (lobby.status === 'night-ended') {
+          spectatorSubLine = 'Host has ended the game night';
+          spectatorSubSize = 'text-sm';
+        } else {
+          spectatorSubLine = 'Waiting for the host to start the game';
+          spectatorSubSize = 'text-base';
+        }
+        viewerLabelEl.innerHTML = `
+          <div class="bg-surface-container-high border border-outline p-4 text-center">
+            <p class="font-headline font-bold text-lg uppercase tracking-widest text-outline">SPECTATOR MODE</p>
+            <p class="font-body ${spectatorSubSize} text-on-surface-variant mt-1">${spectatorSubLine}</p>
+          </div>
+        `;
       }
     }
     container.querySelector('#start-section').style.display = isHost ? 'block' : 'none';
@@ -374,7 +373,7 @@ function _startWatching(roomCode, container) {
     const isPlaying = lobby.status === 'playing';
     const gameInProgress = state.currentGame()?.status === 'active';
     const addRow = container.querySelector('#add-player-row');
-    if (addRow) addRow.style.display = isHost ? 'flex' : 'none';
+    if (addRow) addRow.style.display = canAdd ? 'flex' : 'none';
     _renderPlayers(container, players, isHost, roomCode, gameInProgress);
     _showSuggestions(container, roomCode);
 
