@@ -52,7 +52,7 @@ export function mount(container, params = {}) {
   container.innerHTML = `
     <div class="h-full flex flex-col bg-primary text-on-primary">
       <!-- Hero -->
-      <main class="flex-1 flex flex-col items-center overflow-y-auto min-h-0 px-6 pt-6 pb-8">
+      <main class="flex-1 flex flex-col items-center overflow-y-auto min-h-0 px-6 pt-6 ${juaOn ? 'pb-28' : 'pb-8'}">
         <div id="hero-section" class="text-center w-full max-w-sm mx-auto mb-12">
           <div class="flex items-center justify-center gap-2 mb-4">
             <span aria-hidden="true" class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">emoji_events</span>
@@ -260,20 +260,29 @@ export function mount(container, params = {}) {
 
       </main>
 
-      <!-- Actions (jua winnings toggle; Lobby/Recap live in the bottom nav) -->
       ${juaOn ? `
-      <footer class="p-6 shrink-0">
-        <button id="btn-toggle-view" class="w-full py-4 bg-white text-primary font-headline font-extrabold uppercase tracking-widest text-base transition-opacity hover:opacity-90">
-          VIEW WINNINGS
-        </button>
-      </footer>
+      <!-- Docked view switcher: Scores / Winnings (sits flush above the bottom nav) -->
+      <div class="fixed left-0 right-0 p-4 bg-primary border-t border-white/20 z-40 max-w-[430px] mx-auto" style="bottom: calc(80px + env(safe-area-inset-bottom, 0px))">
+        <div role="tablist" aria-label="View" class="flex border border-white/40">
+          <button id="seg-scores" role="tab" class="flex-1 py-2.5 font-headline font-extrabold uppercase tracking-widest text-sm transition-colors">Scores</button>
+          <button id="seg-winnings" role="tab" class="flex-1 py-2.5 font-headline font-extrabold uppercase tracking-widest text-sm transition-colors">Winnings</button>
+        </div>
+      </div>
       ` : ''}
     </div>
   `;
 
+  const segScores = container.querySelector('#seg-scores');
+  const segWinnings = container.querySelector('#seg-winnings');
+
   const _applyView = (showWinnings) => {
-    const btn = container.querySelector('#btn-toggle-view');
-    if (btn) btn.textContent = showWinnings ? 'VIEW SCORES' : 'VIEW WINNINGS';
+    if (segScores && segWinnings) {
+      const active = 'bg-white text-primary';
+      segScores.className = `flex-1 py-2.5 font-headline font-extrabold uppercase tracking-widest text-sm transition-colors ${showWinnings ? '' : active}`;
+      segWinnings.className = `flex-1 py-2.5 font-headline font-extrabold uppercase tracking-widest text-sm transition-colors ${showWinnings ? active : ''}`;
+      segScores.setAttribute('aria-selected', String(!showWinnings));
+      segWinnings.setAttribute('aria-selected', String(showWinnings));
+    }
     const hero = container.querySelector('#hero-section');
     if (hero) hero.style.display = showWinnings ? 'none' : '';
     container.querySelectorAll('.score-row').forEach((el) => {
@@ -289,11 +298,13 @@ export function mount(container, params = {}) {
   let showWinnings = juaOn && localStorage.getItem('gns_winner_view') === 'winnings';
   _applyView(showWinnings);
 
-  container.querySelector('#btn-toggle-view')?.addEventListener('click', () => {
-    showWinnings = !showWinnings;
+  const _setView = (next) => {
+    showWinnings = next;
     localStorage.setItem('gns_winner_view', showWinnings ? 'winnings' : 'scores');
     _applyView(showWinnings);
-  });
+  };
+  segScores?.addEventListener('click', () => _setView(false));
+  segWinnings?.addEventListener('click', () => _setView(true));
 }
 
 export function unmount() {}
