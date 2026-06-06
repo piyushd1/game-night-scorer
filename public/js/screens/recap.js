@@ -26,7 +26,7 @@ export function mount(container, params = {}) {
   }
   const topBar = document.getElementById('top-bar');
   topBar.style.display = 'flex';
-  document.getElementById('top-bar-title').textContent = locked ? 'NIGHT LOCKED' : 'NIGHT RECAP';
+  document.getElementById('top-bar-title').textContent = locked ? 'FINAL RECAP' : 'RECAP';
 
   // No back button — recap is a nav tab; the header carries the shared
   // copy-link + QR + overflow (host only), matching the Lobby and Game tabs.
