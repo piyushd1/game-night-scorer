@@ -73,18 +73,21 @@ function _renderMenuItems() {
   const itemsEl = document.getElementById('host-menu-items');
   if (!itemsEl) return;
 
-  const lobby = state.get('roomLobby') || {};
-  const games = state.get('games') || {};
-  const gameActive = lobby.status === 'playing' && state.currentGame()?.status === 'active';
-  const trackStats = lobby.trackStats !== false;
-  const hasFinishedGame = Object.values(games).some((g) => g.status === 'finished');
-  // "Call it a Night" can't co-exist with "End Game" — finish the active game first.
-  const canCallNight = trackStats && hasFinishedGame && lobby.status !== 'night-ended' && !gameActive;
-
   const items = [];
-  if (gameActive) items.push({ action: 'end-game', icon: 'stop_circle', label: 'End Game' });
-  items.push({ action: 'change-host', icon: 'swap_horiz', label: 'Change Host' });
-  if (canCallNight) items.push({ action: 'call-night', icon: 'bedtime', label: 'Call it a Night' });
+  if (state.isHost()) {
+    const lobby = state.get('roomLobby') || {};
+    const games = state.get('games') || {};
+    const gameActive = lobby.status === 'playing' && state.currentGame()?.status === 'active';
+    const trackStats = lobby.trackStats !== false;
+    const hasFinishedGame = Object.values(games).some((g) => g.status === 'finished');
+    // "Call it a Night" can't co-exist with "End Game" — finish the active game first.
+    const canCallNight = trackStats && hasFinishedGame && lobby.status !== 'night-ended' && !gameActive;
+
+    if (gameActive) items.push({ action: 'end-game', icon: 'stop_circle', label: 'End Game' });
+    items.push({ action: 'change-host', icon: 'swap_horiz', label: 'Change Host' });
+    if (canCallNight) items.push({ action: 'call-night', icon: 'bedtime', label: 'Call it a Night' });
+  }
+  // Spectators only ever get "Exit Lobby" (the trigger is shown to them in Flip 7).
   items.push({ action: 'exit-lobby', icon: 'logout', label: 'Exit Lobby' });
 
   const base = 'host-menu-action w-full text-left px-4 py-3 font-headline font-bold text-xs uppercase tracking-widest text-error hover:bg-surface-container-high transition-colors flex items-center gap-3';
@@ -154,6 +157,9 @@ export function hide() {
  */
 export function renderTopBarActions(roomCode) {
   const isHost = state.isHost();
+  // Flip 7 spectators get the overflow menu too — their only option is "Exit Lobby".
+  const isFlip7 = state.currentGame()?.type === 'flip7';
+  const showMenu = isHost || isFlip7;
   const actionsEl = document.getElementById('top-bar-actions');
   if (!actionsEl) return;
 
@@ -163,8 +169,8 @@ export function renderTopBarActions(roomCode) {
       ${roomCode}
     </button>
     <button id="btn-qr-share" aria-label="Show QR code" title="Share room QR" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 ml-1" style="font-size:22px">qr_code_2</button>
-    ${isHost
-      ? `<button id="btn-host-menu-trigger" aria-label="Open host menu" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 ml-1" style="font-size:22px">more_vert</button>`
+    ${showMenu
+      ? `<button id="btn-host-menu-trigger" aria-label="Open menu" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 ml-1" style="font-size:22px">more_vert</button>`
       : ''
     }
   `;
