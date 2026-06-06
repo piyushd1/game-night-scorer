@@ -5,6 +5,7 @@
 import * as state from '../state.js';
 import * as router from '../router.js';
 import * as bottomNav from '../components/bottom-nav.js';
+import * as hostMenu from '../components/host-menu.js';
 import { getGame } from '../games/registry.js';
 import { accentColor } from '../state.js';
 import { escapeHTML } from '../utils.js';
@@ -29,13 +30,12 @@ export function mount(container, params = {}) {
   // it stays reachable (and navigable) after a game finishes.
   const topBar = document.getElementById('top-bar');
   topBar.style.display = 'flex';
-  document.getElementById('top-bar-title').textContent = 'WINNER';
+  document.getElementById('top-bar-title').textContent = 'Flip 7';
+  // No back button — winner is a bottom-nav tab, navigable like the other tabs.
   const backBtn = document.getElementById('top-bar-back');
-  backBtn.classList.remove('hidden');
-  backBtn.textContent = 'arrow_back';
-  backBtn.setAttribute('aria-label', 'Go back');
-  backBtn.onclick = () => router.navigate('lobby', { roomCode });
-  document.getElementById('top-bar-actions').innerHTML = '';
+  backBtn.classList.add('hidden');
+  backBtn.onclick = null;
+  hostMenu.renderTopBarActions(roomCode);
   bottomNav.show('winner');
 
   const gameModule = getGame(game.type);
