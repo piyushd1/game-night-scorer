@@ -26,6 +26,8 @@ export function mount(container, params = {}) {
   backBtn.setAttribute('aria-label', 'Go back');
   backBtn.onclick = () => router.navigate('lobby', { roomCode }, 'back');
   document.getElementById('top-bar-actions').innerHTML = '';
+  // Game select is a focused subscreen — hide the header sound button here.
+  document.getElementById('top-bar-sound').style.display = 'none';
 
   _selectedGame = null;
 

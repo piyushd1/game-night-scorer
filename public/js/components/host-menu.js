@@ -78,7 +78,8 @@ function _renderMenuItems() {
   const gameActive = lobby.status === 'playing' && state.currentGame()?.status === 'active';
   const trackStats = lobby.trackStats !== false;
   const hasFinishedGame = Object.values(games).some((g) => g.status === 'finished');
-  const canCallNight = trackStats && hasFinishedGame && lobby.status !== 'night-ended';
+  // "Call it a Night" can't co-exist with "End Game" — finish the active game first.
+  const canCallNight = trackStats && hasFinishedGame && lobby.status !== 'night-ended' && !gameActive;
 
   const items = [];
   if (gameActive) items.push({ action: 'end-game', icon: 'stop_circle', label: 'End Game' });
