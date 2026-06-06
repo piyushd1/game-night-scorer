@@ -340,7 +340,7 @@ function _render(container, roomCode) {
   // Spectators may tap a row to score when the host has enabled it on an active
   // Flip 7 game. The host still confirms the round.
   const spectatorCanScore = game.type === 'flip7' && !isHost
-    && lobby.spectatorScoring === true
+    && lobby.spectatorScoring !== false
     && game.status !== 'finished' && game.status !== 'abandoned';
 
   // Check winner redirect
@@ -1140,7 +1140,7 @@ function _bindDrawerEvents(container, roomCode, playerId, draftSnapshot) {
     // A spectator may only save while the host has scoring enabled (it may have
     // been turned off while this drawer was open).
     const isHost = state.isHost();
-    if (!isHost && (state.get('roomLobby') || {}).spectatorScoring !== true) {
+    if (!isHost && (state.get('roomLobby') || {}).spectatorScoring === false) {
       toast.show('Spectator scoring is off');
       _closeFlip7Drawer();
       _render(container, roomCode);

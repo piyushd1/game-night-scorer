@@ -70,26 +70,27 @@ export function mount(container, params = {}) {
 
       <!-- Player List: 2-column grid of player tiles -->
       <div id="player-list" class="grid grid-cols-2 gap-2"></div>
-
-      <!-- Host-only: let spectators enter scores (host still confirms the round). -->
-      <div id="spectator-scoring-section" class="mt-4 border border-outline bg-surface-container-lowest p-4" style="display:none">
-        <div class="flex items-center justify-between gap-3">
-          <label for="toggle-spectator-scoring" class="font-headline font-bold text-sm uppercase">Allow spectators to score</label>
-          <button
-            type="button"
-            role="switch"
-            id="toggle-spectator-scoring"
-            aria-checked="false"
-            class="w-12 h-7 border transition-colors relative focus:outline-none focus-visible:ring-2 focus-visible:ring-primary bg-surface-container-high border-outline"
-          ><span class="toggle-thumb absolute top-0.5 left-0.5 w-6 h-6 transition-all bg-outline"></span></button>
-        </div>
-      </div>
     </div>
 
     <!-- Docked bottom actions — pinned above the bottom nav. The sections below
          are mutually exclusive; the whole bar is shown/hidden in _render based on
          whether any action applies, so it never renders empty. -->
     <div id="lobby-actions" class="docked-bar p-4 bg-surface-container-low flex flex-col gap-3" style="display:none">
+
+      <!-- Host-only: let spectators enter scores (host still confirms the round).
+           Floated to the bottom bar, above the start button. Default on. -->
+      <div id="spectator-scoring-section" class="border border-outline bg-surface-container-lowest p-4" style="display:none">
+        <div class="flex items-center justify-between gap-3">
+          <label for="toggle-spectator-scoring" class="font-headline font-bold text-sm uppercase">Allow spectators to score</label>
+          <button
+            type="button"
+            role="switch"
+            id="toggle-spectator-scoring"
+            aria-checked="true"
+            class="w-12 h-7 border transition-colors relative focus:outline-none focus-visible:ring-2 focus-visible:ring-primary bg-surface-container-high border-outline"
+          ><span class="toggle-thumb absolute top-0.5 left-0.5 w-6 h-6 transition-all bg-outline"></span></button>
+        </div>
+      </div>
 
       <!-- Start Game (host only) -->
       <div id="start-section" style="display:none">
@@ -322,12 +323,15 @@ function _startWatching(roomCode, container) {
     }
     container.querySelector('#start-section').style.display = isHost ? 'block' : 'none';
 
-    // Host-only spectator-scoring toggle (persists across games in the night).
+    // Host-only spectator-scoring toggle — only while a game is actually active,
+    // so it never shares the bar with the "Start a new game" button.
+    // Defaults on — only an explicit `false` turns it off.
+    const showSpectatorToggle = isHost && state.currentGame()?.status === 'active';
     const specSection = container.querySelector('#spectator-scoring-section');
     if (specSection) {
-      specSection.style.display = isHost ? 'block' : 'none';
+      specSection.style.display = showSpectatorToggle ? 'block' : 'none';
       const specToggle = specSection.querySelector('#toggle-spectator-scoring');
-      if (specToggle) _applySpectatorToggleVisuals(specToggle, lobby.spectatorScoring === true);
+      if (specToggle) _applySpectatorToggleVisuals(specToggle, lobby.spectatorScoring !== false);
     }
 
     // Render player list. Add is always allowed for the host. Remove is allowed
@@ -397,7 +401,7 @@ function _startWatching(roomCode, container) {
     const showFinished = isHost && isGameFinished;
     const showGoToGame = !isHost && isPlaying && gameInProgress;
     const showBecomeHost = !lobby.hostKey && !isHost;
-    const anyAction = showStart || showFinished || nightLocked || showGoToGame || showBecomeHost;
+    const anyAction = showSpectatorToggle || showStart || showFinished || nightLocked || showGoToGame || showBecomeHost;
     const actionsBar = container.querySelector('#lobby-actions');
     if (actionsBar) actionsBar.style.display = anyAction ? 'flex' : 'none';
     // Reserve scroll space so the player grid clears the docked bar when shown.
