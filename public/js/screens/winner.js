@@ -6,9 +6,14 @@ import * as state from '../state.js';
 import * as router from '../router.js';
 import * as bottomNav from '../components/bottom-nav.js';
 import * as hostMenu from '../components/host-menu.js';
+import * as confetti from '../components/confetti.js';
 import { getGame } from '../games/registry.js';
 import { accentColor } from '../state.js';
 import { escapeHTML } from '../utils.js';
+
+// Tracks which game's winner we've already auto-celebrated, so returning to the
+// winner tab for the same game doesn't re-fire the confetti.
+let _celebratedGameId = null;
 
 export function mount(container, params = {}) {
   const roomCode = params.roomCode || state.get('roomCode');
@@ -46,25 +51,19 @@ export function mount(container, params = {}) {
   // Derive standings
   const standings = gameModule.deriveStandings(totals, game.playerIds);
   const winner = snapshot[game.winner] || {};
-  const winnerTotal = totals[game.winner] || 0;
   const winnerColor = accentColor(winner.accentIndex);
 
   container.innerHTML = `
-    <div class="h-full flex flex-col bg-primary text-on-primary">
+    <div class="h-full flex flex-col bg-background text-on-surface">
       <!-- Hero -->
       <main class="flex-1 flex flex-col items-center overflow-y-auto min-h-0 px-6 pt-6 ${juaOn ? 'pb-28' : 'pb-8'}">
-        <div id="hero-section" class="text-center w-full max-w-sm mx-auto mb-12">
+        <div id="hero-section" role="button" tabindex="0" aria-label="Celebrate again" title="Tap to celebrate again" class="text-center w-full max-w-sm mx-auto mb-12 cursor-pointer select-none">
           <div class="flex items-center justify-center gap-2 mb-4">
             <span aria-hidden="true" class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">emoji_events</span>
-            <span class="font-mono text-sm uppercase tracking-widest opacity-80">WINNER</span>
+            <span class="font-headline text-lg uppercase tracking-widest opacity-80">WINNER</span>
           </div>
 
-          <h1 class="font-headline font-black text-[48px] uppercase tracking-tight leading-none mb-4 truncate">${escapeHTML(winner.name || 'UNKNOWN')}</h1>
-
-          <div class="font-mono text-[72px] font-bold leading-none tracking-tighter">
-            ${winnerTotal}
-            <span class="text-2xl opacity-70 align-baseline">PTS</span>
-          </div>
+          <h1 class="font-headline font-black text-5xl uppercase tracking-tight leading-none truncate">${escapeHTML(winner.name || 'UNKNOWN')}</h1>
         </div>
 
         <!-- Standings -->
@@ -127,17 +126,23 @@ export function mount(container, params = {}) {
               return 0;
             };
 
-            const rowsHtml = standings.map((s) => {
+            // Only show the Saves/Fines column for JUA games that actually had
+            // at least one save or fine — otherwise it's an empty column.
+            const showSavesFines = juaOn && (
+              Object.values(savesCounts).some((n) => n > 0)
+              || Object.values(game.juaFines || {}).some((n) => n > 0)
+            );
+
+            const rows = standings.map((s) => {
               const p = snapshot[s.playerId] || {};
               const savesCount = savesCounts[s.playerId] || 0;
               const finesCount = (game.juaFines || {})[s.playerId] || 0;
 
-              // Save/Fines label shown in scores view
+              // Saves/Fines cell shown in the scores table (JUA only).
               const sfParts = [];
               if (savesCount > 0) sfParts.push(`Save: ${savesCount}`);
               if (finesCount > 0) sfParts.push(`Fines: ${finesCount}`);
-              const sfLine = juaOn && sfParts.length > 0
-                ? `<p class="font-mono text-xs opacity-60 mt-2">${sfParts.join(', ')}</p>` : '';
+              const sfText = juaOn && sfParts.length > 0 ? sfParts.join(', ') : '—';
 
               // Winnings math shown in winnings view
               let formulaStr = '';
@@ -162,35 +167,30 @@ export function mount(container, params = {}) {
                 formulaStr = terms.length > 1 ? terms.join(' ') : '';
               }
 
-              return `
-                <div class="py-2">
-                  <!-- Scores view -->
-                  <div class="score-row flex justify-between items-start">
-                    <div class="flex items-start gap-3">
-                      <span class="font-mono text-sm opacity-50 w-6 text-center mt-1">${s.rank}</span>
-                      <div>
-                        <p class="font-headline font-bold text-lg uppercase leading-tight">${escapeHTML(p.name || s.playerId)}</p>
-                        ${sfLine}
-                      </div>
+              const scoreTr = `
+                <tr>
+                  <td class="py-2 pr-3 text-center font-headline text-lg font-bold">${s.rank}</td>
+                  <td class="py-2 pr-3 font-headline text-lg font-bold uppercase leading-tight">${escapeHTML(p.name || s.playerId)}</td>
+                  ${showSavesFines ? `<td class="py-2 px-3 text-center font-mono text-lg opacity-70 whitespace-nowrap">${sfText}</td>` : ''}
+                  <td class="py-2 pl-3 text-right font-mono text-lg">${s.total}</td>
+                </tr>`;
+
+              const winningsRow = juaOn ? `
+                <div class="flex justify-between items-start gap-3 py-2">
+                  <div class="flex items-start gap-3 min-w-0">
+                    <span class="font-mono text-sm opacity-50 w-6 shrink-0 text-center">${s.rank}</span>
+                    <div class="min-w-0">
+                      <p class="font-headline font-bold text-lg uppercase leading-tight">${escapeHTML(p.name || s.playerId)}</p>
+                      ${formulaStr ? `<p class="font-mono text-xs opacity-70 leading-relaxed mt-1">${formulaStr}</p>` : ''}
                     </div>
-                    <span class="font-mono text-xl font-bold">${s.total}</span>
                   </div>
-                  ${juaOn ? `
-                  <!-- Winnings view -->
-                  <div class="winnings-row flex justify-between items-start gap-3" style="display:none">
-                    <div class="flex items-start gap-3 min-w-0">
-                      <span class="font-mono text-sm opacity-50 w-6 shrink-0 text-center">${s.rank}</span>
-                      <div class="min-w-0">
-                        <p class="font-headline font-bold text-lg uppercase leading-tight">${escapeHTML(p.name || s.playerId)}</p>
-                        ${formulaStr ? `<p class="font-mono text-xs opacity-70 leading-relaxed mt-1">${formulaStr}</p>` : ''}
-                      </div>
-                    </div>
-                    <p class="font-headline font-bold text-lg shrink-0">${amountStr}</p>
-                  </div>
-                  ` : ''}
-                </div>
-              `;
-            }).join('');
+                  <p class="font-headline font-bold text-lg shrink-0">${amountStr}</p>
+                </div>` : '';
+
+              return { scoreTr, winningsRow };
+            });
+            const scoreTrs = rows.map((r) => r.scoreTr).join('');
+            const winningsRows = rows.map((r) => r.winningsRow).join('');
 
             // Tie breakdown card — hidden until winnings view is active
             const hasTie = juaOn && (n1 > 1 || n2 > 1 || n3 > 1);
@@ -229,10 +229,10 @@ export function mount(container, params = {}) {
               };
               const tieRows = [posRow(1, n1), posRow(2, n2), posRow(3, n3)].filter((row) => row.count > 0);
               tieHtml = `
-                <div id="tie-card" style="display:none" class="mt-4 mb-6 bg-white text-black p-4">
+                <div id="tie-card" style="display:none" class="mt-4 mb-6 bg-surface-container-lowest border border-outline text-on-surface p-4">
                   <table class="w-full font-mono text-xs border-collapse">
                     <thead>
-                      <tr class="border-b border-black/20">
+                      <tr class="border-b border-outline">
                         <th class="text-left pb-2 font-bold uppercase tracking-widest">#</th>
                         <th class="text-left pb-2 font-bold uppercase tracking-widest px-2">Winnings</th>
                         <th class="text-center pb-2 font-bold uppercase tracking-widest px-2">Players</th>
@@ -241,7 +241,7 @@ export function mount(container, params = {}) {
                     </thead>
                     <tbody>
                       ${tieRows.map((row) => `
-                        <tr class="border-b border-black/10 last:border-0">
+                        <tr class="border-b border-outline-variant last:border-0">
                           <td class="py-1.5 pr-2">${escapeHTML(row.label)}</td>
                           <td class="py-1.5 px-2">${escapeHTML(row.math)}</td>
                           <td class="py-1.5 px-2 text-center">${row.count}</td>
@@ -254,7 +254,23 @@ export function mount(container, params = {}) {
               `;
             }
 
-            return tieHtml + `<div class="divide-y divide-white/20">${rowsHtml}</div>`;
+            const headCls = 'py-2 font-mono text-xs uppercase tracking-widest text-outline';
+            const scoresTable = `
+              <table id="scores-view" class="w-full border-collapse">
+                <thead>
+                  <tr class="border-b border-outline">
+                    <th class="${headCls} pr-3 text-center">Rank</th>
+                    <th class="${headCls} pr-3 text-left">Player</th>
+                    ${showSavesFines ? `<th class="${headCls} px-3 text-center">Saves/Fines</th>` : ''}
+                    <th class="${headCls} pl-3 text-right">Score</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-outline-variant">${scoreTrs}</tbody>
+              </table>`;
+            const winningsView = juaOn
+              ? `<div id="winnings-view" class="divide-y divide-outline-variant" style="display:none">${winningsRows}</div>`
+              : '';
+            return scoresTable + winningsView + tieHtml;
           })()}
         </div>
 
@@ -262,8 +278,8 @@ export function mount(container, params = {}) {
 
       ${juaOn ? `
       <!-- Docked view switcher: Scores / Winnings (sits flush above the bottom nav) -->
-      <div class="docked-bar p-4 bg-primary">
-        <div role="tablist" aria-label="View" class="flex border border-white/40">
+      <div class="docked-bar p-4 bg-surface-container-low">
+        <div role="tablist" aria-label="View" class="flex border border-outline">
           <button id="seg-scores" role="tab" class="flex-1 py-2.5 font-headline font-extrabold uppercase tracking-widest text-sm transition-colors">Scores</button>
           <button id="seg-winnings" role="tab" class="flex-1 py-2.5 font-headline font-extrabold uppercase tracking-widest text-sm transition-colors">Winnings</button>
         </div>
@@ -277,20 +293,17 @@ export function mount(container, params = {}) {
 
   const _applyView = (showWinnings) => {
     if (segScores && segWinnings) {
-      const active = 'bg-white text-primary';
+      const active = 'bg-primary text-on-primary';
       segScores.className = `flex-1 py-2.5 font-headline font-extrabold uppercase tracking-widest text-sm transition-colors ${showWinnings ? '' : active}`;
       segWinnings.className = `flex-1 py-2.5 font-headline font-extrabold uppercase tracking-widest text-sm transition-colors ${showWinnings ? active : ''}`;
       segScores.setAttribute('aria-selected', String(!showWinnings));
       segWinnings.setAttribute('aria-selected', String(showWinnings));
     }
-    const hero = container.querySelector('#hero-section');
-    if (hero) hero.style.display = showWinnings ? 'none' : '';
-    container.querySelectorAll('.score-row').forEach((el) => {
-      el.style.display = showWinnings ? 'none' : 'flex';
-    });
-    container.querySelectorAll('.winnings-row').forEach((el) => {
-      el.style.display = showWinnings ? 'flex' : 'none';
-    });
+    // Hero (trophy + winner name) stays visible on both Scores and Winnings tabs.
+    const scoresView = container.querySelector('#scores-view');
+    if (scoresView) scoresView.style.display = showWinnings ? 'none' : '';
+    const winningsView = container.querySelector('#winnings-view');
+    if (winningsView) winningsView.style.display = showWinnings ? '' : 'none';
     const tieCard = container.querySelector('#tie-card');
     if (tieCard) tieCard.style.display = showWinnings ? 'block' : 'none';
   };
@@ -315,6 +328,23 @@ export function mount(container, params = {}) {
   };
   segScores?.addEventListener('click', () => _setView(false));
   segWinnings?.addEventListener('click', () => _setView(true));
+
+  // Tapping the hero (trophy, "WINNER" label, or winner name) retriggers the rain.
+  const hero = container.querySelector('#hero-section');
+  if (hero) {
+    hero.addEventListener('click', () => confetti.startRain());
+    hero.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); confetti.startRain(); }
+    });
+  }
+
+  // Auto-celebrate the first time a game's winner is revealed — but not when
+  // simply returning to the winner tab for the same game. The rain isn't tied to
+  // this screen: it keeps falling even if you navigate away mid-celebration.
+  if (_celebratedGameId !== activeGameId) {
+    _celebratedGameId = activeGameId;
+    confetti.startRain();
+  }
 }
 
 export function unmount() {}
