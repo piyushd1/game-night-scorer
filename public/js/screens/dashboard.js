@@ -1029,6 +1029,32 @@ function _closeFlip7Drawer() {
   document.body.style.overflow = '';
 }
 
+// ── DEBUG: pause before a CAS write ──
+// Blocks the save until the floating RESUME button is clicked, so two devices can
+// be driven to the same point and resumed in a chosen order to stage races.
+// DISABLED by default (no button, no wait). Set `window.__GNS_DEBUG_CAS_PAUSE = true`
+// in the console to re-enable. Remove this block (and its call site) before shipping.
+function _debugPauseBeforeCAS(label) {
+  if (!(typeof window !== 'undefined' && window.__GNS_DEBUG_CAS_PAUSE === true)) {
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    const el = document.createElement('div');
+    el.setAttribute('role', 'dialog');
+    el.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:rgba(0,0,0,0.45);backdrop-filter:blur(2px);';
+    el.innerHTML = `
+      <div style="font-family:monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#fff;background:#000;padding:6px 10px;border:1px solid #fff;">PAUSED BEFORE CAS</div>
+      <button type="button" id="gns-debug-resume" style="font-family:monospace;font-weight:700;font-size:18px;letter-spacing:0.08em;text-transform:uppercase;color:#000;background:#fff;border:2px solid #000;padding:18px 28px;cursor:pointer;box-shadow:0 6px 0 rgba(0,0,0,0.4);">▶ RESUME CAS</button>
+      <div style="font-family:monospace;font-size:12px;color:#fff;background:rgba(0,0,0,0.6);padding:6px 10px;max-width:80vw;text-align:center;">${escapeHTML(String(label || ''))}</div>
+    `;
+    el.querySelector('#gns-debug-resume').addEventListener('click', () => {
+      el.remove();
+      resolve();
+    });
+    document.body.appendChild(el);
+  });
+}
+
 function _refreshDrawerCardStates(playerId) {
   if (!_flip7DrawerEl) return;
   const draft = _flip7Draft[playerId] || { numbers: new Set(), actions: new Set(), x2: false };
@@ -1134,6 +1160,9 @@ function _bindDrawerEvents(container, roomCode, playerId, draftSnapshot) {
       // first-save lives on the entry now; a Flip 7 can't also be a first save.
       firstSave: !!game.config?.jua && !flip7 && _juaRoundData.firstSavePid === playerId,
     };
+
+    // DEBUG: pause here so concurrent CAS attempts can be staged by hand.
+    await _debugPauseBeforeCAS(`${game.playerSnapshot?.[playerId]?.name || playerId} · ${pts} pts · base v${_flip7DrawerBaseV}`);
 
     let res;
     try {
@@ -1361,9 +1390,13 @@ async function _confirmFlip7Round(container, roomCode, initialGame, gameModule) 
   // saved by a spectator so the confirm dialog can highlight them.
   const liveRound = game.liveRound || {};
   const spectatorPids = new Set();
+  // Version vector captured as we read the live selections — used after the
+  // confirm dialog to detect a spectator edit that landed while the host decided.
+  const baseVersions = {};
   const entries = {};
   playerIds.forEach((pid) => {
     const live = liveRound[pid];
+    baseVersions[pid] = live?.v || 0;
     const draftEntry = _liveRoundToDraft(live);
     const { basePoints, flip7 } = _computeFlip7Score(draftEntry);
     if (live?.by === 'spectator') spectatorPids.add(pid);
@@ -1408,6 +1441,18 @@ async function _confirmFlip7Round(container, roomCode, initialGame, gameModule) 
   }));
   const confirmed = await confirmRoundDialog(playerScores);
   if (!confirmed) return;
+
+  // A spectator may have saved a score while the host was in the dialog. The host
+  // is the only committer, so a client-side version compare against the freshest
+  // liveRound is enough (no need to CAS the commit itself). If anything changed,
+  // re-open the dialog so the host only ever commits what they actually approved.
+  const freshLive = (state.currentGame() || game).liveRound || {};
+  const changed = playerIds.some((pid) => (freshLive[pid]?.v || 0) !== baseVersions[pid]);
+  if (changed) {
+    toast.show('Scores changed — review again');
+    _confirmFlip7Round(container, roomCode, game, gameModule);
+    return;
+  }
 
   const btn = container.querySelector('#btn-confirm-round');
   if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner mx-auto"></div>'; }

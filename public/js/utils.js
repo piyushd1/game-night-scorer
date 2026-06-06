@@ -23,12 +23,18 @@ export function escapeHTML(str) {
  */
 export function confirmRoundDialog(playerScores) {
   return new Promise((resolve) => {
-    // A player gets their own row if they scored, hit flip7, or earned a first save —
-    // even when that score is 0 (first save at 0 points still counts).
+    // A player gets their own row if they scored, hit flip7, earned a first save, or
+    // a spectator touched their entry (so the host always sees spectator edits, even
+    // a spectator-entered 0). Spectator (yellow) rows first; within each set,
+    // first-save on top, then flip7. Sort is stable, so ties keep original order.
     const shown = playerScores
-      .filter((p) => p.score !== 0 || p.flip7 || p.firstSave)
-      .sort((a, b) => (b.flip7 || b.firstSave ? 1 : 0) - (a.flip7 || a.firstSave ? 1 : 0));
-    const others = playerScores.filter((p) => p.score === 0 && !p.flip7 && !p.firstSave);
+      .filter((p) => p.score !== 0 || p.flip7 || p.firstSave || p.spectator)
+      .sort((a, b) =>
+        (b.spectator ? 1 : 0) - (a.spectator ? 1 : 0)
+        || (b.firstSave ? 1 : 0) - (a.firstSave ? 1 : 0)
+        || (b.flip7 ? 1 : 0) - (a.flip7 ? 1 : 0)
+      );
+    const others = playerScores.filter((p) => p.score === 0 && !p.flip7 && !p.firstSave && !p.spectator);
 
     const rows = [
       ...shown.map((p) => ({

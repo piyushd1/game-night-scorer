@@ -296,7 +296,9 @@ export async function saveLiveRoundCAS(roomCode, gameId, pid, baseVersion, newEn
     if (newEntry.firstSave) {
       Object.keys(next).forEach((id) => {
         if (id !== pid && next[id] && next[id].firstSave) {
-          next[id] = { ...next[id], firstSave: false, v: (next[id].v || 0) + 1 };
+          // This actor just modified the prior holder's entry, so its `by` (which
+          // drives the yellow highlight) tracks them too, alongside the version bump.
+          next[id] = { ...next[id], firstSave: false, by: newEntry.by, v: (next[id].v || 0) + 1 };
         }
       });
     }
