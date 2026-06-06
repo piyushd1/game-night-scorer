@@ -24,11 +24,14 @@ let _unsubLobby = null;
 let _unsubPlayers = null;
 
 // ── Flip 7 inline scoring state ──
-// Draft persists across Firebase re-renders until the round is confirmed or undone.
-let _flip7Draft = {}; // { [playerId]: { numbers: Set<number>, actions: Set<number>, x2: bool, bust: bool } }
-let _flip7RoundCount = -1; // Detects undo (round count decreases) to clear the draft
+// The in-progress round's source of truth is the SYNCED liveRound/{pid} structure
+// in Firebase (so spectators can score too). _flip7Draft is only a transient scratch
+// buffer for the currently-open drawer; it is hydrated from liveRound on open.
+let _flip7Draft = {}; // { [playerId]: { numbers: Set<number>, actions: Set<number>, x2: bool } }
+let _flip7RoundCount = -1; // Detects undo/submit (round count changes) to clear scratch
 let _flip7DrawerEl = null; // Fixed overlay appended to body — survives _render() calls
 let _flip7DrawerPlayerId = null; // Which player's drawer is currently open
+let _flip7DrawerBaseV = 0; // CAS baseline: liveRound/{pid}.v seen when the drawer opened
 let _flip7Grayscale = false; // false = colour (default); true = grayscale (toggle hidden for now)
 let _flip7DragMode = false; // Drag-to-rearrange mode for the card grid
 
@@ -204,9 +207,17 @@ function _render(container, roomCode) {
   // Index of the round currently selected for editing (-1 when not in edit mode)
   const editingRoundIndex = _editScoresMode ? roundKeys.indexOf(_editLastRoundKey) : -1;
 
-  // For Flip 7, show live totals (committed + in-progress draft) if the host
-  // has pushed any scores mid-round. Falls back to committed totals.
-  let displayTotals = (game.type === 'flip7' && game.liveTotals) ? game.liveTotals : totals;
+  // For Flip 7, the live total is DERIVED on read from the committed total plus
+  // the in-progress round points held in liveRound/{pid}. liveRound is the single
+  // source of truth for the in-progress round, so there is no separate cached map
+  // that can drift out of sync with totals.
+  let displayTotals = totals;
+  if (game.type === 'flip7' && game.liveRound) {
+    displayTotals = {};
+    playerIds.forEach((pid) => {
+      displayTotals[pid] = (totals[pid] || 0) + (game.liveRound[pid]?.pts || 0);
+    });
+  }
 
   // While in edit mode with buffered adjustments, show preview totals locally
   if (_editScoresMode && editingRoundIndex >= 0 && Object.keys(_editAdjustments).length > 0) {
@@ -300,15 +311,13 @@ function _render(container, roomCode) {
     });
   }
 
-  // Sync Flip 7 draft with the current round
+  // Track the current round. The in-progress selection lives in synced liveRound,
+  // so there is no local draft to restore; we only drop the transient scratch when
+  // a round is committed or undone.
   if (game.type === 'flip7' && rounds.length !== _flip7RoundCount) {
     if (_flip7RoundCount === -1) {
-      // First render after mount — restore saved draft if available
-      _restoreDraft(roomCode, game.gameId, rounds.length);
       _restoreSortState(roomCode, game.gameId);
     } else {
-      // Round count changed (submit or undo) — discard stale draft
-      _clearDraft(roomCode, game.gameId, _flip7RoundCount);
       _flip7Draft = {};
     }
     _flip7RoundCount = rounds.length;
@@ -326,6 +335,12 @@ function _render(container, roomCode) {
 
   // Game info bar
   const isFlip7Host = game.type === 'flip7' && isHost
+    && game.status !== 'finished' && game.status !== 'abandoned';
+
+  // Spectators may tap a row to score when the host has enabled it on an active
+  // Flip 7 game. The host still confirms the round.
+  const spectatorCanScore = game.type === 'flip7' && !isHost
+    && lobby.spectatorScoring === true
     && game.status !== 'finished' && game.status !== 'abandoned';
 
   // Check winner redirect
@@ -406,7 +421,7 @@ function _render(container, roomCode) {
     const p = snapshot[s.playerId] || {};
     if (isFlip7Host) {
       // Tappable row — host enters cards via drawer
-      const liveFirstSave = game.config?.jua && game.juaLive?.firstSavePid === s.playerId;
+      const liveFirstSave = !!game.config?.jua && !!game.liveRound?.[s.playerId]?.firstSave;
       html += _renderFlip7HostRow(
         s, p,
         _editScoresMode ? (displayRoundPoints[s.playerId] || []) : _applyRoundsDisplayLimit(displayRoundPoints[s.playerId] || []),
@@ -414,7 +429,8 @@ function _render(container, roomCode) {
         _editScoresMode ? (displayRoundFlip7Meta[s.playerId] || []) : _applyRoundsDisplayLimit(displayRoundFlip7Meta[s.playerId] || []),
         _editScoresMode ? (roundJuaMeta[s.playerId] || []) : _applyRoundsDisplayLimit(roundJuaMeta[s.playerId] || []),
         liveFirstSave,
-        _editScoresMode ? 0 : (game.juaFines?.[s.playerId] || 0)
+        _editScoresMode ? 0 : (game.juaFines?.[s.playerId] || 0),
+        game.liveRound?.[s.playerId] || null
       );
     } else {
       const liveEntry = game.liveRound?.[s.playerId];
@@ -424,11 +440,11 @@ function _render(container, roomCode) {
       const spectatorMeta = _applyRoundsDisplayLimit(liveEntry != null
         ? [...(displayRoundFlip7Meta[s.playerId] || []), liveEntry.flip7 || false]
         : (displayRoundFlip7Meta[s.playerId] || []));
-      const liveFirstSave = game.config?.jua && game.juaLive?.firstSavePid === s.playerId;
+      const liveFirstSave = !!game.config?.jua && !!game.liveRound?.[s.playerId]?.firstSave;
       const spectatorJuaMeta = _applyRoundsDisplayLimit(liveEntry != null
         ? [...(roundJuaMeta[s.playerId] || []), liveFirstSave]
         : (roundJuaMeta[s.playerId] || []));
-      html += renderRow({
+      const rowHtml = renderRow({
         name: p.name || s.playerId,
         total: s.total,
         accentIndex: p.accentIndex || 0,
@@ -443,6 +459,11 @@ function _render(container, roomCode) {
         winMode: gameModule.winMode,
         fineCount: game.juaFines?.[s.playerId] || 0,
       });
+      if (spectatorCanScore) {
+        html += `<div class="flip7-spectator-row cursor-pointer" role="button" tabindex="0" data-player-id="${escapeHTML(s.playerId)}" aria-label="Score ${escapeHTML(p.name || s.playerId)}">${rowHtml}</div>`;
+      } else {
+        html += rowHtml;
+      }
     }
   });
   html += `</div>`;
@@ -466,10 +487,11 @@ function _render(container, roomCode) {
       `).join('');
 
       html += `
-        <!-- Spacer: pushes the confirm/edit row to the bottom of the screen;
-             collapses when the scoreboard is tall enough to scroll. -->
-        <div class="flex-1 min-h-8"></div>
-        <div class="flex gap-2 mt-6">
+        <!-- Reserve scroll space so the last scoreboard row clears the docked bar. -->
+        <div aria-hidden="true" class="h-20"></div>
+        <!-- Docked confirm/edit (or save/cancel) row, pinned above the bottom nav. -->
+        <div class="docked-bar p-4 bg-surface-container-low">
+          <div class="flex gap-2">
           ${_editScoresMode ? `
             <button id="btn-edit-cancel" aria-label="Cancel" title="Cancel"
               class="shrink-0 self-stretch bg-surface-container-low border border-outline flex items-center justify-center transition-colors hover:bg-surface-container-high">
@@ -495,6 +517,7 @@ function _render(container, roomCode) {
               CONFIRM ROUND
             </button>
           `}
+          </div>
         </div>
       `;
     } else {
@@ -685,19 +708,27 @@ function _render(container, roomCode) {
     _render(container, roomCode);
   });
 
+  // Spectator scoring: tapping a row opens the same card drawer (host confirms).
+  content.querySelectorAll('.flip7-spectator-row').forEach((row) => {
+    row.addEventListener('click', () => {
+      _openFlip7Drawer(container, roomCode, row.dataset.playerId, snapshot, game);
+    });
+  });
+
 }
 
 // ── Flip 7 tappable player row ──
 
-function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundIndex = -1, roundFlip7 = [], roundJuaSave = [], isLiveFirstSave = false, fineCount = 0) {
+function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundIndex = -1, roundFlip7 = [], roundJuaSave = [], isLiveFirstSave = false, fineCount = 0, liveEntry = null) {
   const { playerId: pid, total, rank } = standing;
   const color = accentColor(playerData.accentIndex);
   const name = escapeHTML(playerData.name || pid);
   const rankLabel = rank <= 3 ? ['1ST', '2ND', '3RD'][rank - 1] : `${rank}TH`;
   const bgClass = 'bg-surface-container-lowest';
 
-  const draft = _flip7Draft[pid];
-  const hasDraft = draft && (draft.numbers.size > 0 || draft.actions.size > 0 || draft.x2);
+  // The in-progress selection is synced (liveRound), so the live chip is derived
+  // from it — not from the transient local scratch buffer.
+  const hasDraft = liveEntry != null;
 
   const chipList = roundHistory
     .map((pts, i) => {
@@ -717,9 +748,8 @@ function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundInd
 
   let draftChip = '';
   if (!_editScoresMode && hasDraft) {
-    const { basePoints, flip7 } = _computeFlip7Score(draft);
-    const roundPts = basePoints + (flip7 ? 15 : 0);
-    const chipLabel = `${roundPts}${flip7 ? ' 🔥' : ''}${isLiveFirstSave ? ' ❤️' : ''}`;
+    const roundPts = liveEntry.pts || 0;
+    const chipLabel = `${roundPts}${liveEntry.flip7 ? ' 🔥' : ''}${isLiveFirstSave ? ' ❤️' : ''}`;
     draftChip = `<span class="inline-block font-mono text-sm px-1.5 py-0.5" style="background:#000;color:#fff;border:1px solid #000">${chipLabel}</span>`;
   } else if (!_editScoresMode && isLiveFirstSave) {
     draftChip = `<span class="inline-block font-mono text-sm px-1.5 py-0.5 border border-outline-variant">0 ❤️</span>`;
@@ -799,40 +829,17 @@ function _computeFlip7Score(draft) {
   return { basePoints: subtotal, flip7: numbers.length === 7 };
 }
 
-// ── Flip 7 draft persistence ──
+// ── Synced live round → drawer scratch ──
 
-function _draftKey(roomCode, gameId, roundIndex) {
-  return `gns_rdraft_${roomCode}_${gameId}_${roundIndex}`;
-}
-
-function _saveDraft(roomCode, gameId, roundIndex) {
-  const serialized = {};
-  for (const [pid, d] of Object.entries(_flip7Draft)) {
-    serialized[pid] = { numbers: [...d.numbers], actions: [...d.actions], x2: d.x2 };
-  }
-  try {
-    localStorage.setItem(_draftKey(roomCode, gameId, roundIndex), JSON.stringify({
-      draft: serialized,
-      firstSavePid: _juaRoundData.firstSavePid,
-    }));
-  } catch {}
-}
-
-function _restoreDraft(roomCode, gameId, roundIndex) {
-  try {
-    const raw = localStorage.getItem(_draftKey(roomCode, gameId, roundIndex));
-    if (!raw) return;
-    const { draft, firstSavePid } = JSON.parse(raw);
-    _flip7Draft = {};
-    for (const [pid, d] of Object.entries(draft)) {
-      _flip7Draft[pid] = { numbers: new Set(d.numbers), actions: new Set(d.actions), x2: d.x2 };
-    }
-    _juaRoundData.firstSavePid = firstSavePid;
-  } catch {}
-}
-
-function _clearDraft(roomCode, gameId, roundIndex) {
-  try { localStorage.removeItem(_draftKey(roomCode, gameId, roundIndex)); } catch {}
+// Convert a synced liveRound/{pid} entry into the in-memory drawer shape. Tolerant
+// of legacy entries (older in-flight rounds stored only { pts, flip7 }) and missing
+// fields so an in-progress game from before this change never crashes the drawer.
+function _liveRoundToDraft(entry) {
+  return {
+    numbers: new Set(Array.isArray(entry?.numbers) ? entry.numbers : []),
+    actions: new Set(Array.isArray(entry?.actions) ? entry.actions : []),
+    x2: !!entry?.x2,
+  };
 }
 
 // ── Rounds display limit ──
@@ -864,28 +871,6 @@ function _restoreSortState(roomCode, gameId) {
     _customPlayerOrder = order || null;
     _roundsDisplayMode = roundsDisplay || 'last3';
   } catch {}
-}
-
-// ── Flip 7 live totals ──
-
-async function _pushLiveTotals(roomCode, game) {
-  const playerIds = game.playerIds || [];
-  const committedTotals = game.totals || {};
-  const liveTotals = {};
-  const liveRound = {};
-  playerIds.forEach((pid) => {
-    const committed = committedTotals[pid] || 0;
-    const draft = _flip7Draft[pid];
-    if (draft) {
-      const { basePoints, flip7 } = _computeFlip7Score(draft);
-      const roundPts = basePoints + (flip7 ? 15 : 0);
-      liveTotals[pid] = committed + roundPts;
-      liveRound[pid] = { pts: roundPts, flip7 };
-    } else {
-      liveTotals[pid] = committed;
-    }
-  });
-  await fb.updateLiveTotals(roomCode, game.gameId, liveTotals, liveRound);
 }
 
 // ── Flip 7 card drawer ──
@@ -944,10 +929,18 @@ function _openFlip7Drawer(container, roomCode, playerId, snapshot, game) {
   if (!_flip7DrawerEl) return;
   _flip7DrawerPlayerId = playerId;
 
-  if (!_flip7Draft[playerId]) {
-    _flip7Draft[playerId] = { numbers: new Set(), actions: new Set(), x2: false };
+  // Hydrate the scratch buffer from the SYNCED selection and capture the CAS
+  // baseline so a concurrent save by another device is detected on DONE.
+  const liveEntry = game.liveRound?.[playerId];
+  _flip7Draft[playerId] = _liveRoundToDraft(liveEntry);
+  _flip7DrawerBaseV = liveEntry?.v || 0;
+  // Reflect the synced first-save marker (now stored per-entry in liveRound).
+  if (game.config?.jua) {
+    const lr = game.liveRound || {};
+    _juaRoundData.firstSavePid = Object.keys(lr).find((id) => lr[id]?.firstSave) || null;
   }
 
+  const isHost = state.isHost();
   const p = snapshot[playerId] || {};
   const color = accentColor(p.accentIndex);
   const name = escapeHTML(p.name || playerId);
@@ -995,10 +988,12 @@ function _openFlip7Drawer(container, roomCode, playerId, snapshot, game) {
             class="font-mono text-xs uppercase tracking-widest px-4 py-2 border transition-colors whitespace-nowrap ${_juaRoundData.firstSavePid === playerId ? 'bg-primary text-on-primary border-primary' : 'border-outline hover:border-primary'}">
             FIRST SAVE ❤️
           </button>
+          ${isHost ? `
           <button id="flip7-fine-btn" type="button"
             class="font-mono text-xs uppercase tracking-widest px-4 py-2 border border-outline hover:border-primary transition-colors whitespace-nowrap">
             EDIT FINES 👎
           </button>
+          ` : ''}
         </div>
         ` : ''}
       </div>
@@ -1099,30 +1094,65 @@ function _bindDrawerEvents(container, roomCode, playerId, draftSnapshot) {
   if (!draft) return;
 
   _flip7DrawerEl.querySelector('#flip7-drawer-backdrop')?.addEventListener('click', () => {
+    // Nothing syncs until DONE — discard the local scratch + first-save edit.
     _flip7Draft[playerId].numbers = new Set(draftSnapshot.numbers);
     _flip7Draft[playerId].actions = new Set(draftSnapshot.actions);
     _flip7Draft[playerId].x2 = draftSnapshot.x2;
     _juaRoundData.firstSavePid = draftSnapshot.firstSavePid;
-    const game = state.currentGame();
-    if (game) fb.updateJuaLive(roomCode, game.gameId, _juaRoundData.firstSavePid).catch(() => {});
     _closeFlip7Drawer();
     _render(container, roomCode);
   });
 
-  _flip7DrawerEl.querySelector('#flip7-done-btn')?.addEventListener('click', (e) => {
+  _flip7DrawerEl.querySelector('#flip7-done-btn')?.addEventListener('click', async (e) => {
     const btn = e.currentTarget;
     btn.style.background = '#000';
     btn.style.color = '#fff';
-    setTimeout(() => {
-      const game = state.currentGame();
-      if (game) {
-        _pushLiveTotals(roomCode, game).catch(() => {});
-        fb.updateJuaLive(roomCode, game.gameId, _juaRoundData.firstSavePid).catch(() => {});
-        _saveDraft(roomCode, game.gameId, game.rounds ? Object.values(game.rounds).length : 0);
-      }
+    btn.disabled = true;
+
+    const game = state.currentGame();
+    if (!game) { _closeFlip7Drawer(); _render(container, roomCode); return; }
+
+    // A spectator may only save while the host has scoring enabled (it may have
+    // been turned off while this drawer was open).
+    const isHost = state.isHost();
+    if (!isHost && (state.get('roomLobby') || {}).spectatorScoring !== true) {
+      toast.show('Spectator scoring is off');
       _closeFlip7Drawer();
       _render(container, roomCode);
-    }, 150);
+      return;
+    }
+
+    const { basePoints, flip7 } = _computeFlip7Score(draft);
+    const pts = basePoints + (flip7 ? 15 : 0);
+    const newEntry = {
+      numbers: [...draft.numbers],
+      actions: [...draft.actions],
+      x2: draft.x2,
+      pts,
+      flip7,
+      by: isHost ? 'host' : 'spectator',
+      // first-save lives on the entry now; a Flip 7 can't also be a first save.
+      firstSave: !!game.config?.jua && !flip7 && _juaRoundData.firstSavePid === playerId,
+    };
+
+    let res;
+    try {
+      res = await fb.saveLiveRoundCAS(roomCode, game.gameId, playerId, _flip7DrawerBaseV, newEntry);
+    } catch (err) {
+      res = { ok: false };
+    }
+
+    if (!res.ok) {
+      // Another device changed this player's entry since we opened the drawer
+      // (a card edit, or a first-save move that cleared/bumped this player).
+      toast.show('Another user edited the score');
+      _closeFlip7Drawer();
+      _render(container, roomCode);
+      return;
+    }
+
+    _closeFlip7Drawer();
+    _render(container, roomCode);
   });
 
   // Jua first-save toggle inside the scoring drawer
@@ -1137,8 +1167,7 @@ function _bindDrawerEvents(container, roomCode, playerId, draftSnapshot) {
       btn.classList.remove('bg-primary', 'text-on-primary', 'border-primary');
       btn.classList.add('border-outline', 'hover:border-primary');
     }
-    const game = state.currentGame();
-    if (game) _saveDraft(roomCode, game.gameId, game.rounds ? Object.values(game.rounds).length : 0);
+    // Local only — committed via the DONE transaction so backdrop-cancel reverts it.
   });
 
   _flip7DrawerEl.querySelector('#flip7-fine-btn')?.addEventListener('click', () => {
@@ -1327,11 +1356,17 @@ async function _confirmFlip7Round(container, roomCode, initialGame, gameModule) 
   const rounds = game.rounds ? Object.values(game.rounds) : [];
   const playersMap = state.get('players') || {};
 
-  // Build draft entries from the local Flip 7 card selections
+  // Build the round entries from the SYNCED in-progress selections (liveRound),
+  // which may include scores entered by spectators. Track which players were last
+  // saved by a spectator so the confirm dialog can highlight them.
+  const liveRound = game.liveRound || {};
+  const spectatorPids = new Set();
   const entries = {};
   playerIds.forEach((pid) => {
-    const draftEntry = _flip7Draft[pid] || { numbers: new Set(), actions: new Set(), x2: false };
+    const live = liveRound[pid];
+    const draftEntry = _liveRoundToDraft(live);
     const { basePoints, flip7 } = _computeFlip7Score(draftEntry);
+    if (live?.by === 'spectator') spectatorPids.add(pid);
     entries[pid] = {
       basePoints,
       flip7,
@@ -1345,9 +1380,12 @@ async function _confirmFlip7Round(container, roomCode, initialGame, gameModule) 
 
   const draft = { entries };
 
-  // Attach Jua round data when Jua is enabled
+  // First save is part of the synced liveRound entries (a spectator may have set it).
+  const firstSavePid = game.config?.jua
+    ? (Object.keys(liveRound).find((id) => liveRound[id]?.firstSave) || null)
+    : null;
   if (game.config?.jua) {
-    draft.jua = { firstSavePid: _juaRoundData.firstSavePid || null };
+    draft.jua = { firstSavePid };
   }
 
   const validation = gameModule.validateRound(draft, game);
@@ -1365,7 +1403,8 @@ async function _confirmFlip7Round(container, roomCode, initialGame, gameModule) 
     name: playersMap[pid]?.name || pid,
     score: (newTotals[pid] || 0) - (totals[pid] || 0),
     flip7: entries[pid]?.flip7 || false,
-    firstSave: (game.config?.jua && _juaRoundData.firstSavePid === pid) || false,
+    firstSave: (game.config?.jua && firstSavePid === pid) || false,
+    spectator: spectatorPids.has(pid),
   }));
   const confirmed = await confirmRoundDialog(playerScores);
   if (!confirmed) return;
@@ -1378,8 +1417,8 @@ async function _confirmFlip7Round(container, roomCode, initialGame, gameModule) 
 
     _juaRoundData = { firstSavePid: null };
     _juaRoundTracked = rounds.length + 1;
-    fb.updateJuaLive(roomCode, game.gameId, null).catch(() => {});
-    _clearDraft(roomCode, game.gameId, rounds.length);
+    _flip7Draft = {};
+    // submitRound nulls the whole liveRound node, clearing live first-save too.
 
     if (endResult.ended) {
       router.navigate('winner', { roomCode });

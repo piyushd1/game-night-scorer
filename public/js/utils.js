@@ -34,8 +34,9 @@ export function confirmRoundDialog(playerScores) {
       ...shown.map((p) => ({
         name: p.name,
         value: `${p.flip7 ? '🔥 ' : p.firstSave ? '❤️ ' : ''}${p.score}`,
+        spectator: !!p.spectator,
       })),
-      ...(others.length > 0 ? [{ name: shown.length === 0 ? 'All' : 'Others', value: '0' }] : []),
+      ...(others.length > 0 ? [{ name: shown.length === 0 ? 'All' : 'Others', value: '0', spectator: false }] : []),
     ];
 
     const el = document.createElement('div');
@@ -59,7 +60,7 @@ export function confirmRoundDialog(playerScores) {
             </thead>
             <tbody>
               ${rows.map((r) => `
-                <tr class="border-b border-outline-variant last:border-0">
+                <tr class="border-b border-outline-variant last:border-0"${r.spectator ? ' style="background:#fef9c3"' : ''}>
                   <td class="px-3 py-2 font-headline font-bold text-base uppercase truncate">${escapeHTML(r.name)}</td>
                   <td class="px-3 py-2 font-mono font-bold text-base text-right whitespace-nowrap">${r.value}</td>
                 </tr>

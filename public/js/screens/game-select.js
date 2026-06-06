@@ -66,7 +66,7 @@ export function mount(container, params = {}) {
     </div>
 
     <!-- Start Button (floats up from above the bottom nav on selection) -->
-    <div id="btn-start-wrapper" class="fixed left-0 right-0 p-4 bg-surface border-t border-outline translate-y-full transition-transform duration-300 ease-out z-10 max-w-[430px] mx-auto" style="bottom: calc(80px + env(safe-area-inset-bottom, 0px))">
+    <div id="btn-start-wrapper" class="docked-bar p-4 bg-surface-container-low translate-y-full transition-transform duration-300 ease-out">
       <button id="btn-start" class="btn-primary flex items-center justify-center gap-2 w-full">
         SELECT A GAME
       </button>
