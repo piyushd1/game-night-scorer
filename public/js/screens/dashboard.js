@@ -434,16 +434,15 @@ function _render(container, roomCode) {
       );
     } else {
       const liveEntry = game.liveRound?.[s.playerId];
-      const spectatorRounds = _applyRoundsDisplayLimit(liveEntry != null
-        ? [...(displayRoundPoints[s.playerId] || []), liveEntry.pts]
-        : (displayRoundPoints[s.playerId] || []));
-      const spectatorMeta = _applyRoundsDisplayLimit(liveEntry != null
-        ? [...(displayRoundFlip7Meta[s.playerId] || []), liveEntry.flip7 || false]
-        : (displayRoundFlip7Meta[s.playerId] || []));
-      const liveFirstSave = !!game.config?.jua && !!game.liveRound?.[s.playerId]?.firstSave;
-      const spectatorJuaMeta = _applyRoundsDisplayLimit(liveEntry != null
-        ? [...(roundJuaMeta[s.playerId] || []), liveFirstSave]
-        : (roundJuaMeta[s.playerId] || []));
+      const liveFirstSave = !!game.config?.jua && !!liveEntry?.firstSave;
+      // The display limit applies only to committed rounds; the live chip is the
+      // current round and always shows (matches host behaviour, incl. 'none' mode).
+      const committedPts = _applyRoundsDisplayLimit(displayRoundPoints[s.playerId] || []);
+      const committedMeta = _applyRoundsDisplayLimit(displayRoundFlip7Meta[s.playerId] || []);
+      const committedJua = _applyRoundsDisplayLimit(roundJuaMeta[s.playerId] || []);
+      const spectatorRounds = liveEntry != null ? [...committedPts, liveEntry.pts] : committedPts;
+      const spectatorMeta = liveEntry != null ? [...committedMeta, liveEntry.flip7 || false] : committedMeta;
+      const spectatorJuaMeta = liveEntry != null ? [...committedJua, liveFirstSave] : committedJua;
       const rowHtml = renderRow({
         name: p.name || s.playerId,
         total: s.total,
@@ -1439,7 +1438,9 @@ async function _confirmFlip7Round(container, roomCode, initialGame, gameModule) 
     firstSave: (game.config?.jua && firstSavePid === pid) || false,
     spectator: spectatorPids.has(pid),
   }));
-  const confirmed = await confirmRoundDialog(playerScores);
+  const confirmed = await confirmRoundDialog(playerScores, {
+    requireNoSaveAck: !!game.config?.jua && !firstSavePid,
+  });
   if (!confirmed) return;
 
   // A spectator may have saved a score while the host was in the dialog. The host
