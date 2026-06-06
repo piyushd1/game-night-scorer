@@ -16,17 +16,21 @@ export function show(url, roomCode) {
   }
 
   _el.innerHTML = `
-    <div id="qr-backdrop" class="absolute inset-0" style="background:rgba(0,0,0,0.6)"></div>
-    <div class="relative bg-surface-container-lowest border border-outline p-6 flex flex-col items-center gap-4 mx-4 w-full" style="max-width:280px">
-      <div class="flex items-center justify-between w-full">
-        <p class="font-mono text-[10px] uppercase tracking-widest text-outline">SCAN TO JOIN</p>
-        <button id="qr-close" aria-label="Close" class="material-symbols-outlined text-outline hover:text-on-surface transition-colors" style="font-size:20px">close</button>
+    <div id="qr-backdrop" class="absolute inset-0" style="background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)"></div>
+    <div class="relative bg-surface-container-low border border-outline flex flex-col items-center mx-4 w-full overflow-hidden" style="max-width:320px">
+      <div class="w-full px-4 py-4 border-b border-outline-variant">
+        <h2 class="font-headline font-extrabold text-xl uppercase">Scan to Join</h2>
       </div>
-      <div id="qr-canvas" class="p-3" style="background:#fff"></div>
-      <p class="font-mono text-2xl font-bold tracking-[0.3em]">${roomCode}</p>
-      <button id="qr-copy" class="font-mono text-[10px] uppercase tracking-widest border border-outline px-4 py-2 w-full hover:bg-surface-container-high transition-colors">
-        COPY LINK
-      </button>
+      <div class="py-6 flex flex-col items-center gap-3 w-full">
+        <p class="font-mono text-base font-bold tracking-[0.3em]">${roomCode}</p>
+        <div id="qr-canvas" class="p-3" style="background:#f4f4f2"></div>
+      </div>
+      <div class="w-full px-4 pb-4 flex gap-3 border-t border-outline-variant pt-4">
+        <button id="qr-close" type="button" aria-label="Close" class="btn-secondary flex-none flex items-center justify-center self-stretch" style="padding:0;background:#f4f4f2">
+          <span class="material-symbols-outlined" style="font-size:20px">close</span>
+        </button>
+        <button id="qr-copy" type="button" class="btn-primary" style="flex:3">COPY LINK</button>
+      </div>
     </div>
   `;
 
@@ -39,12 +43,14 @@ export function show(url, roomCode) {
     width: 200,
     height: 200,
     colorDark: '#000000',
-    colorLight: '#ffffff',
+    colorLight: '#f4f4f2',
     correctLevel: window.QRCode.CorrectLevel.M,
   });
 
   _el.querySelector('#qr-backdrop').addEventListener('click', hide);
-  _el.querySelector('#qr-close').addEventListener('click', hide);
+  const closeBtn = _el.querySelector('#qr-close');
+  closeBtn.addEventListener('click', hide);
+  requestAnimationFrame(() => { closeBtn.style.width = closeBtn.offsetHeight + 'px'; });
 
   _el.querySelector('#qr-copy').addEventListener('click', () => {
     navigator.clipboard.writeText(url).then(() => {

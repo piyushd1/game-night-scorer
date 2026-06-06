@@ -50,6 +50,18 @@ async function init() {
   // Init shared host menu
   hostMenu.init();
 
+  // Header sound button — plays a one-shot mp3 on tap. The button lives in the
+  // top bar (outside #top-bar-actions, which screens overwrite), so it's wired
+  // once here. Reuse a single Audio element and rewind so rapid taps re-trigger.
+  const soundBtn = document.getElementById('top-bar-sound');
+  if (soundBtn) {
+    const sound = new Audio('sounds/fahhh.mp3');
+    soundBtn.addEventListener('click', () => {
+      sound.currentTime = 0;
+      sound.play().catch(() => { /* autoplay/file-missing — ignore */ });
+    });
+  }
+
   // Pre-hydrate state from URL + cache BEFORE router fires its initial _onHashChange.
   // Without this, screens that read state.get('roomCode') on a hash-based refresh
   // (e.g. refreshing while on #lobby or #dashboard) would find state empty and bail.
@@ -59,7 +71,7 @@ async function init() {
   if (roomCode) {
     state.set('roomCode', roomCode);
     if (cached) {
-      state.set('roomMeta', cached.meta || {});
+      state.set('roomLobby', cached.lobby || {});
       state.set('players', cached.players || {});
       state.set('games', cached.games || {});
     }
@@ -68,16 +80,20 @@ async function init() {
   // Start router — _onHashChange fires here with state already populated
   router.init('screen-container');
 
-  // Auto-navigate on night-ended / night-resumed status changes
-  state.on('roomMeta', (newMeta, prevMeta) => {
-    if (!newMeta) return;
+  // Auto-navigate on night-ended / night-resumed status changes.
+  state.on('roomLobby', (newLobby, prevLobby) => {
+    if (!newLobby) return;
     const screen = router.currentScreen();
-    const roomCode = newMeta.roomCode || state.get('roomCode');
+    const roomCode = newLobby.roomCode || state.get('roomCode');
     if (!roomCode) return;
 
-    if (newMeta.status === 'night-ended' && screen !== 'recap') {
+    // Only redirect to recap on the *transition* into night-ended (or a cold
+    // load that lands locked). Once locked, leave navigation alone so host and
+    // spectators can move freely between tabs without being yanked back.
+    const justLocked = newLobby.status === 'night-ended' && prevLobby?.status !== 'night-ended';
+    if (justLocked && screen !== 'recap') {
       router.navigate('recap', { roomCode });
-    } else if (prevMeta?.status === 'night-ended' && newMeta.status === 'lobby') {
+    } else if (prevLobby?.status === 'night-ended' && newLobby.status === 'waiting') {
       if (screen === 'recap') router.navigate('lobby', { roomCode });
     }
   });

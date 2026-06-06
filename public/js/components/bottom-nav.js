@@ -4,6 +4,9 @@
 
 import * as state from '../state.js';
 import * as router from '../router.js';
+import { getGame } from '../games/registry.js';
+
+const LOBBY_TAB = { id: 'lobby', icon: 'group', label: 'LOBBY' };
 
 const TABS = {
   host: [
@@ -17,6 +20,43 @@ const TABS = {
   ],
 };
 
+// Flip 7 uses inline scoring and has no rules tab. The tab set is:
+//   Lobby · <game> (while a game is in progress) · Recap (once stats exist).
+function flip7Tabs(game) {
+  const lobby = state.get('roomLobby') || {};
+  const games = state.get('games') || {};
+  const trackStats = lobby.trackStats !== false;
+  const hasPlayedGames = Object.values(games).some((g) => g.rounds && Object.keys(g.rounds).length > 0);
+
+  const tabs = [LOBBY_TAB];
+
+  // The game tab is always labeled with the game's name (e.g. "FLIP 7"). While
+  // in progress it opens the board; otherwise it opens the results (winner) so
+  // a finished or locked-night game stays reachable. Gate "in progress" on
+  // lobby.status, since ending flips it back to 'waiting'/'night-ended'.
+  if (game) {
+    const gameLabel = (getGame(game.type)?.label || 'Game').toUpperCase();
+    const inProgress = lobby.status === 'playing' && game.status === 'active';
+    if (inProgress) {
+      tabs.push({ id: 'dashboard', icon: 'dashboard', label: gameLabel });
+    } else if (game.status === 'finished' && game.winner) {
+      tabs.push({ id: 'winner', icon: 'dashboard', label: gameLabel });
+    } else if (lobby.status === 'night-ended') {
+      // Locked night — keep the game reachable for review (results if there's a
+      // winner, otherwise the board/standings).
+      tabs.push({ id: game.winner ? 'winner' : 'dashboard', icon: 'dashboard', label: gameLabel });
+    }
+  }
+
+  // Night recap appears once there's something to show (stats tracking on and
+  // at least one game played).
+  if (trackStats && hasPlayedGames) {
+    tabs.push({ id: 'recap', icon: 'bar_chart', label: 'RECAP' });
+  }
+
+  return tabs;
+}
+
 let _activeTab = 'dashboard';
 
 export function show(activeTab = 'dashboard') {
@@ -29,6 +69,20 @@ export function show(activeTab = 'dashboard') {
 
   _activeTab = activeTab;
   render();
+
+  // Fonts can finish loading after the first render and grow the nav; remeasure
+  // once they're ready so docked bars stay flush against the tabs.
+  if (document.fonts?.ready) document.fonts.ready.then(_syncNavHeight);
+}
+
+// Publish the nav's real pixel height as --nav-height so the screen's bottom
+// padding and any .docked-bar sit flush on top of the tabs (the old hardcoded
+// 80px left a small gap, since the rendered nav is a few px shorter).
+function _syncNavHeight() {
+  const nav = document.getElementById('bottom-nav');
+  if (!nav || nav.style.display === 'none') return;
+  const h = nav.offsetHeight;
+  if (h) document.documentElement.style.setProperty('--nav-height', `${h}px`);
 }
 
 export function hide() {
@@ -45,6 +99,16 @@ export function setActive(tabId) {
   render();
 }
 
+/**
+ * Re-render the nav (e.g. after game data loads so the tab set reflects the
+ * current game type). No-op when the nav is hidden.
+ */
+export function refresh() {
+  const nav = document.getElementById('bottom-nav');
+  if (!nav || nav.style.display === 'none') return;
+  render();
+}
+
 export function getActive() {
   return _activeTab;
 }
@@ -52,9 +116,21 @@ export function getActive() {
 function render() {
   const nav = document.getElementById('bottom-nav');
   const game = state.currentGame();
-  // Flip 7 uses inline scoring on the dashboard — no separate scoring tab needed
-  const hostTabs = game?.type === 'flip7' ? TABS.viewer : TABS.host;
-  const tabs = state.isHost() ? hostTabs : TABS.viewer;
+  const games = state.get('games') || {};
+
+  // We're in the Flip 7 nav experience if a Flip 7 game is active OR one has
+  // been played this night (so the Lobby/Recap tabs persist between games).
+  const isFlip7Context = game?.type === 'flip7'
+    || Object.values(games).some((g) => g.type === 'flip7');
+
+  let tabs;
+  if (isFlip7Context) {
+    tabs = flip7Tabs(game);
+  } else if (_activeTab === 'lobby') {
+    tabs = [LOBBY_TAB];
+  } else {
+    tabs = state.isHost() ? TABS.host : TABS.viewer;
+  }
 
   // Add ARIA attributes to indicate it is a tablist
   nav.setAttribute('role', 'tablist');
@@ -81,4 +157,6 @@ function render() {
       router.navigate(tabId, { roomCode });
     });
   });
+
+  _syncNavHeight();
 }

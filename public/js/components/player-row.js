@@ -2,7 +2,7 @@
 // Reusable Player Scoreboard Row
 // ═══════════════════════════════════════════
 
-import { ACCENT_COLORS } from '../state.js';
+import { accentColor } from '../state.js';
 import { escapeHTML } from '../utils.js';
 
 /**
@@ -31,12 +31,10 @@ export function renderRow({
   progressPct = 0,
   isLeader = false,
   winMode = 'highest_total',
-  isInactive = false,
   fineCount = 0,
 }) {
-  const color = ACCENT_COLORS[accentIndex % ACCENT_COLORS.length];
+  const color = accentColor(accentIndex);
   const bgClass = 'bg-surface-container-lowest';
-  const dim = isInactive ? 'opacity-50' : '';
 
   // Guard against NaN/Infinity leaking into the UI. If we ever see one,
   // render a dash instead so the user isn't staring at 'NaN PTS' — and
@@ -72,11 +70,11 @@ export function renderRow({
   })();
 
   return `
-    <div class="flex flex-col border border-outline ${bgClass} ${dim}">
+    <div class="flex flex-col border border-outline ${bgClass}">
       <div class="accent-bar" style="background:${color}"></div>
       <div class="flex items-stretch flex-1">
         <div class="flex items-center justify-center shrink-0 min-w-[2.5rem] border-r border-outline">
-          <span class="font-mono text-2xl font-bold">${isInactive ? '—' : rank}</span>
+          <span class="font-mono text-2xl font-bold">${rank}</span>
         </div>
         <div class="flex-1 accent-${accentIndex} group">
           <div class="p-4 flex items-center gap-3">

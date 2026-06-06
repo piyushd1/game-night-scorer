@@ -2,7 +2,7 @@
 // Cabo Game Module
 // ═══════════════════════════════════════════
 
-import { ACCENT_COLORS } from '../state.js';
+import { accentColor } from '../state.js';
 import { escapeHTML } from '../utils.js';
 
 const minCardCache = new WeakMap();
@@ -32,9 +32,8 @@ export default {
     if (!draft.callerId) return { valid: false, error: 'Select who called Cabo' };
     if (!draft.entries) return { valid: false, error: 'No scores entered' };
 
-    // Iterate the draft entries (active players only — inactive players aren't
-    // rendered in the form post-P2 and aren't in the draft). The caller must
-    // be among those entries, otherwise scoring is inconsistent.
+    // Iterate the draft entries. The caller must be among those entries,
+    // otherwise scoring is inconsistent.
     for (const entry of Object.values(draft.entries)) {
       if (!Number.isFinite(entry.cardTotal)) return { valid: false, error: 'Card total must be a number' };
       if (entry.cardTotal < 0) return { valid: false, error: 'Card totals cannot be negative' };
@@ -169,7 +168,7 @@ export default {
         <div class="flex flex-wrap gap-2">
           ${playerIds.map((pid) => {
             const p = snapshot[pid] || {};
-            const color = ACCENT_COLORS[p.accentIndex || 0];
+            const color = accentColor(p.accentIndex);
             return `
               <button
                 data-caller="${escapeHTML(pid)}"
@@ -195,7 +194,7 @@ export default {
       <div class="flex flex-col gap-2" id="card-totals-section">
         ${playerIds.map((pid) => {
           const p = snapshot[pid] || {};
-          const color = ACCENT_COLORS[p.accentIndex || 0];
+          const color = accentColor(p.accentIndex);
           const currentTotal = totals[pid] || 0;
           return `
             <div class="bg-surface-container-lowest border border-outline">

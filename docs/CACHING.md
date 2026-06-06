@@ -33,11 +33,11 @@ Even though the SW caches HTML for returning visitors, the Firebase Hosting `no-
 
 ## Layer 2 — localStorage (data mirror)
 
-Owns the room state the user was last looking at: `roomMeta`, `players`, `games`. Lives in [`public/js/cache.js`](../public/js/cache.js).
+Owns the room state the user was last looking at: `roomLobby`, `players`, `games`. Lives in [`public/js/cache.js`](../public/js/cache.js).
 
 | Concern | Mechanism |
 |---|---|
-| Storage | `localStorage`, keyed by `gns_cache_<roomCode>` → `{ ts, meta, players, games }` |
+| Storage | `localStorage`, keyed by `gns_cache_<roomCode>` → `{ ts, lobby, players, games }` |
 | Write | Every `roomRef.on('value')` callback in [`firebase.js`](../public/js/firebase.js) writes through to the cache after updating the state store |
 | Read | [`app.js`](../public/js/app.js) reads on boot when `?room=<PIN>` is in the URL, hydrates the state store, and optimistically navigates to the Lobby — Firebase's watcher reconciles within ~1s |
 | Eviction | Entries older than 12h are evicted on read (TTL guards against a user rejoining a long-dead room and seeing multi-day-old data) |
@@ -49,7 +49,7 @@ Owns the room state the user was last looking at: `roomMeta`, `players`, `games`
 They're independent on purpose:
 
 - SW `VERSION` — bumps on **every** deploy (injected from the git SHA). Purges the **asset** cache, so the client runs the latest code on the next cold open. Does not touch user data.
-- `SCHEMA_VERSION` — bumps **rarely**, only when the shape of `meta` / `players` / `games` in Firebase changes in a way that would make old cached entries crash the new code. Purges the **data** cache. User data in Firebase is untouched — only the local mirror is wiped.
+- `SCHEMA_VERSION` — bumps **rarely**, only when the shape of `lobby` / `players` / `games` in Firebase changes in a way that would make old cached entries crash the new code. Purges the **data** cache. User data in Firebase is untouched — only the local mirror is wiped.
 
 A bug fix or UI change = SW bump only, in-progress games keep working. A Firebase schema migration = bump both.
 

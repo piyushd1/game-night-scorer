@@ -64,7 +64,7 @@ export async function createRoom() {
   let roomCode;
   for (let attempt = 0; attempt < 10; attempt++) {
     const candidate = generateCode();
-    const snap = await db.ref(`rooms/${candidate}/meta`).once('value');
+    const snap = await db.ref(`rooms/${candidate}/lobby`).once('value');
     if (!snap.exists()) {
       roomCode = candidate;
       break;
@@ -75,17 +75,17 @@ export async function createRoom() {
   const hostKey = generateKey();
   const now = Date.now();
 
-  const meta = {
+  const lobby = {
     roomCode,
     hostKey,
-    status: 'lobby',
+    status: 'waiting',
     activeGameId: null,
     trackStats: true,
     createdAt: now,
     updatedAt: now,
   };
 
-  await db.ref(`rooms/${roomCode}/meta`).set(meta);
+  await db.ref(`rooms/${roomCode}/lobby`).set(lobby);
 
   // Store host key locally
   localStorage.setItem(`gns_host_${roomCode}`, hostKey);
@@ -100,7 +100,7 @@ export async function joinRoom(roomCode) {
   if (!db) throw new Error('Firebase not configured');
 
   const code = roomCode.toUpperCase().trim();
-  const snap = await db.ref(`rooms/${code}/meta`).once('value');
+  const snap = await db.ref(`rooms/${code}/lobby`).once('value');
   if (!snap.exists()) return null;
 
   return code;
@@ -121,7 +121,7 @@ export function watchRoom(roomCode, onUpdate) {
     }
 
     // Update state store
-    state.set('roomMeta', data.meta || {});
+    state.set('roomLobby', data.lobby || {});
     state.set('players', data.players || {});
     state.set('games', data.games || {});
     state.set('roomCode', roomCode);
@@ -129,7 +129,7 @@ export function watchRoom(roomCode, onUpdate) {
     // Write-through to localStorage so a cold open can hydrate instantly
     // before this watcher reconnects. See docs/CACHING.md.
     cache.writeCache(roomCode, {
-      meta: data.meta,
+      lobby: data.lobby,
       players: data.players,
       games: data.games,
     });
@@ -175,7 +175,6 @@ export async function addPlayer(roomCode, name, seatOrder, accentIndex) {
   await db.ref(`rooms/${roomCode}/players/${id}`).set({
     id,
     name: name.toUpperCase(),
-    isActive: true,
     seatOrder,
     accentIndex,
   });
@@ -216,7 +215,7 @@ export async function createGame(roomCode, type, config, playerIds, playerSnapsh
   };
 
   await db.ref(`rooms/${roomCode}/games/${gameId}`).set(game);
-  await db.ref(`rooms/${roomCode}/meta`).update({
+  await db.ref(`rooms/${roomCode}/lobby`).update({
     activeGameId: gameId,
     status: 'playing',
     updatedAt: now,
@@ -232,9 +231,8 @@ export async function submitRound(roomCode, gameId, roundIndex, roundData, newTo
 
   updates[`rooms/${roomCode}/games/${gameId}/rounds/${roundIndex}`] = roundData;
   updates[`rooms/${roomCode}/games/${gameId}/totals`] = newTotals;
-  updates[`rooms/${roomCode}/games/${gameId}/liveTotals`] = null; // clear live preview on commit
-  updates[`rooms/${roomCode}/games/${gameId}/liveRound`] = null;
-  updates[`rooms/${roomCode}/meta/updatedAt`] = Date.now();
+  updates[`rooms/${roomCode}/games/${gameId}/liveRound`] = null; // clear live preview on commit
+  updates[`rooms/${roomCode}/lobby/updatedAt`] = Date.now();
 
   if (endResult) {
     updates[`rooms/${roomCode}/games/${gameId}/status`] = 'finished';
@@ -268,22 +266,45 @@ export async function undoLastRound(roomCode, gameId, newTotals, prevStatus) {
   updates[`rooms/${roomCode}/games/${gameId}/status`] = prevStatus;
   updates[`rooms/${roomCode}/games/${gameId}/winner`] = null;
   updates[`rooms/${roomCode}/games/${gameId}/finishedAt`] = null;
-  updates[`rooms/${roomCode}/meta/updatedAt`] = Date.now();
+  updates[`rooms/${roomCode}/lobby/updatedAt`] = Date.now();
 
   await db.ref().update(updates);
 }
 
-export async function updateLiveTotals(roomCode, gameId, liveTotals, liveRound = null) {
-  if (!db) return;
-  await db.ref().update({
-    [`rooms/${roomCode}/games/${gameId}/liveTotals`]: liveTotals,
-    [`rooms/${roomCode}/games/${gameId}/liveRound`]: liveRound,
+// Compare-and-swap save of a player's in-progress Flip 7 selection. liveRound is
+// the single source of truth for the in-progress round; the live total is derived
+// on read (totals[pid] + liveRound[pid].pts). first-save is stored per player as
+// liveRound[pid].firstSave.
+//
+// The transaction runs on the PARENT liveRound node — not liveRound/{pid} —
+// because first-save is exclusive: marking one player must atomically clear the
+// previous holder, which is a second child. We guard on the edited player's .v
+// (the baseline captured when the drawer opened); when this save marks first-save
+// we also clear any other holder and bump their version, so a concurrent editor of
+// that player CAS-fails too. Returns { ok } — ok:false means another device changed
+// this player first, or the round was committed underneath us.
+export async function saveLiveRoundCAS(roomCode, gameId, pid, baseVersion, newEntry) {
+  if (!db) return { ok: false };
+  const ref = db.ref(`rooms/${roomCode}/games/${gameId}/liveRound`);
+  const result = await ref.transaction((current) => {
+    const map = current || {};
+    const cur = map[pid];
+    const curV = cur ? (cur.v || 0) : 0;
+    if (curV !== baseVersion) return; // abort — CAS fail
+    const next = { ...map };
+    next[pid] = { ...newEntry, v: curV + 1 };
+    if (newEntry.firstSave) {
+      Object.keys(next).forEach((id) => {
+        if (id !== pid && next[id] && next[id].firstSave) {
+          // This actor just modified the prior holder's entry, so its `by` (which
+          // drives the row highlight) tracks them too, alongside the version bump.
+          next[id] = { ...next[id], firstSave: false, by: newEntry.by, v: (next[id].v || 0) + 1 };
+        }
+      });
+    }
+    return next;
   });
-}
-
-export async function updateJuaLive(roomCode, gameId, firstSavePid) {
-  if (!db) return;
-  await db.ref(`rooms/${roomCode}/games/${gameId}/juaLive`).set({ firstSavePid: firstSavePid || null });
+  return { ok: result.committed };
 }
 
 export async function updateJuaFines(roomCode, gameId, fines) {
@@ -295,26 +316,25 @@ export async function adjustTotals(roomCode, gameId, newTotals) {
   if (!db) return;
   await db.ref().update({
     [`rooms/${roomCode}/games/${gameId}/totals`]: newTotals,
-    [`rooms/${roomCode}/games/${gameId}/liveTotals`]: null,
-    [`rooms/${roomCode}/meta/updatedAt`]: Date.now(),
+    [`rooms/${roomCode}/lobby/updatedAt`]: Date.now(),
   });
 }
 
 export async function setRoomStatus(roomCode, status) {
   if (!db) return;
-  await db.ref(`rooms/${roomCode}/meta`).update({ status, updatedAt: Date.now() });
+  await db.ref(`rooms/${roomCode}/lobby`).update({ status, updatedAt: Date.now() });
 }
 
-export async function updateRoomMeta(roomCode, updates) {
+export async function updateRoomLobby(roomCode, updates) {
   if (!db) return;
-  await db.ref(`rooms/${roomCode}/meta`).update({ ...updates, updatedAt: Date.now() });
+  await db.ref(`rooms/${roomCode}/lobby`).update({ ...updates, updatedAt: Date.now() });
 }
 
 export async function releaseHost(roomCode) {
   if (!db) return;
   localStorage.removeItem(`gns_host_${roomCode}`);
   state.clearHostCache(roomCode);
-  await db.ref(`rooms/${roomCode}/meta/hostKey`).set(null);
+  await db.ref(`rooms/${roomCode}/lobby/hostKey`).set(null);
 }
 
 export async function claimHost(roomCode) {
@@ -322,7 +342,7 @@ export async function claimHost(roomCode) {
   const newKey = generateKey();
   localStorage.setItem(`gns_host_${roomCode}`, newKey);
   state.clearHostCache(roomCode);
-  await db.ref(`rooms/${roomCode}/meta/hostKey`).set(newKey);
+  await db.ref(`rooms/${roomCode}/lobby/hostKey`).set(newKey);
 }
 
 export async function submitGameEnd(roomCode, gameId, winnerId) {
@@ -347,8 +367,7 @@ export async function patchLastRoundMulti(roomCode, gameId, roundKey, pidEntries
   if (!db) return;
   const updates = {
     [`rooms/${roomCode}/games/${gameId}/totals`]: newTotals,
-    [`rooms/${roomCode}/games/${gameId}/liveTotals`]: null,
-    [`rooms/${roomCode}/meta/updatedAt`]: Date.now(),
+    [`rooms/${roomCode}/lobby/updatedAt`]: Date.now(),
   };
   Object.entries(pidEntries).forEach(([pid, entry]) => {
     updates[`rooms/${roomCode}/games/${gameId}/rounds/${roundKey}/entries/${pid}`] = entry;
@@ -365,8 +384,17 @@ export async function addPlayerToGame(roomCode, gameId, playerId, playerName, ac
     [`rooms/${roomCode}/games/${gameId}/playerIds`]: [...currentPlayerIds, playerId],
     [`rooms/${roomCode}/games/${gameId}/totals/${playerId}`]: 0,
     [`rooms/${roomCode}/games/${gameId}/playerSnapshot/${playerId}`]: { name: playerName, accentIndex },
-    [`rooms/${roomCode}/meta/updatedAt`]: Date.now(),
+    [`rooms/${roomCode}/lobby/updatedAt`]: Date.now(),
   });
+}
+
+export async function updateGameConfig(roomCode, gameId, configUpdates) {
+  if (!db) return;
+  const updates = { [`rooms/${roomCode}/lobby/updatedAt`]: Date.now() };
+  for (const [key, value] of Object.entries(configUpdates)) {
+    updates[`rooms/${roomCode}/games/${gameId}/config/${key}`] = value;
+  }
+  await db.ref().update(updates);
 }
 
 // ── Night Lifecycle ──
@@ -374,7 +402,7 @@ export async function addPlayerToGame(roomCode, gameId, playerId, playerName, ac
 export async function endNight(roomCode) {
   if (!db) return;
   const now = Date.now();
-  await db.ref(`rooms/${roomCode}/meta`).update({
+  await db.ref(`rooms/${roomCode}/lobby`).update({
     status: 'night-ended',
     nightEndedAt: now,
     updatedAt: now,
@@ -396,10 +424,10 @@ export async function startNewNight(roomCode) {
     };
   }
   updates[`rooms/${roomCode}/games`] = null;
-  updates[`rooms/${roomCode}/meta/status`] = 'lobby';
-  updates[`rooms/${roomCode}/meta/activeGameId`] = null;
-  updates[`rooms/${roomCode}/meta/nightEndedAt`] = null;
-  updates[`rooms/${roomCode}/meta/updatedAt`] = now;
+  updates[`rooms/${roomCode}/lobby/status`] = 'waiting';
+  updates[`rooms/${roomCode}/lobby/activeGameId`] = null;
+  updates[`rooms/${roomCode}/lobby/nightEndedAt`] = null;
+  updates[`rooms/${roomCode}/lobby/updatedAt`] = now;
 
   await db.ref().update(updates);
 }
