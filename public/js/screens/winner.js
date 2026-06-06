@@ -262,7 +262,7 @@ export function mount(container, params = {}) {
 
       ${juaOn ? `
       <!-- Docked view switcher: Scores / Winnings (sits flush above the bottom nav) -->
-      <div class="fixed left-0 right-0 p-4 bg-primary border-t border-white/20 z-40 max-w-[430px] mx-auto" style="bottom: calc(80px + env(safe-area-inset-bottom, 0px))">
+      <div class="docked-bar p-4 bg-primary">
         <div role="tablist" aria-label="View" class="flex border border-white/40">
           <button id="seg-scores" role="tab" class="flex-1 py-2.5 font-headline font-extrabold uppercase tracking-widest text-sm transition-colors">Scores</button>
           <button id="seg-winnings" role="tab" class="flex-1 py-2.5 font-headline font-extrabold uppercase tracking-widest text-sm transition-colors">Winnings</button>
@@ -295,12 +295,22 @@ export function mount(container, params = {}) {
     if (tieCard) tieCard.style.display = showWinnings ? 'block' : 'none';
   };
 
-  let showWinnings = juaOn && localStorage.getItem('gns_winner_view') === 'winnings';
+  // The Scores/Winnings choice is remembered per game, so it survives tab
+  // navigation but resets to Scores once a new game ends (the activeGameId
+  // changes). Older string-only values fail the parse and fall back to Scores.
+  const activeGameId = state.get('roomLobby')?.activeGameId || null;
+  let stored = null;
+  try { stored = JSON.parse(localStorage.getItem('gns_winner_view')); } catch { /* legacy/invalid */ }
+
+  let showWinnings = juaOn && stored?.gameId === activeGameId && stored?.view === 'winnings';
   _applyView(showWinnings);
 
   const _setView = (next) => {
     showWinnings = next;
-    localStorage.setItem('gns_winner_view', showWinnings ? 'winnings' : 'scores');
+    localStorage.setItem('gns_winner_view', JSON.stringify({
+      gameId: activeGameId,
+      view: showWinnings ? 'winnings' : 'scores',
+    }));
     _applyView(showWinnings);
   };
   segScores?.addEventListener('click', () => _setView(false));
