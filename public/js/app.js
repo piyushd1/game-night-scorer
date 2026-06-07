@@ -62,25 +62,6 @@ async function init() {
     });
   }
 
-  // Temporary dark-mode toggle in the header. The `.dark` class on <html> swaps
-  // the CSS-variable palette (see css/app.css); the choice is persisted and
-  // re-applied before paint by the bootstrap script in index.html. This button
-  // is a placeholder — it'll be re-homed (or removed) once the real entry point
-  // for theme switching is decided.
-  const themeBtn = document.getElementById('top-bar-theme');
-  if (themeBtn) {
-    const root = document.documentElement;
-    const syncIcon = () => {
-      themeBtn.textContent = root.classList.contains('dark') ? 'light_mode' : 'dark_mode';
-    };
-    syncIcon();
-    themeBtn.addEventListener('click', () => {
-      const isDark = root.classList.toggle('dark');
-      try { localStorage.setItem('gns_theme', isDark ? 'dark' : 'light'); } catch (_) { /* storage blocked */ }
-      syncIcon();
-    });
-  }
-
   // Pre-hydrate state from URL + cache BEFORE router fires its initial _onHashChange.
   // Without this, screens that read state.get('roomCode') on a hash-based refresh
   // (e.g. refreshing while on #lobby or #dashboard) would find state empty and bail.

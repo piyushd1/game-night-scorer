@@ -2,68 +2,6 @@
    ANALOG ARCHITECT — App Styles
    ═══════════════════════════════════════════ */
 
-/* ── Theme tokens ──
-   Semantic colors are CSS variables so the whole app can flip between light
-   and dark. The Tailwind config (index.html) maps each token to var(--token),
-   so utilities like bg-surface-container-low / text-on-surface theme for free.
-   Light is the default (:root); .dark on <html> swaps the palette. */
-:root {
-  --surface-container-low: #f4f4f2;
-  --surface-container: #eeeeec;
-  --surface-container-high: #e8e8e6;
-  --surface-container-highest: #e2e3e1;
-  --surface-container-lowest: #ffffff;
-  --surface-bright: #f9f9f7;
-  --surface-dim: #dadad8;
-  --on-surface: #1a1c1b;
-  --on-surface-variant: #474747;
-  --primary: #000000;
-  --on-primary: #ffffff;
-  --secondary: #0046fa;
-  --on-secondary: #ffffff;
-  --tertiary: #7e0008;
-  --tertiary-container: #e61720;
-  --error: #ba1a1a;
-  --on-error: #ffffff;
-  --outline: #777777;
-  --outline-variant: #c6c6c6;
-  --background: #f4f4f2;
-  --on-background: #1a1c1b;
-  --surface: #f9f9f7;
-  --inverse-surface: #2f3130;
-  --inverse-on-surface: #f1f1ef;
-}
-
-.dark {
-  /* App background and the former "white" surfaces collapse to black; the
-     bordered, brutalist layout keeps structure via outlines. Elevated/hover
-     surfaces step up in dark grey. All text goes white. */
-  --surface-container-low: #000000;
-  --surface-container: #1a1a1a;
-  --surface-container-high: #242424;
-  --surface-container-highest: #2e2e2e;
-  --surface-container-lowest: #000000;
-  --surface-bright: #121212;
-  --surface-dim: #000000;
-  --on-surface: #ffffff;
-  --on-surface-variant: #cfcfcf;
-  --primary: #ffffff;
-  --on-primary: #000000;
-  --secondary: #4d82ff;
-  --on-secondary: #000000;
-  --tertiary: #ff6b70;
-  --tertiary-container: #e61720;
-  --error: #ffb4ab;
-  --on-error: #000000;
-  --outline: #8a8a8a;
-  --outline-variant: #3a3a3a;
-  --background: #000000;
-  --on-background: #ffffff;
-  --surface: #000000;
-  --inverse-surface: #f1f1ef;
-  --inverse-on-surface: #1a1c1b;
-}
-
 /* Material Symbols */
 .material-symbols-outlined {
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -107,7 +45,7 @@ body {
   margin-right: auto;
   bottom: calc(var(--nav-height, 80px) + env(safe-area-inset-bottom, 0px));
   z-index: 40;
-  border-top: 1px solid var(--outline-variant);
+  border-top: 1px solid #c6c6c6;
 }
 .screen.no-nav .docked-bar {
   bottom: env(safe-area-inset-bottom, 0px);
@@ -121,7 +59,7 @@ body {
   justify-content: center;
   padding: 12px 0 16px;
   flex: 1;
-  color: var(--outline);
+  color: #777777;
   transition: all 75ms ease-linear;
   cursor: pointer;
   -webkit-user-select: none;
@@ -129,11 +67,11 @@ body {
 }
 
 .nav-item:hover {
-  background: var(--surface-container-highest);
+  background: #E2E3E1;
 }
 
 .nav-item.active {
-  color: var(--on-surface);
+  color: #1a1c1b;
 }
 
 .nav-item span:last-child {
@@ -146,12 +84,12 @@ body {
 
 /* ── Toast ── */
 .toast {
-  background: var(--inverse-surface);
-  color: var(--inverse-on-surface);
+  background: #2f3130;
+  color: #f1f1ef;
   font-family: 'Space Mono', monospace;
   font-size: 12px;
   padding: 10px 16px;
-  border: 1px solid var(--outline);
+  border: 1px solid #777777;
   pointer-events: all;
   opacity: 0;
   transform: translateY(-10px);
@@ -234,25 +172,25 @@ input[type="number"] {
 .score-input {
   background: transparent;
   border: 0;
-  border-bottom: 2px solid var(--on-surface);
+  border-bottom: 2px solid #000000;
   font-family: 'Space Mono', monospace;
   font-size: 24px;
   text-align: center;
   width: 80px;
   padding: 4px 0;
   outline: none;
-  color: var(--on-surface);
+  color: #1a1c1b;
   transition: border-color 0.15s;
 }
 
 .score-input:focus {
-  border-color: var(--secondary);
+  border-color: #0046fa;
 }
 
 /* ── Buttons ── */
 .btn-primary {
-  background: var(--primary);
-  color: var(--on-primary);
+  background: #000000;
+  color: #ffffff;
   font-family: 'Manrope', sans-serif;
   font-weight: 800;
   text-transform: uppercase;
@@ -268,36 +206,36 @@ input[type="number"] {
 .btn-primary:hover { opacity: 0.9; }
 .btn-primary:active { transform: scale(0.98); }
 .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
-.btn-primary:focus-visible { outline: 2px solid var(--secondary); outline-offset: 2px; }
+.btn-primary:focus-visible { outline: 2px solid #0046fa; outline-offset: 2px; }
 
 .btn-secondary {
-  background: var(--surface-container-lowest);
-  color: var(--on-surface);
+  background: #ffffff;
+  color: #000000;
   font-family: 'Manrope', sans-serif;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   padding: 14px 24px;
-  border: 1px solid var(--on-surface);
+  border: 1px solid #000000;
   cursor: pointer;
   transition: background 0.15s;
   font-size: 16px;
 }
 
-.btn-secondary:hover { background: var(--surface-container-high); }
+.btn-secondary:hover { background: #e8e8e6; }
 .btn-secondary:active { transform: scale(0.98); }
-.btn-secondary:focus-visible { outline: 2px solid var(--secondary); outline-offset: 2px; }
+.btn-secondary:focus-visible { outline: 2px solid #0046fa; outline-offset: 2px; }
 
 /* Negative / destructive variant — outlined: red border + red text, no fill. */
 .btn-danger {
   background: transparent;
-  color: var(--error);
+  color: #ba1a1a;
   font-family: 'Manrope', sans-serif;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   padding: 14px 24px;
-  border: 1px solid var(--error);
+  border: 1px solid #ba1a1a;
   cursor: pointer;
   transition: background 0.15s;
   width: 100%;
@@ -307,7 +245,7 @@ input[type="number"] {
 .btn-danger:hover { background: rgba(186, 26, 26, 0.08); }
 .btn-danger:active { transform: scale(0.98); }
 .btn-danger:disabled { opacity: 0.4; cursor: not-allowed; }
-.btn-danger:focus-visible { outline: 2px solid var(--error); outline-offset: 2px; }
+.btn-danger:focus-visible { outline: 2px solid #ba1a1a; outline-offset: 2px; }
 
 /* ── Modal / Bottom Sheet ── */
 .modal-overlay {
@@ -334,8 +272,8 @@ input[type="number"] {
   right: 0;
   max-width: 430px;
   margin: 0 auto;
-  background: var(--surface-container-lowest);
-  border-top: 1px solid var(--outline);
+  background: #ffffff;
+  border-top: 1px solid #777777;
   z-index: 101;
   transform: translateY(100%);
   transition: transform 0.25s ease;
@@ -352,15 +290,15 @@ input[type="number"] {
 .modal-handle {
   width: 40px;
   height: 4px;
-  background: var(--outline-variant);
+  background: #c6c6c6;
   border-radius: 2px;
   margin: 8px auto 16px;
 }
 
 /* ── Overtime Banner ── */
 .overtime-banner {
-  background: var(--primary);
-  color: var(--on-primary);
+  background: #000000;
+  color: #ffffff;
   font-family: 'Manrope', sans-serif;
   font-weight: 800;
   text-transform: uppercase;
@@ -401,6 +339,6 @@ button.nav-item {
 }
 
 button.nav-item:focus-visible {
-  outline: 2px solid var(--secondary);
+  outline: 2px solid #0046fa;
   outline-offset: -2px;
 }

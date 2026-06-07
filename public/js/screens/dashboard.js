@@ -507,7 +507,7 @@ function _render(container, roomCode) {
                 style="width:3.25rem;height:100%;" ${rounds.length === 0 ? 'disabled' : ''}>
                 <span class="material-symbols-outlined text-lg" aria-hidden="true">edit</span>
               </button>
-              <div id="round-dropdown" style="display:none;position:absolute;bottom:100%;left:0;margin-bottom:4px;background:var(--surface-container-low);border:1px solid var(--on-surface);z-index:20;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
+              <div id="round-dropdown" style="display:none;position:absolute;bottom:100%;left:0;margin-bottom:4px;background:#f4f4f2;border:1px solid #000;z-index:20;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
                 ${roundDropdownItems}
               </div>
             </div>
@@ -739,7 +739,7 @@ function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundInd
       const label = `${pts}${roundFlip7[i] ? ' 🔥' : ''}${showHeart ? ' ❤️' : ''}`;
       const firstSaveChanged = _editFirstSavePid !== undefined && (_editFirstSavePid === pid) !== Boolean(roundJuaSave[i]);
       if (isEditingRound && (_editAdjustments[pid] || firstSaveChanged)) {
-        return `<span class="inline-block font-mono text-sm px-1.5 py-0.5" style="background:var(--primary);color:var(--on-primary);border:1px solid var(--primary)">${label}</span>`;
+        return `<span class="inline-block font-mono text-sm px-1.5 py-0.5" style="background:#000;color:#fff;border:1px solid #000">${label}</span>`;
       }
       return `<span class="inline-block font-mono text-sm bg-surface-container-low border border-outline-variant px-1.5 py-0.5 text-on-surface">${label}</span>`;
     })
@@ -749,7 +749,7 @@ function _renderFlip7HostRow(standing, playerData, roundHistory, editingRoundInd
   if (!_editScoresMode && hasDraft) {
     const roundPts = liveEntry.pts || 0;
     const chipLabel = `${roundPts}${liveEntry.flip7 ? ' 🔥' : ''}${isLiveFirstSave ? ' ❤️' : ''}`;
-    draftChip = `<span class="inline-block font-mono text-sm px-1.5 py-0.5" style="background:var(--primary);color:var(--on-primary);border:1px solid var(--primary)">${chipLabel}</span>`;
+    draftChip = `<span class="inline-block font-mono text-sm px-1.5 py-0.5" style="background:#000;color:#fff;border:1px solid #000">${chipLabel}</span>`;
   } else if (!_editScoresMode && isLiveFirstSave) {
     draftChip = `<span class="inline-block font-mono text-sm px-1.5 py-0.5 border border-outline-variant">0 ❤️</span>`;
   }
