@@ -974,7 +974,7 @@ function _openFlip7Drawer(container, roomCode, playerId, snapshot, game) {
 
   _flip7DrawerEl.innerHTML = `
     <div id="flip7-drawer-backdrop" class="absolute inset-0 bg-black/50"></div>
-    <div id="flip7-drawer-sheet" class="relative w-full bg-surface-container-lowest border-t-2 border-outline" style="max-height:85vh;display:flex;flex-direction:column;">
+    <div id="flip7-drawer-sheet" class="app-col relative w-full bg-surface-container-lowest border-t-2 border-outline" style="max-height:85vh;display:flex;flex-direction:column;">
       <!-- Sticky header -->
       <div class="shrink-0">
         <div class="accent-bar" style="background:${color}"></div>
@@ -1530,7 +1530,7 @@ function _openAdjustDrawer(container, roomCode, game, pid, snapshot) {
 
   _editScoresEl.innerHTML = `
     <div id="adjust-backdrop" class="absolute inset-0 bg-black/50"></div>
-    <div class="relative w-full bg-surface-container-lowest border-t-2 border-outline">
+    <div class="app-col relative w-full bg-surface-container-lowest border-t-2 border-outline">
       <div class="h-[6px]" style="background:${color}"></div>
       <div class="flex justify-center pt-3 pb-1">
         <div class="w-10 h-1 rounded-full bg-outline-variant"></div>
@@ -1636,7 +1636,7 @@ function _openJuaFineCounter(pid, game, roomCode) {
 
   _juaModalEl.innerHTML = `
     <div id="jua-modal-backdrop" class="absolute inset-0 bg-black/50"></div>
-    <div class="relative w-full bg-surface-container-lowest border-t-2 border-outline">
+    <div class="app-col relative w-full bg-surface-container-lowest border-t-2 border-outline">
       <div class="flex justify-center pt-3 pb-1"><div class="w-10 h-1 rounded-full bg-outline-variant"></div></div>
       <div class="px-4 pb-3 border-b border-outline-variant">
         <p class="font-mono text-[9px] uppercase tracking-widest text-outline mb-1">RECORD FINES</p>
