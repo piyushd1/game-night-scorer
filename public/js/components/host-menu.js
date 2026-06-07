@@ -95,8 +95,8 @@ function _renderMenuItems() {
     // Spectators can request to take over as host (via the request → approve flow).
     items.push({ action: 'become-host', icon: 'swap_horiz', label: 'Become Host' });
   }
-  // Everyone gets "Exit Lobby".
-  items.push({ action: 'exit-lobby', icon: 'logout', label: 'Exit Lobby' });
+  // Everyone gets "Leave Lobby".
+  items.push({ action: 'exit-lobby', icon: 'logout', label: 'Leave Lobby' });
 
   const base = 'host-menu-action w-full text-left px-4 py-3 font-headline font-bold text-xs uppercase tracking-widest hover:bg-surface-container-high transition-colors flex items-center gap-3';
   itemsEl.innerHTML = items.map((it, i) => {

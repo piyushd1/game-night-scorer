@@ -297,7 +297,7 @@ export function buildSingleGameTables(game, priorGames = []) {
  * live DOM and old listeners are discarded with the replaced DOM.
  * @param {HTMLElement} container
  */
-export function wireSingleGameTables(container) {
+export function wireSingleGameTables(container, { collapsedLabel = 'Winnings', expandedLabel = 'Breakdown' } = {}) {
   const winningsCells = Array.from(container.querySelectorAll('[data-winnings-pid]'));
 
   const _setCellBreakdown = (cell, show) => {
@@ -316,7 +316,9 @@ export function wireSingleGameTables(container) {
     const header = container.querySelector('#winnings-col-header');
     if (header) {
       header.querySelector('.material-symbols-outlined').textContent = show ? 'unfold_less' : 'unfold_more';
-      header.querySelector('.col-header-label').textContent = show ? 'Breakdown' : 'Winnings';
+      // Callers can keep the column label fixed (e.g. "Total") by passing the
+      // same collapsed/expanded label.
+      header.querySelector('.col-header-label').textContent = show ? expandedLabel : collapsedLabel;
       header.setAttribute('aria-label', show ? 'Collapse all breakdowns' : 'Expand all breakdowns');
     }
   };

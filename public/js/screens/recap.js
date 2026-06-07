@@ -222,8 +222,14 @@ export function mount(container, params = {}) {
     dockedEl.style.display = (hasDropdown || hasWinnings) ? '' : 'none';
 
     region.innerHTML = scoresHTML + winningsHTML + tieHTML;
-    // No-op for the All Games tables (no breakdown cells); wires the per-game view.
-    wireSingleGameTables(region);
+    // Wire the winnings breakdown toggles. The All Games total expands to its
+    // per-game breakdown but keeps the "Total" column label in both states; the
+    // per-game view keeps the Winner screen's "Winnings"/"Breakdown" labels.
+    if (viewSel === 'all') {
+      wireSingleGameTables(region, { collapsedLabel: 'Total', expandedLabel: 'Total' });
+    } else {
+      wireSingleGameTables(region);
+    }
 
     if (hasWinnings) {
       segContainer.querySelector('#seg-scores').addEventListener('click', () => { tab = 'scores'; _applyTab(); });
@@ -340,11 +346,13 @@ function _winnerHero(winners, isJua) {
       .map((w) => `<span class="${nameFont} ${size} text-center truncate min-w-0">${escapeHTML(w.name)}</span>`)
       .join('')}</div>`;
   }
+  // Ties get more breathing room between the label/icon row and the names row.
+  const rowGap = plural ? 'mb-8' : 'mb-4';
   return `
     <div id="recap-winner-hero" role="button" tabindex="0" aria-label="Celebrate again" title="Tap to celebrate again" class="text-center w-full cursor-pointer select-none">
-      <div class="flex items-center justify-center gap-2 mb-4">
+      <div class="flex items-center justify-center gap-2 ${rowGap}">
         <span aria-hidden="true" class="material-symbols-outlined text-[2.5rem]" style="font-variation-settings: 'FILL' 1;">${icon}</span>
-        <span class="font-headline text-xl uppercase tracking-widest opacity-80">${label}</span>
+        <span class="font-headline font-bold text-xl uppercase tracking-widest opacity-80">${label}</span>
       </div>
       ${namesHTML}
     </div>`;
@@ -376,7 +384,7 @@ function _allScoresTable(stats) {
     <tr>
       <td class="py-3 pl-4 pr-3 text-center font-mono font-bold text-lg align-middle">${i + 1}</td>
       <td class="py-3 pr-3 font-headline font-bold text-lg uppercase leading-tight align-middle">${escapeHTML(p.name)}</td>
-      <td class="py-3 pl-3 pr-4 align-middle"><div class="flex flex-wrap gap-1">${chips || '<span class="text-outline">—</span>'}</div></td>
+      <td class="py-3 pl-3 pr-4 align-middle"><div class="flex flex-wrap gap-1 justify-end">${chips || '<span class="text-outline">—</span>'}</div></td>
     </tr>`;
   }).join('');
 
@@ -386,7 +394,7 @@ function _allScoresTable(stats) {
         <tr class="border-b border-outline">
           <th class="${_HEAD_CLS} pl-4 pr-3 text-center" style="${_RANK_COL}">Rank</th>
           <th class="${_HEAD_CLS} pr-3 text-left">Player</th>
-          <th class="${_HEAD_CLS} pl-3 pr-4 text-left">Standings</th>
+          <th class="${_HEAD_CLS} pl-3 pr-4 text-right">Standings</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-outline-variant">${body}</tbody>
@@ -394,18 +402,32 @@ function _allScoresTable(stats) {
 }
 
 // Winnings: total net per player, sorted descending (already sorted by stats),
-// using the winner screen's green/red + enlarged-₹ amount styling.
+// using the winner screen's green/red + enlarged-₹ amount styling. Each total
+// taps to reveal its per-game breakdown (the per-game nets sum to the total),
+// mirroring the Winner screen's winnings column — but the column label stays
+// "Total" in both states (see the wireSingleGameTables call in renderRegion).
 function _allWinningsTable(stats) {
   const body = stats.winnings.players.map((p, i) => {
     const net = parseFloat(p.net.toFixed(1));
     const absNet = parseFloat(Math.abs(net).toFixed(1));
     const amountStr = `<span class="inline-flex items-center justify-end">${net >= 0 ? '+' : '-'}<span class="ml-1.5 text-[1.4em] leading-none">₹</span>${absNet}</span>`;
     const amountCls = net >= 0 ? 'text-green-600' : 'text-red-600';
+    // Per-game nets shown as additive terms (they sum to the total).
+    const breakdown = (p.gameNets || []).map((gn, idx) => {
+      const v = parseFloat(gn.net.toFixed(1));
+      const op = idx === 0 ? (v < 0 ? '- ' : '') : (v < 0 ? '- ' : '+ ');
+      return `<span class="whitespace-nowrap">${op}${Math.abs(v)}</span>`;
+    }).join(' ');
+    const pid = escapeHTML(p.playerId);
+    const name = escapeHTML(p.name);
     return `
       <tr>
         <td class="pt-3 pb-3 pl-4 pr-3 text-center font-mono font-bold text-lg align-middle">${i + 1}</td>
-        <td class="pt-3 pb-3 pr-3 font-headline font-bold text-lg uppercase leading-tight align-middle">${escapeHTML(p.name)}</td>
-        <td class="pt-3 pb-3 pl-3 pr-4 text-right font-mono font-bold text-lg whitespace-nowrap align-middle ${amountCls}">${amountStr}</td>
+        <td class="pt-3 pb-3 pr-3 font-headline font-bold text-lg uppercase leading-tight align-middle">${name}</td>
+        <td data-winnings-pid="${pid}" role="button" tabindex="0" aria-pressed="false" aria-label="Show breakdown for ${name}" class="pt-3 pb-3 pl-3 pr-4 text-right align-middle cursor-pointer select-none">
+          <span class="winnings-amount font-mono font-bold text-lg whitespace-nowrap ${amountCls}">${amountStr}</span>
+          <span class="winnings-breakdown font-mono font-bold text-sm opacity-70 leading-relaxed" style="display:none">${breakdown}</span>
+        </td>
       </tr>`;
   }).join('');
 
@@ -415,7 +437,7 @@ function _allWinningsTable(stats) {
         <tr class="border-b border-outline">
           <th class="${_HEAD_CLS} pl-4 pr-3 text-center" style="${_RANK_COL}">Rank</th>
           <th class="${_HEAD_CLS} pr-3 text-left">Player</th>
-          <th class="${_HEAD_CLS} pl-3 pr-4 text-right">Total</th>
+          <th id="winnings-col-header" role="button" tabindex="0" aria-label="Expand all breakdowns" class="${_HEAD_CLS} pl-3 pr-4 text-right cursor-pointer select-none whitespace-nowrap"><span class="material-symbols-outlined" style="font-size:1.25rem;vertical-align:middle;line-height:1">unfold_more</span> <span class="col-header-label">Total</span></th>
         </tr>
       </thead>
       <tbody class="divide-y divide-outline-variant">${body}</tbody>
