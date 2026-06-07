@@ -126,15 +126,18 @@ async function _callItANight(roomCode) {
   }
 }
 
-// Reverse "Call it a Night": unlock the room back to the 'waiting' state it was
-// in before. The lobby/recap watchers pick this up and restore the live tabs.
+// Reverse "Call it a Night": unlock the room back to the 'waiting' state. We
+// also clear activeGameId — the night's last game is over, so we don't want its
+// tab restored; the host lands on the Lobby with a fresh "Start Game" button.
+// (app.js navigates only the host to the lobby; spectators stay on the recap
+// until a new game actually starts.)
 async function _oneMoreGame(roomCode) {
   if (!state.isHost()) {
     toast.show('Only the host can do that');
     return;
   }
   try {
-    await fb.setRoomStatus(roomCode, 'waiting');
+    await fb.updateRoomLobby(roomCode, { status: 'waiting', activeGameId: null });
   } catch (e) {
     console.error('Resume night failed:', e);
     toast.show('Failed to start another game');

@@ -21,11 +21,15 @@ let _backdropEl = null;
 // every tab/view switch — while a fresh "Call it a Night" re-celebrates.
 let _celebratedNight = null;
 
-// Live re-render subscription. Recap can stay mounted across a status change —
+// Live re-render subscriptions. Recap can stay mounted across a status change —
 // e.g. the host taps "Call it a Night" from the recap tab, which locks the night
 // but doesn't navigate (we're already here). Without this, the screen would show
-// a stale "active" recap and the action would look like it did nothing.
+// a stale "active" recap and the action would look like it did nothing. We also
+// watch for a *new* game starting underneath us (e.g. a spectator left on the
+// recap after "One More Game") so we can hand them off to the live board, the
+// same way the Lobby tab does.
 let _unsubLobby = null;
+let _unsubGames = null;
 
 function _closeDropdown(dropdownEl, trigger) {
   if (_backdropEl) { _backdropEl.remove(); _backdropEl = null; }
@@ -34,9 +38,10 @@ function _closeDropdown(dropdownEl, trigger) {
 }
 
 export function mount(container, params = {}) {
-  // A re-mount (tab switch or live status change) supersedes any prior listener
+  // A re-mount (tab switch or live status change) supersedes any prior listeners
   // and closes a dropdown left open on the previous render.
   if (_unsubLobby) { _unsubLobby(); _unsubLobby = null; }
+  if (_unsubGames) { _unsubGames(); _unsubGames = null; }
   if (_backdropEl) { _backdropEl.remove(); _backdropEl = null; }
 
   const roomCode = params.roomCode || state.get('roomCode');
@@ -89,7 +94,18 @@ export function mount(container, params = {}) {
 
   // ── UI state ──
   let viewSel = 'all';          // 'all' or a 0-based index into stats.perGame
-  let tab = 'scores';           // 'scores' | 'winnings'
+
+  // Scores/Winnings selection persists across navigation (like the Winner
+  // screen's segmented control), keyed by room. On a Jua night, default to
+  // Winnings — that's the headline of a money night — whether or not the night
+  // has been called, unless the user has already expressed a preference.
+  const TAB_KEY = `gns_recap_tab_${roomCode}`;
+  let tab = localStorage.getItem(TAB_KEY) || 'scores';   // 'scores' | 'winnings'
+  if (stats.winnings && !localStorage.getItem(TAB_KEY)) tab = 'winnings';
+
+  // The game that was active when we mounted. If a *different* game becomes
+  // active under us, a new game has started and we hand off to the board.
+  const mountActiveGameId = lobby.activeGameId || null;
 
   // Look up the raw game (config/rounds/totals/juaFines) backing a perGame entry.
   const rawGameOf = (pg) => games[pg.gameId] || Object.values(games).find((g) => g.gameId === pg.gameId);
@@ -232,8 +248,8 @@ export function mount(container, params = {}) {
     }
 
     if (hasWinnings) {
-      segContainer.querySelector('#seg-scores').addEventListener('click', () => { tab = 'scores'; _applyTab(); });
-      segContainer.querySelector('#seg-winnings').addEventListener('click', () => { tab = 'winnings'; _applyTab(); });
+      segContainer.querySelector('#seg-scores').addEventListener('click', () => { tab = 'scores'; localStorage.setItem(TAB_KEY, tab); _applyTab(); });
+      segContainer.querySelector('#seg-winnings').addEventListener('click', () => { tab = 'winnings'; localStorage.setItem(TAB_KEY, tab); _applyTab(); });
     }
     _applyTab();
   };
@@ -282,17 +298,33 @@ export function mount(container, params = {}) {
 
   renderRegion();
 
-  // Re-mount when the night is locked/unlocked underneath us so the heading,
-  // top-bar title, and "called" state stay in sync (the host can trigger this
-  // from the recap tab itself via "Call it a Night").
-  _unsubLobby = state.on('roomLobby', (newLobby) => {
-    const newLocked = (newLobby?.status === 'night-ended');
+  // React to room/game changes underneath us:
+  //  1. A new game becomes active → leave the recap for the live board, exactly
+  //     as the Lobby tab does (covers a spectator stranded on the recap after
+  //     "One More Game", and the activeGameId is fresh vs. when we mounted).
+  //  2. The night is locked/unlocked → re-mount so the heading, hero, and
+  //     "called" state stay in sync (the host can trigger this from the recap
+  //     tab itself via "Call it a Night" / "One More Game").
+  // We watch both roomLobby and games, since a new game arrives as two separate
+  // RTDB events; either one calling the shared handler is enough.
+  const _onRoomChange = () => {
+    const lob = state.get('roomLobby') || {};
+    const activeId = lob.activeGameId || null;
+    const activeGame = (state.get('games') || {})[activeId];
+    if (activeId && activeId !== mountActiveGameId && activeGame?.status === 'active') {
+      router.navigate('dashboard', { roomCode });
+      return;
+    }
+    const newLocked = (lob.status === 'night-ended');
     if (newLocked !== locked) mount(container, { roomCode });
-  });
+  };
+  _unsubLobby = state.on('roomLobby', _onRoomChange);
+  _unsubGames = state.on('games', _onRoomChange);
 }
 
 export function unmount() {
   if (_unsubLobby) { _unsubLobby(); _unsubLobby = null; }
+  if (_unsubGames) { _unsubGames(); _unsubGames = null; }
   if (_backdropEl) { _backdropEl.remove(); _backdropEl = null; }
 }
 
@@ -335,15 +367,21 @@ function _winnerHero(winners, isJua) {
   const nameFont = 'font-headline font-extrabold uppercase tracking-tight leading-none';
   let namesHTML;
   if (winners.length === 1) {
+    // Single winner uses the same text-7xl name as the Winner screen's hero.
     namesHTML = `<h1 class="confetti-text ${nameFont} text-7xl truncate">${escapeHTML(winners[0].name)}</h1>`;
   } else {
     // One continuous gradient across all the names: confetti-text on the grid,
     // so its single clipped background image slides through every name as a unit
-    // (the children inherit the transparent text fill).
-    const cols = winners.length === 2 ? 'grid-cols-2' : 'grid-cols-3';
-    const size = winners.length === 2 ? 'text-4xl' : 'text-2xl';
-    namesHTML = `<div class="confetti-text grid ${cols} gap-2">${winners
-      .map((w) => `<span class="${nameFont} ${size} text-center truncate min-w-0">${escapeHTML(w.name)}</span>`)
+    // (the children inherit the transparent text fill). Always two names per row;
+    // with an odd count the last one spans both columns so it sits centered on
+    // its own row.
+    const size = winners.length === 2 ? 'text-4xl' : 'text-3xl';
+    const odd = winners.length % 2 === 1;
+    namesHTML = `<div class="confetti-text grid grid-cols-2 gap-x-2 gap-y-3">${winners
+      .map((w, i) => {
+        const span = (odd && i === winners.length - 1) ? ' col-span-2' : '';
+        return `<span class="${nameFont} ${size} text-center truncate min-w-0${span}">${escapeHTML(w.name)}</span>`;
+      })
       .join('')}</div>`;
   }
   // Ties get more breathing room between the label/icon row and the names row.
@@ -382,7 +420,7 @@ function _allScoresTable(stats) {
     const chips = medals('🥇', p.ones) + medals('🥈', p.twos) + medals('🥉', p.threes);
     return `
     <tr>
-      <td class="py-3 pl-4 pr-3 text-center font-mono font-bold text-lg align-middle">${i + 1}</td>
+      <td class="py-3 pl-4 pr-3 text-center font-mono font-bold text-lg align-middle" style="height:3.5rem">${i + 1}</td>
       <td class="py-3 pr-3 font-headline font-bold text-lg uppercase leading-tight align-middle">${escapeHTML(p.name)}</td>
       <td class="py-3 pl-3 pr-4 align-middle"><div class="flex flex-wrap gap-1 justify-end">${chips || '<span class="text-outline">—</span>'}</div></td>
     </tr>`;
@@ -412,21 +450,23 @@ function _allWinningsTable(stats) {
     const absNet = parseFloat(Math.abs(net).toFixed(1));
     const amountStr = `<span class="inline-flex items-center justify-end">${net >= 0 ? '+' : '-'}<span class="ml-1.5 text-[1.4em] leading-none">₹</span>${absNet}</span>`;
     const amountCls = net >= 0 ? 'text-green-600' : 'text-red-600';
-    // Per-game nets shown as additive terms (they sum to the total).
+    // Per-game nets shown as additive terms (they sum to the total), each tinted
+    // green/red by its own sign so a winning night reads at a glance.
     const breakdown = (p.gameNets || []).map((gn, idx) => {
       const v = parseFloat(gn.net.toFixed(1));
       const op = idx === 0 ? (v < 0 ? '- ' : '') : (v < 0 ? '- ' : '+ ');
-      return `<span class="whitespace-nowrap">${op}${Math.abs(v)}</span>`;
+      const cls = v >= 0 ? 'text-green-600' : 'text-red-600';
+      return `<span class="whitespace-nowrap ${cls}">${op}${Math.abs(v)}</span>`;
     }).join(' ');
     const pid = escapeHTML(p.playerId);
     const name = escapeHTML(p.name);
     return `
       <tr>
-        <td class="pt-3 pb-3 pl-4 pr-3 text-center font-mono font-bold text-lg align-middle">${i + 1}</td>
+        <td class="pt-3 pb-3 pl-4 pr-3 text-center font-mono font-bold text-lg align-middle" style="height:3.5rem">${i + 1}</td>
         <td class="pt-3 pb-3 pr-3 font-headline font-bold text-lg uppercase leading-tight align-middle">${name}</td>
         <td data-winnings-pid="${pid}" role="button" tabindex="0" aria-pressed="false" aria-label="Show breakdown for ${name}" class="pt-3 pb-3 pl-3 pr-4 text-right align-middle cursor-pointer select-none">
           <span class="winnings-amount font-mono font-bold text-lg whitespace-nowrap ${amountCls}">${amountStr}</span>
-          <span class="winnings-breakdown font-mono font-bold text-sm opacity-70 leading-relaxed" style="display:none">${breakdown}</span>
+          <span class="winnings-breakdown font-mono font-bold text-sm leading-relaxed" style="display:none">${breakdown}</span>
         </td>
       </tr>`;
   }).join('');
