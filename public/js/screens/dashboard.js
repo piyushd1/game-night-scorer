@@ -125,11 +125,10 @@ export function mount(container, params = {}) {
   if (!state.get('roomCode')) {
     state.set('roomCode', roomCode);
   }
-  // Guard on the actual watcher, not roomLobby — cache hydration sets roomLobby on
-  // page load which would otherwise skip watchRoom entirely after a refresh.
-  if (!fb.isWatchingRoom()) {
-    fb.watchRoom(roomCode, () => {});
-  }
+  // Always replace the watcher so any previous screen's callback (e.g. lobby's,
+  // which calls bottomNav.show('lobby')) doesn't fire while we're on the dashboard.
+  // The dashboard uses state.on() subscriptions, so the callback itself is a no-op.
+  fb.watchRoom(roomCode, () => {});
 
   // Initial render
   _render(container, roomCode);

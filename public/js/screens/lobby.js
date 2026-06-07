@@ -11,7 +11,9 @@ import * as hostMenu from '../components/host-menu.js';
 import { accentColor } from '../state.js';
 import { escapeHTML } from '../utils.js';
 
-let _unsub = null;
+let _unsubLobby = null;
+let _unsubPlayers = null;
+let _unsubGames = null;
 // Tracks the host state last reflected in the top bar, so we only re-render the
 // header actions (and its overflow trigger) when the viewer flips host ⇄ spectator.
 let _lastTopBarHost = null;
@@ -134,7 +136,9 @@ export function mount(container, params = {}) {
 }
 
 export function unmount() {
-  // Keep the room watcher alive — we still need it
+  if (_unsubLobby) { _unsubLobby(); _unsubLobby = null; }
+  if (_unsubPlayers) { _unsubPlayers(); _unsubPlayers = null; }
+  if (_unsubGames) { _unsubGames(); _unsubGames = null; }
 }
 
 function _bindEvents(container, roomCode) {
@@ -273,144 +277,153 @@ function _startWatching(roomCode, container) {
     if (!data) {
       toast.show('Room not found');
       router.navigate('home');
-      return;
-    }
-
-    const isHost = state.isHost();
-    const lobby = data.lobby || {};
-    const players = data.players || {};
-
-    // The lobby is always a nav tab: it shows on its own when no game is active,
-    // and alongside the game tab during a Flip 7 game. Only a non-Flip 7 game in
-    // progress hides the nav (those games use their own tab set elsewhere).
-    const activeGameForNav = state.currentGame();
-    if (activeGameForNav && activeGameForNav.type !== 'flip7') {
-      bottomNav.hide();
-    } else {
-      bottomNav.show('lobby');
-    }
-
-    // Show/hide host controls (add-player row + quick-add chips). Hidden once
-    // the night has ended — no more players can be added.
-    const canAdd = isHost && lobby.status !== 'night-ended';
-    container.querySelector('#host-controls').style.display = canAdd ? 'block' : 'none';
-    const viewerLabelEl = container.querySelector('#viewer-label');
-    if (viewerLabelEl) {
-      if (isHost) {
-        viewerLabelEl.style.display = 'none';
-      } else {
-        viewerLabelEl.style.display = 'block';
-        // Always show the Spectator Mode card; the sub-line reflects room state.
-        const gameActive = lobby.status === 'playing' && state.currentGame()?.status === 'active';
-        let spectatorSubLine, spectatorSubSize;
-        if (gameActive) {
-          spectatorSubLine = 'Host has started the game...';
-          spectatorSubSize = 'text-base';
-        } else if (lobby.status === 'night-ended') {
-          spectatorSubLine = 'Host has ended the game night';
-          spectatorSubSize = 'text-sm';
-        } else {
-          spectatorSubLine = 'Waiting for the host to start the game';
-          spectatorSubSize = 'text-base';
-        }
-        viewerLabelEl.innerHTML = `
-          <div class="bg-surface-container-high border border-outline p-4 text-center">
-            <p class="font-headline font-bold text-lg uppercase tracking-widest text-outline">SPECTATOR MODE</p>
-            <p class="font-body ${spectatorSubSize} text-on-surface-variant mt-1">${spectatorSubLine}</p>
-          </div>
-        `;
-      }
-    }
-    container.querySelector('#start-section').style.display = isHost ? 'block' : 'none';
-
-    // Host-only spectator-scoring toggle — only while a game is actually active,
-    // so it never shares the bar with the "Start a new game" button.
-    // Defaults on — only an explicit `false` turns it off.
-    const showSpectatorToggle = isHost && state.currentGame()?.status === 'active';
-    const specSection = container.querySelector('#spectator-scoring-section');
-    if (specSection) {
-      specSection.style.display = showSpectatorToggle ? 'block' : 'none';
-      const specToggle = specSection.querySelector('#toggle-spectator-scoring');
-      if (specToggle) _applySpectatorToggleVisuals(specToggle, lobby.spectatorScoring !== false);
-    }
-
-    // Render player list. Add is always allowed for the host. Remove is allowed
-    // except while a game is actually in progress — once a game is finished or
-    // abandoned (or the night has ended) the game's playerIds/snapshot are
-    // frozen, so removing a player from the roster can't affect jua/standings.
-    const isPlaying = lobby.status === 'playing';
-    const gameInProgress = state.currentGame()?.status === 'active';
-    const addRow = container.querySelector('#add-player-row');
-    if (addRow) addRow.style.display = canAdd ? 'flex' : 'none';
-    _renderPlayers(container, players, isHost, roomCode, gameInProgress);
-    _showSuggestions(container, roomCode);
-
-    // The overflow menu is host-only. If the viewer just became (or stopped being)
-    // the host, re-render the header so the trigger appears/disappears.
-    if (isHost !== _lastTopBarHost) {
-      hostMenu.renderTopBarActions(roomCode);
-      _lastTopBarHost = isHost;
-    }
-
-    const becomeHostSection = container.querySelector('#become-host-section');
-    if (becomeHostSection) becomeHostSection.style.display = (!lobby.hostKey && !isHost) ? 'block' : 'none';
-
-    // Spectators get a "Go to game" shortcut to the live board once the host has
-    // a game in progress.
-    const spectatorGameSection = container.querySelector('#spectator-game-section');
-    if (spectatorGameSection) spectatorGameSection.style.display = (!isHost && isPlaying && gameInProgress) ? 'block' : 'none';
-
-    // Enable/disable start
-    const activeCount = Object.values(players).length;
-    const activeGame = state.currentGame();
-    const isGameFinished = isPlaying && activeGame?.status === 'finished';
-
-    const finishedSection = container.querySelector('#finished-game-section');
-    if (finishedSection) {
-      if (isHost && isGameFinished) {
-        finishedSection.style.display = 'flex';
-        _renderFinishedGameActions(finishedSection, roomCode);
-      } else {
-        finishedSection.style.display = 'none';
-      }
-    }
-
-    // Once the night is locked, no new games can be started or replayed here —
-    // the host starts a fresh night from the landing screen. Everyone gets a
-    // Leave Lobby button instead.
-    const nightLocked = lobby.status === 'night-ended';
-    const leaveLobbySection = container.querySelector('#leave-lobby-section');
-    if (leaveLobbySection) leaveLobbySection.style.display = nightLocked ? 'block' : 'none';
-
-    const startSection = container.querySelector('#start-section');
-    const btn = container.querySelector('#btn-start-game');
-    if (startSection) startSection.style.display = (isHost && !isPlaying && !nightLocked) ? 'block' : 'none';
-    if (btn) btn.disabled = activeCount < 3;
-    // Keep the "add at least 3 players" hint visible until the threshold is met.
-    // At 0 players the empty-state placeholder already shows it, so only fill the
-    // gap for 1-2 players here.
-    const startHint = container.querySelector('#start-hint');
-    if (startHint) {
-      const showHint = isHost && !isPlaying && !nightLocked && activeCount > 0 && activeCount < 3;
-      startHint.style.display = showHint ? 'block' : 'none';
-    }
-
-    // Show the docked action bar only when one of its sections applies, so it
-    // never renders as an empty strip. Mirror the per-section conditions above.
-    const showStart = isHost && !isPlaying && !nightLocked;
-    const showFinished = isHost && isGameFinished;
-    const showGoToGame = !isHost && isPlaying && gameInProgress;
-    const showBecomeHost = !lobby.hostKey && !isHost;
-    const anyAction = showSpectatorToggle || showStart || showFinished || nightLocked || showGoToGame || showBecomeHost;
-    const actionsBar = container.querySelector('#lobby-actions');
-    if (actionsBar) actionsBar.style.display = anyAction ? 'flex' : 'none';
-    // Reserve scroll space so the player grid clears the docked bar when shown.
-    const lobbyContent = container.querySelector('#lobby-content');
-    if (lobbyContent) {
-      lobbyContent.classList.toggle('pb-32', anyAction);
-      lobbyContent.classList.toggle('pb-8', !anyAction);
     }
   });
+
+  const renderHandler = () => _render(container, roomCode);
+  _unsubLobby = state.on('roomLobby', renderHandler);
+  _unsubPlayers = state.on('players', renderHandler);
+  _unsubGames = state.on('games', renderHandler);
+
+  // Initial render from cached/current state
+  _render(container, roomCode);
+}
+
+function _render(container, roomCode) {
+  const isHost = state.isHost();
+  const lobby = state.get('roomLobby') || {};
+  const players = state.get('players') || {};
+
+  // The lobby is always a nav tab: it shows on its own when no game is active,
+  // and alongside the game tab during a Flip 7 game. Only a non-Flip 7 game in
+  // progress hides the nav (those games use their own tab set elsewhere).
+  const activeGameForNav = state.currentGame();
+  if (activeGameForNav && activeGameForNav.type !== 'flip7') {
+    bottomNav.hide();
+  } else {
+    bottomNav.show('lobby');
+  }
+
+  // Show/hide host controls (add-player row + quick-add chips). Hidden once
+  // the night has ended — no more players can be added.
+  const canAdd = isHost && lobby.status !== 'night-ended';
+  container.querySelector('#host-controls').style.display = canAdd ? 'block' : 'none';
+  const viewerLabelEl = container.querySelector('#viewer-label');
+  if (viewerLabelEl) {
+    if (isHost) {
+      viewerLabelEl.style.display = 'none';
+    } else {
+      viewerLabelEl.style.display = 'block';
+      // Always show the Spectator Mode card; the sub-line reflects room state.
+      const gameActive = lobby.status === 'playing' && state.currentGame()?.status === 'active';
+      let spectatorSubLine, spectatorSubSize;
+      if (gameActive) {
+        spectatorSubLine = 'Host has started the game...';
+        spectatorSubSize = 'text-base';
+      } else if (lobby.status === 'night-ended') {
+        spectatorSubLine = 'Host has ended the game night';
+        spectatorSubSize = 'text-sm';
+      } else {
+        spectatorSubLine = 'Waiting for the host to start the game';
+        spectatorSubSize = 'text-base';
+      }
+      viewerLabelEl.innerHTML = `
+        <div class="bg-surface-container-high border border-outline p-4 text-center">
+          <p class="font-headline font-bold text-lg uppercase tracking-widest text-outline">SPECTATOR MODE</p>
+          <p class="font-body ${spectatorSubSize} text-on-surface-variant mt-1">${spectatorSubLine}</p>
+        </div>
+      `;
+    }
+  }
+  container.querySelector('#start-section').style.display = isHost ? 'block' : 'none';
+
+  // Host-only spectator-scoring toggle — only while a game is actually active,
+  // so it never shares the bar with the "Start a new game" button.
+  // Defaults on — only an explicit `false` turns it off.
+  const showSpectatorToggle = isHost && state.currentGame()?.status === 'active';
+  const specSection = container.querySelector('#spectator-scoring-section');
+  if (specSection) {
+    specSection.style.display = showSpectatorToggle ? 'block' : 'none';
+    const specToggle = specSection.querySelector('#toggle-spectator-scoring');
+    if (specToggle) _applySpectatorToggleVisuals(specToggle, lobby.spectatorScoring !== false);
+  }
+
+  // Render player list. Add is always allowed for the host. Remove is allowed
+  // except while a game is actually in progress — once a game is finished or
+  // abandoned (or the night has ended) the game's playerIds/snapshot are
+  // frozen, so removing a player from the roster can't affect jua/standings.
+  const isPlaying = lobby.status === 'playing';
+  const gameInProgress = state.currentGame()?.status === 'active';
+  const addRow = container.querySelector('#add-player-row');
+  if (addRow) addRow.style.display = canAdd ? 'flex' : 'none';
+  _renderPlayers(container, players, isHost, roomCode, gameInProgress);
+  _showSuggestions(container, roomCode);
+
+  // The overflow menu is host-only. If the viewer just became (or stopped being)
+  // the host, re-render the header so the trigger appears/disappears.
+  if (isHost !== _lastTopBarHost) {
+    hostMenu.renderTopBarActions(roomCode);
+    _lastTopBarHost = isHost;
+  }
+
+  const becomeHostSection = container.querySelector('#become-host-section');
+  if (becomeHostSection) becomeHostSection.style.display = (!lobby.hostKey && !isHost) ? 'block' : 'none';
+
+  // Spectators get a "Go to game" shortcut to the live board once the host has
+  // a game in progress.
+  const spectatorGameSection = container.querySelector('#spectator-game-section');
+  if (spectatorGameSection) spectatorGameSection.style.display = (!isHost && isPlaying && gameInProgress) ? 'block' : 'none';
+
+  // Enable/disable start
+  const activeCount = Object.values(players).length;
+  const activeGame = state.currentGame();
+  const isGameFinished = isPlaying && activeGame?.status === 'finished';
+
+  const finishedSection = container.querySelector('#finished-game-section');
+  if (finishedSection) {
+    if (isHost && isGameFinished) {
+      finishedSection.style.display = 'flex';
+      _renderFinishedGameActions(finishedSection, roomCode);
+    } else {
+      finishedSection.style.display = 'none';
+    }
+  }
+
+  // Once the night is locked, no new games can be started or replayed here —
+  // the host starts a fresh night from the landing screen. Everyone gets a
+  // Leave Lobby button instead.
+  const nightLocked = lobby.status === 'night-ended';
+  const leaveLobbySection = container.querySelector('#leave-lobby-section');
+  if (leaveLobbySection) leaveLobbySection.style.display = nightLocked ? 'block' : 'none';
+
+  const startSection = container.querySelector('#start-section');
+  const btn = container.querySelector('#btn-start-game');
+  if (startSection) startSection.style.display = (isHost && !isPlaying && !nightLocked) ? 'block' : 'none';
+  if (btn) btn.disabled = activeCount < 3;
+  // Keep the "add at least 3 players" hint visible until the threshold is met.
+  // At 0 players the empty-state placeholder already shows it, so only fill the
+  // gap for 1-2 players here.
+  const startHint = container.querySelector('#start-hint');
+  if (startHint) {
+    const showHint = isHost && !isPlaying && !nightLocked && activeCount > 0 && activeCount < 3;
+    startHint.style.display = showHint ? 'block' : 'none';
+  }
+
+  // Show the docked action bar only when one of its sections applies, so it
+  // never renders as an empty strip. Mirror the per-section conditions above.
+  const showStart = isHost && !isPlaying && !nightLocked;
+  const showFinished = isHost && isGameFinished;
+  const showGoToGame = !isHost && isPlaying && gameInProgress;
+  const showBecomeHost = !lobby.hostKey && !isHost;
+  const anyAction = showSpectatorToggle || showStart || showFinished || nightLocked || showGoToGame || showBecomeHost;
+  const actionsBar = container.querySelector('#lobby-actions');
+  if (actionsBar) actionsBar.style.display = anyAction ? 'flex' : 'none';
+  // Reserve scroll space so the player grid clears the docked bar when shown.
+  const lobbyContent = container.querySelector('#lobby-content');
+  if (lobbyContent) {
+    lobbyContent.classList.toggle('pb-32', anyAction);
+    lobbyContent.classList.toggle('pb-8', !anyAction);
+  }
 }
 
 function _renderFinishedGameActions(el, roomCode) {
