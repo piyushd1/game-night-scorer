@@ -103,13 +103,13 @@ async function init() {
     const gameScreens = ['lobby', 'dashboard', 'rules', 'scoring', 'winner', 'recap', 'game-select'];
     const currentHash = window.location.hash.replace('#', '');
     if (cached && !gameScreens.includes(currentHash)) {
-      router.navigate('lobby', { roomCode });
+      router.navigate('dashboard', { roomCode });
     }
 
     try {
       const code = await fb.joinRoom(roomCode);
       if (code) {
-        if (!cached) router.navigate('lobby', { roomCode: code });
+        if (!cached) router.navigate('dashboard', { roomCode: code });
       } else if (cached) {
         cache.clearCache(roomCode);
         router.navigate('home');

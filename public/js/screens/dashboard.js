@@ -125,11 +125,10 @@ export function mount(container, params = {}) {
   if (!state.get('roomCode')) {
     state.set('roomCode', roomCode);
   }
-  // Guard on the actual watcher, not roomLobby — cache hydration sets roomLobby on
-  // page load which would otherwise skip watchRoom entirely after a refresh.
-  if (!fb.isWatchingRoom()) {
-    fb.watchRoom(roomCode, () => {});
-  }
+  // Always replace the watcher so any previous screen's callback (e.g. lobby's,
+  // which calls bottomNav.show('lobby')) doesn't fire while we're on the dashboard.
+  // The dashboard uses state.on() subscriptions, so the callback itself is a no-op.
+  fb.watchRoom(roomCode, () => {});
 
   // Initial render
   _render(container, roomCode);
@@ -183,16 +182,8 @@ function _render(container, roomCode) {
   const isHost = state.isHost();
 
   if (!game) {
-    document.getElementById('top-bar-title').textContent = 'GAME NIGHT';
-    content.innerHTML = `
-      <div class="text-center py-20">
-        <span aria-hidden="true" class="material-symbols-outlined text-5xl text-outline mb-4">casino</span>
-        <p class="font-headline font-bold text-lg uppercase mb-2">No Active Game</p>
-        <p class="font-body text-sm text-on-surface-variant">
-          ${isHost ? 'Go back to the lobby to start a game.' : 'Waiting for the host to start a game...'}
-        </p>
-      </div>
-    `;
+    if (!state.get('roomLobby')) return;
+    router.navigate('lobby', { roomCode });
     return;
   }
 
@@ -347,6 +338,12 @@ function _render(container, roomCode) {
   // Check winner redirect
   if (game.status === 'finished' && game.winner) {
     router.navigate('winner', { roomCode });
+    return;
+  }
+
+  // Game abandoned (end-game with no clear winner) — send everyone to lobby.
+  if (game.status === 'abandoned') {
+    router.navigate('lobby', { roomCode });
     return;
   }
 
