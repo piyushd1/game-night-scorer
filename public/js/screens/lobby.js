@@ -29,10 +29,7 @@ export function mount(container, params = {}) {
   }
 
   state.set('roomCode', roomCode);
-  // freshJoin: arriving from a link/QR/home-screen join — always auto-navigate
-  // to an active game. Without this, cached state would pre-populate
-  // _mountActiveGameId and the Flip7 carve-out would silently skip the redirect.
-  _mountActiveGameId = params.freshJoin ? null : (state.get('roomLobby')?.activeGameId || null);
+  _mountActiveGameId = state.get('roomLobby')?.activeGameId || null;
 
   // Show top bar. No back button here — leaving happens via the overflow menu's
   // "Exit Lobby"; the header carries copy-link + QR + overflow (host only).
