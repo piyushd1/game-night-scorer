@@ -182,16 +182,7 @@ function _render(container, roomCode) {
   const isHost = state.isHost();
 
   if (!game) {
-    document.getElementById('top-bar-title').textContent = 'GAME NIGHT';
-    content.innerHTML = `
-      <div class="text-center py-20">
-        <span aria-hidden="true" class="material-symbols-outlined text-5xl text-outline mb-4">casino</span>
-        <p class="font-headline font-bold text-lg uppercase mb-2">No Active Game</p>
-        <p class="font-body text-sm text-on-surface-variant">
-          ${isHost ? 'Go back to the lobby to start a game.' : 'Waiting for the host to start a game...'}
-        </p>
-      </div>
-    `;
+    router.navigate('lobby', { roomCode });
     return;
   }
 
@@ -346,6 +337,12 @@ function _render(container, roomCode) {
   // Check winner redirect
   if (game.status === 'finished' && game.winner) {
     router.navigate('winner', { roomCode });
+    return;
+  }
+
+  // Game abandoned (end-game with no clear winner) — send everyone to lobby.
+  if (game.status === 'abandoned') {
+    router.navigate('lobby', { roomCode });
     return;
   }
 
