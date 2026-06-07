@@ -47,7 +47,9 @@ export function mount(container, params = {}) {
   }
   const topBar = document.getElementById('top-bar');
   topBar.style.display = 'flex';
-  document.getElementById('top-bar-title').textContent = locked ? 'FINAL RECAP' : 'RECAP';
+  // The header title stays "RECAP" even once the night is called — the locked
+  // state is conveyed by the "Tonight's Winner" hero, not the header.
+  document.getElementById('top-bar-title').textContent = 'RECAP';
 
   // No back button — recap is a nav tab; the header carries the shared
   // copy-link + QR + overflow (host only), matching the Lobby and Game tabs.
@@ -89,11 +91,19 @@ export function mount(container, params = {}) {
   const totalGames = stats.totalGames;
   const hasDropdown = totalGames > 1;
 
-  // Page heading: depends on whether the night's been called and which view is up.
-  const _headingText = () => {
-    if (viewSel !== 'all') return `Game ${viewSel + 1}`;
-    if (locked) return 'Tonight’s Recap';
-    return totalGames === 1 ? 'Last Game' : `Last ${totalGames} Games`;
+  // Header: a per-game / "Last N Games" title while the night runs, or — once the
+  // night's been called and we're in the All Games view — a "Tonight's Winner"
+  // hero (trophy + name) styled like the Winner screen.
+  const _renderHeader = () => {
+    const el = container.querySelector('#recap-header');
+    if (viewSel === 'all' && locked) {
+      el.innerHTML = _winnerHero(_tonightWinners(stats));
+      return;
+    }
+    const txt = viewSel !== 'all'
+      ? `Game ${viewSel + 1}`
+      : (totalGames === 1 ? 'Last Game' : `Last ${totalGames} Games`);
+    el.innerHTML = `<p class="font-mono text-3xl font-bold uppercase">${escapeHTML(txt)}</p>`;
   };
 
   // ── Static shell ──
@@ -106,32 +116,28 @@ export function mount(container, params = {}) {
   // The header block carries a hero-sized bottom gap so the table starts at the
   // same height as the Winner screen's table (which sits below its trophy hero).
   container.innerHTML = `
-    <div class="screen-body pb-28">
-      <div class="mb-12">
-        <p id="recap-heading" class="font-mono text-3xl font-bold uppercase mb-6"></p>
-        ${hasDropdown ? `
-        <div class="relative">
-          <button id="view-trigger" aria-haspopup="listbox" aria-expanded="false"
-            class="relative w-full flex items-center justify-center border border-outline bg-surface-container-lowest px-4 py-3 font-mono text-sm uppercase tracking-wide">
-            <span id="view-trigger-label">All Games</span>
-            <span class="material-symbols-outlined text-lg absolute right-3" aria-hidden="true">expand_more</span>
-          </button>
-          <div id="view-dropdown" role="listbox" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:#f4f4f2;border:1px solid #000;z-index:20;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
-            ${dropdownItems}
-          </div>
-        </div>` : ''}
-      </div>
-
+    <div class="screen-body pb-40">
+      <div id="recap-header" class="mb-12"></div>
       <div id="recap-table-region"></div>
     </div>
 
-    <!-- Docked Scores/Winnings switcher (flush above the bottom nav, like the winner screen) -->
+    <!-- Docked View dropdown + Standings/Winnings switcher (flush above the bottom nav, like the winner screen) -->
     <div id="recap-docked" class="docked-bar p-4 bg-surface-container-low">
+      ${hasDropdown ? `
+      <div class="relative mb-3">
+        <button id="view-trigger" aria-haspopup="listbox" aria-expanded="false"
+          class="relative w-full flex items-center justify-center border border-outline bg-surface-container-lowest px-4 py-3 font-mono text-sm uppercase tracking-wide">
+          <span id="view-trigger-label">All Games</span>
+          <span class="material-symbols-outlined text-lg absolute right-3" aria-hidden="true">expand_more</span>
+        </button>
+        <div id="view-dropdown" role="listbox" style="display:none;position:absolute;bottom:100%;left:0;margin-bottom:4px;background:#f4f4f2;border:1px solid #000;z-index:20;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
+          ${dropdownItems}
+        </div>
+      </div>` : ''}
       <div id="recap-segmented"></div>
     </div>
   `;
 
-  const headingEl = container.querySelector('#recap-heading');
   const segContainer = container.querySelector('#recap-segmented');
   const dockedEl = container.querySelector('#recap-docked');
   const region = container.querySelector('#recap-table-region');
@@ -180,7 +186,7 @@ export function mount(container, params = {}) {
     // Hide the segmented control + fall back to Scores when there's nothing to show.
     if (!hasWinnings) tab = 'scores';
 
-    headingEl.textContent = _headingText();
+    _renderHeader();
 
     // The first tab is the night's medal tally ("Standings") in the All Games
     // view, or a single game's "Scores"; the second is always "Winnings".
@@ -191,7 +197,8 @@ export function mount(container, params = {}) {
            <button id="seg-winnings" role="tab" class="flex-1 py-2.5 font-headline uppercase tracking-widest text-sm transition-colors">Winnings</button>
          </div>`
       : '';
-    dockedEl.style.display = hasWinnings ? '' : 'none';
+    // The docked bar shows when there's a dropdown and/or a segmented control.
+    dockedEl.style.display = (hasDropdown || hasWinnings) ? '' : 'none';
 
     region.innerHTML = scoresHTML + winningsHTML + tieHTML;
     // No-op for the All Games tables (no breakdown cells); wires the per-game view.
@@ -220,13 +227,13 @@ export function mount(container, params = {}) {
       _backdropEl.addEventListener('click', () => _closeDropdown(dropdownEl, trigger));
       document.body.appendChild(_backdropEl);
 
-      // Anchored at the top of the screen, so the panel opens downward.
+      // Docked just above the segmented control, so the panel opens upward.
       const rect = trigger.getBoundingClientRect();
       dropdownEl.style.position = 'fixed';
       dropdownEl.style.zIndex = '9999';
       dropdownEl.style.left = `${rect.left}px`;
-      dropdownEl.style.top = `${rect.bottom + 4}px`;
-      dropdownEl.style.bottom = 'auto';
+      dropdownEl.style.bottom = `${window.innerHeight - rect.top + 4}px`;
+      dropdownEl.style.top = 'auto';
       dropdownEl.style.width = `${rect.width}px`;
       dropdownEl.style.margin = '0';
       dropdownEl.style.display = 'block';
@@ -262,13 +269,66 @@ export function unmount() {
   if (_backdropEl) { _backdropEl.remove(); _backdropEl = null; }
 }
 
+// ── Tonight's winner(s) ──
+
+// The night's winner(s). Jua: the player(s) with the most total winnings.
+// Non-Jua: the player(s) with the most 1st places, breaking ties on 2nds then
+// 3rds. Ties (joint winners) are possible in both cases.
+function _tonightWinners(stats) {
+  if (stats.winnings) {
+    const players = stats.winnings.players; // sorted by net desc, ≥1 entry
+    const top = parseFloat(players[0].net.toFixed(1));
+    return players
+      .filter((p) => parseFloat(p.net.toFixed(1)) === top)
+      .map((p) => ({ name: p.name }));
+  }
+  const rows = stats.overall.map((p) => ({
+    name: p.name,
+    ones: p.finishes.filter((r) => r === 1).length,
+    twos: p.finishes.filter((r) => r === 2).length,
+    threes: p.finishes.filter((r) => r === 3).length,
+  })).sort((a, b) => (b.ones - a.ones) || (b.twos - a.twos) || (b.threes - a.threes));
+  const top = rows[0];
+  return rows
+    .filter((r) => r.ones === top.ones && r.twos === top.twos && r.threes === top.threes)
+    .map((r) => ({ name: r.name }));
+}
+
+// "Tonight's Winner(s)" hero — trophy + confetti-text name(s), matching the
+// Winner screen. One winner uses the full text-7xl name; ties shrink the names
+// and lay them out side by side (2-up, then 3-up grid for 3+).
+function _winnerHero(winners) {
+  const label = winners.length > 1 ? 'TONIGHT’S WINNERS' : 'TONIGHT’S WINNER';
+  const nameCls = 'confetti-text font-headline font-extrabold uppercase tracking-tight leading-none';
+  let namesHTML;
+  if (winners.length === 1) {
+    namesHTML = `<h1 class="${nameCls} text-7xl truncate">${escapeHTML(winners[0].name)}</h1>`;
+  } else if (winners.length === 2) {
+    namesHTML = `<div class="grid grid-cols-2 gap-2">${winners
+      .map((w) => `<span class="${nameCls} text-4xl text-center truncate min-w-0">${escapeHTML(w.name)}</span>`)
+      .join('')}</div>`;
+  } else {
+    namesHTML = `<div class="grid grid-cols-3 gap-2">${winners
+      .map((w) => `<span class="${nameCls} text-2xl text-center truncate min-w-0">${escapeHTML(w.name)}</span>`)
+      .join('')}</div>`;
+  }
+  return `
+    <div class="text-center w-full">
+      <div class="flex items-center justify-center gap-2 mb-4">
+        <span aria-hidden="true" class="material-symbols-outlined text-[2.5rem]" style="font-variation-settings: 'FILL' 1;">emoji_events</span>
+        <span class="font-headline text-xl uppercase tracking-widest opacity-80">${label}</span>
+      </div>
+      ${namesHTML}
+    </div>`;
+}
+
 // ── All-Games tables ──
 
 const _HEAD_CLS = 'py-3 font-headline font-bold text-sm uppercase tracking-widest text-outline';
 const _RANK_COL = 'width:3.5rem';
 const _ITEM_STYLE = 'display:block;width:100%;text-align:center;padding:10px 16px;font-family:monospace;font-size:1rem;text-transform:uppercase;letter-spacing:0.05em;color:#000;background:#f4f4f2;border:none;cursor:pointer;white-space:nowrap;';
-// Medal chip — emoji only, no count, mirroring the dashboard save/fine chips.
-const _MEDAL_CHIP = 'inline-block font-mono text-sm bg-surface-container-low border border-outline-variant px-1.5 py-0.5 text-on-surface';
+// Medal chip — borderless, emoji only (no count), enlarged 1.5× (0.875rem → ~1.31rem).
+const _MEDAL_CHIP = 'inline-block bg-surface-container-low px-1.5 py-0.5 text-[1.3125rem] leading-none';
 
 // Standings: one row per player with a medal chip for each 1st/2nd/3rd finish,
 // sorted lexicographically by (1sts, 2nds, 3rds) descending.
