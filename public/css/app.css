@@ -119,6 +119,37 @@ body {
   background: var(--accent);
 }
 
+/* ── Confetti-banded text ──
+   Fills text with hard diagonal bands of the confetti accent colours, clipped to
+   the glyph shapes via background-clip:text so the bands show through the letters.
+   Bands are 70.711px wide along the 135° axis (one cycle = 353.553px); rendered
+   into a 500px tile that equals exactly one horizontal period, so animating
+   background-position by a clean 500px loops the diagonal slide seamlessly.
+   Used on the winner name. */
+.confetti-text {
+  background-image: repeating-linear-gradient(135deg,
+    #FF2E2E 0 70.711px,            /* red    */
+    #FFB800 70.711px 141.421px,    /* amber  */
+    #00B85C 141.421px 212.132px,   /* green  */
+    #8B5CF6 212.132px 282.843px,   /* violet */
+    #EC4899 282.843px 353.553px);  /* pink   */
+  background-size: 500px 500px;     /* tile = one horizontal period each way */
+  background-repeat: repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: confetti-slide 4s linear infinite;
+}
+
+@keyframes confetti-slide {
+  to { background-position: 500px 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confetti-text { animation: none; }
+}
+
 /* ── Inputs (Analog Architect style) ── */
 input[type="text"],
 input[type="number"] {
