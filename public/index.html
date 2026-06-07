@@ -112,9 +112,9 @@ tailwind.config = {
     <!-- Column-aligned positioning context: keeps the menu hanging off the
          trigger at the top-right of the app column, not the viewport corner
          (which detaches on wide/tablet screens). -->
-    <div class="app-col relative h-full">
+    <div class="app-col relative h-full pointer-events-none">
       <!-- Items are rendered dynamically by host-menu.js (conditional on game/night state). -->
-      <div id="host-menu-items" class="absolute top-14 right-4 max-w-[250px] w-[220px] bg-surface-container-low border border-outline" style="max-width:min(250px, calc(100vw - 32px))"></div>
+      <div id="host-menu-items" class="absolute top-14 right-4 max-w-[250px] w-[220px] bg-surface-container-low border border-outline pointer-events-auto" style="max-width:min(250px, calc(100vw - 32px))"></div>
     </div>
   </div>
 
