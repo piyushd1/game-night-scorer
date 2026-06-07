@@ -14,6 +14,7 @@ import { escapeHTML } from '../utils.js';
 let _unsubLobby = null;
 let _unsubPlayers = null;
 let _unsubGames = null;
+let _mountActiveGameId = null;
 // Tracks the host state last reflected in the top bar, so we only re-render the
 // header actions (and its overflow trigger) when the viewer flips host ⇄ spectator.
 let _lastTopBarHost = null;
@@ -28,6 +29,7 @@ export function mount(container, params = {}) {
   }
 
   state.set('roomCode', roomCode);
+  _mountActiveGameId = state.get('roomLobby')?.activeGameId || null;
 
   // Show top bar. No back button here — leaving happens via the overflow menu's
   // "Exit Lobby"; the header carries copy-link + QR + overflow (host only).
@@ -304,6 +306,19 @@ function _render(container, roomCode) {
     bottomNav.show('lobby');
   }
 
+  // Auto-navigate to the game when it becomes active:
+  // - Non-Flip7: always (the nav is hidden and there's no other way out).
+  // - Flip7: only when a NEW game starts (activeGameId changed since this lobby
+  //   mounted), so navigating back to the lobby tab mid-game doesn't loop.
+  const gameInProgress = activeGameForNav?.status === 'active';
+  if (gameInProgress) {
+    const currentActiveGameId = lobby.activeGameId || null;
+    if (activeGameForNav.type !== 'flip7' || currentActiveGameId !== _mountActiveGameId) {
+      router.navigate('dashboard', { roomCode });
+      return;
+    }
+  }
+
   // Show/hide host controls (add-player row + quick-add chips). Hidden once
   // the night has ended — no more players can be added.
   const canAdd = isHost && lobby.status !== 'night-ended';
@@ -353,7 +368,6 @@ function _render(container, roomCode) {
   // abandoned (or the night has ended) the game's playerIds/snapshot are
   // frozen, so removing a player from the roster can't affect jua/standings.
   const isPlaying = lobby.status === 'playing';
-  const gameInProgress = state.currentGame()?.status === 'active';
   const addRow = container.querySelector('#add-player-row');
   if (addRow) addRow.style.display = canAdd ? 'flex' : 'none';
   _renderPlayers(container, players, isHost, roomCode, gameInProgress);

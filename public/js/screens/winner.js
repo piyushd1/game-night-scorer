@@ -15,6 +15,8 @@ import { escapeHTML } from '../utils.js';
 // Tracks which game's winner we've already auto-celebrated, so returning to the
 // winner tab for the same game doesn't re-fire the confetti.
 let _celebratedGameId = null;
+let _unsubLobby = null;
+let _unsubGames = null;
 
 export function mount(container, params = {}) {
   const roomCode = params.roomCode || state.get('roomCode');
@@ -439,6 +441,24 @@ export function mount(container, params = {}) {
     _celebratedGameId = activeGameId;
     confetti.startRain();
   }
+
+  // When the host starts a new game while this screen is open, navigate everyone
+  // to the dashboard so they land on the live board automatically.
+  const shownGameId = game.gameId;
+  const _checkNewGame = () => {
+    const lobby = state.get('roomLobby') || {};
+    if (lobby.activeGameId && lobby.activeGameId !== shownGameId) {
+      const newGame = state.currentGame();
+      if (newGame?.status === 'active') {
+        router.navigate('dashboard', { roomCode });
+      }
+    }
+  };
+  _unsubLobby = state.on('roomLobby', _checkNewGame);
+  _unsubGames = state.on('games', _checkNewGame);
 }
 
-export function unmount() {}
+export function unmount() {
+  if (_unsubLobby) { _unsubLobby(); _unsubLobby = null; }
+  if (_unsubGames) { _unsubGames(); _unsubGames = null; }
+}
