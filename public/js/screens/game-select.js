@@ -96,12 +96,12 @@ function _renderSelection(container) {
     if (!indicator) return;
     const isSelected = card.dataset.id === _selectedGame;
     if (isSelected) {
-      card.style.borderColor = '#000000';
+      card.style.borderColor = 'var(--on-surface)';
       card.style.borderWidth = '2px';
-      card.style.background = '#ffffff';
-      card.style.borderLeft = '4px solid #000000';
+      card.style.background = 'var(--surface-container-lowest)';
+      card.style.borderLeft = '4px solid var(--on-surface)';
       indicator.className = 'game-check w-7 h-7 bg-primary border-2 border-primary flex items-center justify-center transition-all';
-      indicator.innerHTML = '<span aria-hidden="true" class="material-symbols-outlined text-white text-base">check</span>';
+      indicator.innerHTML = '<span aria-hidden="true" class="material-symbols-outlined text-on-primary text-base">check</span>';
     } else {
       card.style.borderColor = '';
       card.style.borderWidth = '';

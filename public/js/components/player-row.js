@@ -53,7 +53,7 @@ export function renderRow({
     const label = `${pts}${roundsMeta[i] ? ' 🔥' : ''}${roundsJuaMeta[i] ? ' ❤️' : ''}`;
     const isLive = hasLiveChip && i === rounds.length - 1;
     if (isLive) {
-      return `<span class="inline-block font-mono text-sm px-1.5 py-0.5" style="background:#000;color:#fff;border:1px solid #000">${label}</span>`;
+      return `<span class="inline-block font-mono text-sm px-1.5 py-0.5" style="background:var(--primary);color:var(--on-primary);border:1px solid var(--primary)">${label}</span>`;
     }
     return `<span class="inline-block font-mono text-sm bg-surface-container-low border border-outline-variant px-1.5 py-0.5 text-on-surface">${label}</span>`;
   });

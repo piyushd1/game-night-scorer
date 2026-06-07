@@ -91,7 +91,6 @@ export function mount(container, params = {}) {
             pool += Object.values(game.juaFines || {}).reduce((s, n) => s + n, 0) * influenceFine;
 
             const d1 = (v) => parseFloat(v.toFixed(1));
-            const fmt = (n) => `${n >= 0 ? '+' : ''}${n}`;
 
             // Group standings by rank to detect ties
             const byRank = {};
@@ -150,24 +149,42 @@ export function mount(container, params = {}) {
               // Winnings math shown in winnings view
               let formulaStr = '';
               let amountStr = '';
+              let amountCls = ''; // green for a net gain, red for a net loss
               if (juaOn) {
                 const savesCost = savesCount * firstSaveAmt;
                 const finesCost = finesCount * influenceFine;
                 const reward = positionReward(s.rank);
                 const net = reward - buyIn - savesCost - finesCost;
+                // Each term carries its own operator. Rewards (prize/pool) add;
+                // saves, fines and buy-in subtract — shown as " - " separators with
+                // the magnitude only (no inner minus sign on the number).
                 const terms = [];
                 if (s.rank === 1 && n1 === 1) {
-                  terms.push(fmt(prize1));
-                  if (pool > 0) terms.push(fmt(pool));
+                  terms.push({ op: '+', text: `${prize1}` });
+                  if (pool > 0) terms.push({ op: '+', text: `${pool}` });
                 } else if (s.rank <= 3) {
-                  terms.push(fmt(d1(reward)));
+                  terms.push({ op: '+', text: `${d1(reward)}` });
                 }
-                if (savesCount > 0) terms.push(`+ (-${firstSaveAmt} x ${savesCount})`);
-                if (finesCount > 0) terms.push(`+ (-${influenceFine} x ${finesCount})`);
-                terms.push(fmt(-buyIn));
+                // Non-breaking spaces inside the parens keep each "(a x b)" term on
+                // one line; the surrounding " + " / " - " separators stay breakable.
+                if (savesCount > 0) terms.push({ op: '-', text: `(${firstSaveAmt} x ${savesCount})` });
+                if (finesCount > 0) terms.push({ op: '-', text: `(${influenceFine} x ${finesCount})` });
+                if (buyIn > 0) terms.push({ op: '-', text: `${buyIn}` });
                 const absNet = parseFloat(Math.abs(net).toFixed(1));
-                amountStr = `${net >= 0 ? '+' : '-'}₹${absNet}`;
-                formulaStr = terms.length > 1 ? terms.join(' ') : '';
+                // Sign, a small gap, then the amount. A flex row vertically centers
+                // the sign, the larger ₹ (1.4x) and the digits as one unit, so the
+                // alignment is consistent across rows regardless of content.
+                amountStr = `<span class="inline-flex items-center justify-end">${net >= 0 ? '+' : '-'}<span class="ml-1.5 text-[1.4em] leading-none">₹</span>${absNet}</span>`;
+                amountCls = net >= 0 ? 'text-green-600' : 'text-red-600';
+                formulaStr = terms.length > 0
+                  // Each "operator + term" is rendered as one nowrap span, joined by
+                  // ordinary (breakable) spaces. A line can therefore only break
+                  // between terms — never between an operator and the term it applies to.
+                  ? terms.map((t, i) => {
+                      const op = i === 0 ? (t.op === '-' ? '- ' : '') : `${t.op} `;
+                      return `<span class="whitespace-nowrap">${op}${t.text}</span>`;
+                    }).join(' ')
+                  : '';
               }
 
               const scoreTr = `
@@ -178,15 +195,25 @@ export function mount(container, params = {}) {
                   <td class="py-3 pl-3 pr-4 text-right font-mono font-bold text-lg">${s.total}</td>
                 </tr>`;
 
+              // The winnings cell holds both the amount and the (hidden) breakdown.
+              // Tapping the cell swaps one for the other — per player, in place — so
+              // the breakdown replaces the winnings number for just that row.
+              const pid = escapeHTML(s.playerId);
+              const name = escapeHTML(p.name || s.playerId);
+              const winningsCell = formulaStr
+                ? `<td data-winnings-pid="${pid}" role="button" tabindex="0" aria-pressed="false" aria-label="Show breakdown for ${name}" class="pt-3 pb-3 pl-3 pr-4 text-right align-middle cursor-pointer select-none">
+                     <span class="winnings-amount font-mono font-bold text-lg whitespace-nowrap ${amountCls}">${amountStr}</span>
+                     <span class="winnings-breakdown font-mono font-bold text-sm opacity-70 leading-relaxed" style="display:none">${formulaStr}</span>
+                   </td>`
+                : `<td class="pt-3 pb-3 pl-3 pr-4 text-right font-mono font-bold text-lg whitespace-nowrap align-middle ${amountCls}">${amountStr}</td>`;
               const winningsRow = juaOn ? `
                 <tr>
-                  <td class="py-3 pl-4 pr-3 text-center font-mono font-bold text-lg">${s.rank}</td>
-                  <td class="py-3 pr-3 font-headline font-bold text-lg uppercase leading-tight">${escapeHTML(p.name || s.playerId)}</td>
-                  <td class="py-3 px-3 font-mono font-bold text-sm opacity-70 leading-relaxed">${formulaStr || '—'}</td>
-                  <td class="py-3 pl-3 pr-4 text-right font-mono font-bold text-lg whitespace-nowrap">${amountStr}</td>
+                  <td class="pt-3 pb-3 pl-4 pr-3 text-center font-mono font-bold text-lg align-middle">${s.rank}</td>
+                  <td class="pt-3 pb-3 pr-3 font-headline font-bold text-lg uppercase leading-tight align-middle">${name}</td>
+                  ${winningsCell}
                 </tr>` : '';
 
-              return { scoreTr, winningsRow };
+              return { scoreTr, winningsRow, hasBreakdown: !!formulaStr };
             });
             const scoreTrs = rows.map((r) => r.scoreTr).join('');
             const winningsRows = rows.map((r) => r.winningsRow).join('');
@@ -254,11 +281,15 @@ export function mount(container, params = {}) {
             }
 
             const headCls = 'py-3 font-headline font-bold text-sm uppercase tracking-widest text-outline';
+            // Fixed rank-column width shared by both tables so the rank cell and the
+            // player column start at the same x — Scores and Winnings line up when
+            // you switch tabs (and when breakdowns are hidden).
+            const rankColStyle = 'width:3.5rem';
             const scoresTable = `
-              <table id="scores-view" class="w-full border-collapse bg-white">
+              <table id="scores-view" class="w-full border-collapse">
                 <thead>
                   <tr class="border-b border-outline">
-                    <th class="${headCls} pl-4 pr-3 text-center">Rank</th>
+                    <th class="${headCls} pl-4 pr-3 text-center" style="${rankColStyle}">Rank</th>
                     <th class="${headCls} pr-3 text-left">Player</th>
                     ${showSavesFines ? `<th class="${headCls} px-3"></th>` : ''}
                     <th class="${headCls} pl-3 pr-4 text-right">Score</th>
@@ -267,7 +298,14 @@ export function mount(container, params = {}) {
                 <tbody class="divide-y divide-outline-variant">${scoreTrs}</tbody>
               </table>`;
             const winningsView = juaOn
-              ? `<table id="winnings-view" class="w-full border-collapse bg-white" style="display:none">
+              ? `<table id="winnings-view" class="w-full border-collapse" style="display:none">
+                <thead>
+                  <tr class="border-b border-outline">
+                    <th class="${headCls} pl-4 pr-3 text-center" style="${rankColStyle}">Rank</th>
+                    <th class="${headCls} pr-3 text-left">Player</th>
+                    <th class="${headCls} pl-3 pr-4 text-right">Winnings</th>
+                  </tr>
+                </thead>
                 <tbody class="divide-y divide-outline-variant">${winningsRows}</tbody>
               </table>`
               : '';
@@ -309,10 +347,35 @@ export function mount(container, params = {}) {
     if (tieCard) tieCard.style.display = showWinnings ? 'block' : 'none';
   };
 
+  const activeGameId = state.get('roomLobby')?.activeGameId || null;
+
+  // Winnings breakdowns: each player's winnings cell can swap its amount for the
+  // breakdown text. Tapping a cell toggles just that player, in place.
+  const winningsCells = Array.from(container.querySelectorAll('[data-winnings-pid]'));
+
+  const _setCellBreakdown = (cell, show) => {
+    const amt = cell.querySelector('.winnings-amount');
+    const bd = cell.querySelector('.winnings-breakdown');
+    if (amt) amt.style.display = show ? 'none' : '';
+    if (bd) bd.style.display = show ? '' : 'none';
+    cell.setAttribute('aria-pressed', String(show));
+  };
+
+  winningsCells.forEach((cell) => {
+    const toggle = () => {
+      const amt = cell.querySelector('.winnings-amount');
+      const showing = amt && amt.style.display === 'none';
+      _setCellBreakdown(cell, !showing);
+    };
+    cell.addEventListener('click', toggle);
+    cell.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+    });
+  });
+
   // The Scores/Winnings choice is remembered per game, so it survives tab
   // navigation but resets to Scores once a new game ends (the activeGameId
   // changes). Older string-only values fail the parse and fall back to Scores.
-  const activeGameId = state.get('roomLobby')?.activeGameId || null;
   let stored = null;
   try { stored = JSON.parse(localStorage.getItem('gns_winner_view')); } catch { /* legacy/invalid */ }
 
