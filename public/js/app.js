@@ -100,10 +100,17 @@ async function init() {
 
   if (roomCode && fb.isConfigured()) {
     // If cache was available but hash isn't already pointing at a game screen, navigate now.
+    // Pick the right landing screen based on the cached game state so a spectator
+    // who joins mid-game lands on the board rather than the lobby.
     const gameScreens = ['lobby', 'dashboard', 'rules', 'scoring', 'winner', 'recap', 'game-select'];
     const currentHash = window.location.hash.replace('#', '');
     if (cached && !gameScreens.includes(currentHash)) {
-      router.navigate('lobby', { roomCode });
+      const cachedLobby = cached.lobby || {};
+      const activeGame = cachedLobby.activeGameId ? (cached.games || {})[cachedLobby.activeGameId] : null;
+      let landing = 'lobby';
+      if (activeGame?.status === 'active') landing = 'dashboard';
+      else if (activeGame?.status === 'finished' && activeGame.winner) landing = 'winner';
+      router.navigate(landing, { roomCode });
     }
 
     try {
