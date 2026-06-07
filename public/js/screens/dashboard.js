@@ -651,7 +651,7 @@ function _render(container, roomCode) {
         patchedRounds.forEach((rnd) => { newTotals = gameModule.applyRound(newTotals, rnd, game); });
         const saveBtn = content.querySelector('#btn-edit-save');
         saveBtn.disabled = true;
-        saveBtn.innerHTML = '<div class="spinner mx-auto"></div>';
+        saveBtn.innerHTML = '<div class="spinner mx-auto"></div><span class="sr-only">Loading...</span>';
         const pendingAdjustments = { ..._editAdjustments };
         const pendingFirstSavePid = _editFirstSavePid;
         _editAdjustments = {};
@@ -1472,7 +1472,7 @@ async function _confirmFlip7Round(container, roomCode, initialGame, gameModule) 
   }
 
   const btn = container.querySelector('#btn-confirm-round');
-  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner mx-auto"></div>'; }
+  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner mx-auto"></div><span class="sr-only">Loading...</span>'; }
 
   try {
     await fb.submitRound(roomCode, game.gameId, rounds.length, draft, newTotals, endResult.ended ? endResult : null);
