@@ -182,6 +182,7 @@ function _render(container, roomCode) {
   const isHost = state.isHost();
 
   if (!game) {
+    if (!state.get('roomLobby')) return;
     router.navigate('lobby', { roomCode });
     return;
   }
