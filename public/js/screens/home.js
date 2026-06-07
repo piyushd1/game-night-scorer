@@ -124,7 +124,7 @@ export function mount(container) {
       url.searchParams.set('room', code);
       window.history.replaceState({}, '', url);
 
-      router.navigate('lobby', { roomCode: code });
+      router.navigate('lobby', { roomCode: code, freshJoin: true });
     } catch (e) {
       console.error('Join failed:', e);
       toast.show('Failed to join room');
