@@ -6,6 +6,7 @@ import * as state from '../state.js';
 import * as router from '../router.js';
 import * as bottomNav from '../components/bottom-nav.js';
 import * as hostMenu from '../components/host-menu.js';
+import * as confetti from '../components/confetti.js';
 import { computeNightStats } from '../stats.js';
 import { escapeHTML } from '../utils.js';
 import { buildSingleGameTables, wireSingleGameTables } from './single-game-tables.js';
@@ -14,6 +15,11 @@ import { buildSingleGameTables, wireSingleGameTables } from './single-game-table
 // Tracked at module scope so unmount can tear it down if the screen changes
 // while the dropdown is still open.
 let _backdropEl = null;
+
+// The night-lock we've already celebrated (confetti + fanfare), keyed by room +
+// nightEndedAt, so the rain fires once when the night is called — not again on
+// every tab/view switch — while a fresh "Call it a Night" re-celebrates.
+let _celebratedNight = null;
 
 // Live re-render subscription. Recap can stay mounted across a status change —
 // e.g. the host taps "Call it a Night" from the recap tab, which locks the night
@@ -97,7 +103,19 @@ export function mount(container, params = {}) {
   const _renderHeader = () => {
     const el = container.querySelector('#recap-header');
     if (viewSel === 'all' && locked) {
-      el.innerHTML = _winnerHero(_tonightWinners(stats));
+      el.innerHTML = _winnerHero(_tonightWinners(stats), !!stats.winnings);
+      // Tap the hero to replay the confetti rain + fanfare, like the Winner screen.
+      const hero = el.querySelector('#recap-winner-hero');
+      if (hero) {
+        const celebrate = () => confetti.startRain();
+        hero.addEventListener('click', celebrate);
+        hero.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); celebrate(); }
+        });
+      }
+      // Auto-celebrate the first time this night's lock is shown.
+      const key = `${roomCode}:${lobby.nightEndedAt || ''}`;
+      if (_celebratedNight !== key) { _celebratedNight = key; confetti.startRain(); }
       return;
     }
     const txt = viewSel !== 'all'
@@ -108,10 +126,13 @@ export function mount(container, params = {}) {
 
   // ── Static shell ──
   // The dropdown only appears once there's more than one game to choose between.
-  const dropdownItems = ['<button type="button" data-view="all" class="view-dropdown-item" style="' + _ITEM_STYLE + '">All Games</button>']
-    .concat(stats.perGame.map((pg, i) =>
-      `<button type="button" data-view="${i}" class="view-dropdown-item" style="${_ITEM_STYLE}${i < stats.perGame.length - 1 ? 'border-bottom:1px solid #c6c6c6;' : ''}">Game ${i + 1}</button>`
-    )).join('');
+  // Order: Game 1 … Game N, then "All Games" at the bottom.
+  const dropdownItems = stats.perGame
+    .map((pg, i) =>
+      `<button type="button" data-view="${i}" class="view-dropdown-item" style="${_ITEM_STYLE}border-bottom:1px solid #c6c6c6;">Game ${i + 1}</button>`
+    )
+    .concat('<button type="button" data-view="all" class="view-dropdown-item" style="' + _ITEM_STYLE + '">All Games</button>')
+    .join('');
 
   // The header block carries a hero-sized bottom gap so the table starts at the
   // same height as the Winner screen's table (which sits below its trophy hero).
@@ -294,28 +315,35 @@ function _tonightWinners(stats) {
     .map((r) => ({ name: r.name }));
 }
 
-// "Tonight's Winner(s)" hero — trophy + confetti-text name(s), matching the
-// Winner screen. One winner uses the full text-7xl name; ties shrink the names
-// and lay them out side by side (2-up, then 3-up grid for 3+).
-function _winnerHero(winners) {
-  const label = winners.length > 1 ? 'TONIGHT’S WINNERS' : 'TONIGHT’S WINNER';
-  const nameCls = 'confetti-text font-headline font-extrabold uppercase tracking-tight leading-none';
+// Tonight's winner(s) hero — confetti-text name(s) matching the Winner screen,
+// with a Jua/non-Jua icon + label. Non-Jua: crown + "Champion(s)". Jua:
+// poker chip + "High Roller(s)". One winner uses the full text-7xl name; ties
+// shrink the names and lay them out side by side (2-up, then 3-up for 3+).
+// Tapping the hero replays the celebration (wired up by _renderHeader).
+function _winnerHero(winners, isJua) {
+  const plural = winners.length > 1;
+  const icon = isJua ? 'poker_chip' : 'crown';
+  const label = isJua
+    ? (plural ? 'HIGH ROLLERS' : 'HIGH ROLLER')
+    : (plural ? 'CHAMPIONS' : 'CHAMPION');
+  const nameFont = 'font-headline font-extrabold uppercase tracking-tight leading-none';
   let namesHTML;
   if (winners.length === 1) {
-    namesHTML = `<h1 class="${nameCls} text-7xl truncate">${escapeHTML(winners[0].name)}</h1>`;
-  } else if (winners.length === 2) {
-    namesHTML = `<div class="grid grid-cols-2 gap-2">${winners
-      .map((w) => `<span class="${nameCls} text-4xl text-center truncate min-w-0">${escapeHTML(w.name)}</span>`)
-      .join('')}</div>`;
+    namesHTML = `<h1 class="confetti-text ${nameFont} text-7xl truncate">${escapeHTML(winners[0].name)}</h1>`;
   } else {
-    namesHTML = `<div class="grid grid-cols-3 gap-2">${winners
-      .map((w) => `<span class="${nameCls} text-2xl text-center truncate min-w-0">${escapeHTML(w.name)}</span>`)
+    // One continuous gradient across all the names: confetti-text on the grid,
+    // so its single clipped background image slides through every name as a unit
+    // (the children inherit the transparent text fill).
+    const cols = winners.length === 2 ? 'grid-cols-2' : 'grid-cols-3';
+    const size = winners.length === 2 ? 'text-4xl' : 'text-2xl';
+    namesHTML = `<div class="confetti-text grid ${cols} gap-2">${winners
+      .map((w) => `<span class="${nameFont} ${size} text-center truncate min-w-0">${escapeHTML(w.name)}</span>`)
       .join('')}</div>`;
   }
   return `
-    <div class="text-center w-full">
+    <div id="recap-winner-hero" role="button" tabindex="0" aria-label="Celebrate again" title="Tap to celebrate again" class="text-center w-full cursor-pointer select-none">
       <div class="flex items-center justify-center gap-2 mb-4">
-        <span aria-hidden="true" class="material-symbols-outlined text-[2.5rem]" style="font-variation-settings: 'FILL' 1;">emoji_events</span>
+        <span aria-hidden="true" class="material-symbols-outlined text-[2.5rem]" style="font-variation-settings: 'FILL' 1;">${icon}</span>
         <span class="font-headline text-xl uppercase tracking-widest opacity-80">${label}</span>
       </div>
       ${namesHTML}
@@ -327,8 +355,8 @@ function _winnerHero(winners) {
 const _HEAD_CLS = 'py-3 font-headline font-bold text-sm uppercase tracking-widest text-outline';
 const _RANK_COL = 'width:3.5rem';
 const _ITEM_STYLE = 'display:block;width:100%;text-align:center;padding:10px 16px;font-family:monospace;font-size:1rem;text-transform:uppercase;letter-spacing:0.05em;color:#000;background:#f4f4f2;border:none;cursor:pointer;white-space:nowrap;';
-// Medal chip — borderless, emoji only (no count), enlarged 1.5× (0.875rem → ~1.31rem).
-const _MEDAL_CHIP = 'inline-block bg-surface-container-low px-1.5 py-0.5 text-[1.3125rem] leading-none';
+// Medal chip — borderless, emoji only (no count), enlarged 2× (0.875rem → 1.75rem).
+const _MEDAL_CHIP = 'inline-block bg-surface-container-low px-1.5 py-0.5 text-[1.75rem] leading-none';
 
 // Standings: one row per player with a medal chip for each 1st/2nd/3rd finish,
 // sorted lexicographically by (1sts, 2nds, 3rds) descending.
