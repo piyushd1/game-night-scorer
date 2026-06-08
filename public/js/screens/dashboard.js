@@ -1556,7 +1556,7 @@ function _openAdjustDrawer(container, roomCode, game, pid, snapshot) {
         <input type="number" id="adj-amount-input" inputmode="numeric"
           class="score-input flex-1" placeholder="0" min="0"
           value="${initialAmount || ''}">
-        <button id="adj-apply-btn" class="btn-primary shrink-0 flex items-center justify-center" style="width:48px;height:48px;padding:0">
+        <button id="adj-apply-btn" aria-label="Apply adjustment" class="btn-primary shrink-0 flex items-center justify-center" style="width:48px;height:48px;padding:0">
           <span aria-hidden="true" class="material-symbols-outlined" style="font-size:1.25rem;font-variation-settings:'FILL' 1">check</span>
         </button>
       </div>
@@ -1646,11 +1646,11 @@ function _openJuaFineCounter(pid, game, roomCode) {
         </div>
       </div>
       <div class="p-6 flex items-center justify-center gap-8 pb-4">
-        <button id="jua-fine-sub" type="button"
+        <button id="jua-fine-sub" type="button" aria-label="Subtract fine"
           class="w-16 h-16 border-2 border-outline font-mono text-3xl flex items-center justify-center hover:bg-surface-container-high transition-colors disabled:opacity-30"
           ${fineCount === 0 ? 'disabled' : ''}>−</button>
         <span id="jua-fine-count" class="font-mono text-6xl font-bold w-16 text-center">${fineCount}</span>
-        <button id="jua-fine-add" type="button"
+        <button id="jua-fine-add" type="button" aria-label="Add fine"
           class="w-16 h-16 border-2 border-outline font-mono text-3xl flex items-center justify-center hover:bg-surface-container-high transition-colors">+</button>
       </div>
       <div class="px-4 pb-8">
