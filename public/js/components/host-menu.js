@@ -98,7 +98,7 @@ function _renderMenuItems() {
   // Everyone gets "Leave Lobby".
   items.push({ action: 'exit-lobby', icon: 'logout', label: 'Leave Lobby' });
 
-  const base = 'host-menu-action w-full text-left px-4 py-3 font-headline font-bold text-xs uppercase tracking-widest hover:bg-surface-container-high transition-colors flex items-center gap-3';
+  const base = 'host-menu-action w-full text-left px-4 py-3 font-headline font-bold text-xs uppercase tracking-widest hover:bg-surface-container-high transition-colors flex items-center gap-3 focus:outline-none focus-visible:bg-surface-container-high focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary';
   itemsEl.innerHTML = items.map((it, i) => {
     // Most items are destructive (error variant); a few are positive (default).
     const color = it.variant === 'default' ? 'text-on-surface' : 'text-error';
@@ -194,12 +194,12 @@ export function renderTopBarActions(roomCode) {
 
   actionsEl.innerHTML = `
     <button id="btn-copy-link" aria-label="Copy join link" title="Copy join link"
-      class="font-mono text-xs text-outline border border-outline px-2 py-1 hover:bg-surface-container-high transition-colors">
+      class="font-mono text-xs text-outline border border-outline px-2 py-1 hover:bg-surface-container-high transition-colors rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
       ${roomCode}
     </button>
-    <button id="btn-qr-share" aria-label="Show QR code" title="Share room QR" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 ml-1" style="font-size:1.375rem">qr_code_2</button>
+    <button id="btn-qr-share" aria-label="Show QR code" title="Share room QR" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 ml-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" style="font-size:1.375rem">qr_code_2</button>
     ${showMenu
-      ? `<button id="btn-host-menu-trigger" aria-label="Open menu" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 ml-1" style="font-size:1.375rem">more_vert</button>`
+      ? `<button id="btn-host-menu-trigger" aria-label="Open menu" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 ml-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" style="font-size:1.375rem">more_vert</button>`
       : ''
     }
   `;
