@@ -123,7 +123,8 @@ export function mount(container, params = {}) {
       // Tap the hero to replay the confetti rain + fanfare, like the Winner screen.
       const hero = el.querySelector('#recap-winner-hero');
       if (hero) {
-        const celebrate = () => confetti.startRain();
+        const rainOpts = stats.winnings ? { sound: 'highroller' } : {};
+        const celebrate = () => confetti.startRain(rainOpts);
         hero.addEventListener('click', celebrate);
         hero.addEventListener('keydown', (e) => {
           if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); celebrate(); }
@@ -131,7 +132,7 @@ export function mount(container, params = {}) {
       }
       // Auto-celebrate the first time this night's lock is shown.
       const key = `${roomCode}:${lobby.nightEndedAt || ''}`;
-      if (_celebratedNight !== key) { _celebratedNight = key; confetti.startRain(); }
+      if (_celebratedNight !== key) { _celebratedNight = key; confetti.startRain(stats.winnings ? { sound: 'highroller' } : {}); }
       return;
     }
     const txt = viewSel !== 'all'

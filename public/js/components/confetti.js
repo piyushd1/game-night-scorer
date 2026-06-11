@@ -52,6 +52,41 @@ function _playFanfare() {
   } catch (_) { /* Audio unavailable — ignore */ }
 }
 
+let _jackpotAudio = null;
+let _yeehawAudio = null;
+let _yeehawTimer = null;
+
+function _playHighRollerSound() {
+  try {
+    if (!_jackpotAudio) _jackpotAudio = new Audio();
+    if (!_yeehawAudio) _yeehawAudio = new Audio();
+
+    if (_yeehawTimer) { clearTimeout(_yeehawTimer); _yeehawTimer = null; }
+
+    // Play jackpot-alarm from 6 s to 12 s.
+    _jackpotAudio.pause();
+    _jackpotAudio.src = 'sounds/jackpot-alarm.mp3';
+    _jackpotAudio.currentTime = 6;
+    const _onTimeUpdate = () => {
+      if (_jackpotAudio.currentTime >= 13) {
+        _jackpotAudio.pause();
+        _jackpotAudio.removeEventListener('timeupdate', _onTimeUpdate);
+      }
+    };
+    _jackpotAudio.addEventListener('timeupdate', _onTimeUpdate);
+    _jackpotAudio.play().catch(() => {});
+
+    // Yeehaw starts 2 seconds after jackpot-alarm.
+    _yeehawTimer = setTimeout(() => {
+      _yeehawTimer = null;
+      _yeehawAudio.pause();
+      _yeehawAudio.src = 'sounds/Yeeehaw.mp3';
+      _yeehawAudio.currentTime = 0;
+      _yeehawAudio.play().catch(() => {});
+    }, 2000);
+  } catch (_) {}
+}
+
 function _resize() {
   if (!_canvas) return;
   const dpr = window.devicePixelRatio || 1;
@@ -182,9 +217,9 @@ function _run() {
 // stops *producing* new flakes — those already on screen keep falling naturally.
 // Production begins at the top with an empty screen; the rain fills in as flakes
 // fall. Calling again retriggers it (and restarts the countdown).
-export function startRain({ rate = 0.5, duration = 5000 } = {}) {
+export function startRain({ rate = 0.5, duration = 5000, sound = 'fanfare' } = {}) {
   if (_reducedMotion()) return;
-  _playFanfare();
+  if (sound === 'highroller') _playHighRollerSound(); else _playFanfare();
   _ensureCanvas();
   _rate = rate;
   // Restart the auto-stop countdown on every call (so taps retrigger/extend it).
