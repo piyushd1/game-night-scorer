@@ -213,13 +213,17 @@ function _render(container, roomCode) {
 
   // While in edit mode with buffered adjustments, show preview totals locally
   if (_editScoresMode && editingRoundIndex >= 0 && Object.keys(_editAdjustments).length > 0) {
-    const patchedRounds = rounds.map((rnd, i) =>
-      i === editingRoundIndex
-        ? { ...rnd, entries: { ...(rnd.entries || {}), ..._editAdjustments } }
-        : rnd
-    );
-    let preview = Object.fromEntries(playerIds.map((id) => [id, 0]));
-    patchedRounds.forEach((rnd) => { preview = gameModule.applyRound(preview, rnd, game); });
+    let preview = {};
+    for (let i = 0; i < playerIds.length; i++) {
+      preview[playerIds[i]] = 0;
+    }
+    for (let i = 0; i < rounds.length; i++) {
+      let rnd = rounds[i];
+      if (i === editingRoundIndex) {
+        rnd = { ...rnd, entries: { ...(rnd.entries || {}), ..._editAdjustments } };
+      }
+      preview = gameModule.applyRound(preview, rnd, game);
+    }
     displayTotals = preview;
   }
 
@@ -642,13 +646,17 @@ function _render(container, roomCode) {
         });
         const confirmed = await confirmSaveDialog(changes);
         if (!confirmed) return;
-        const patchedRounds = rounds.map((rnd, i) =>
-          i === editingRoundIndex
-            ? { ...rnd, entries: { ...(rnd.entries || {}), ..._editAdjustments } }
-            : rnd
-        );
-        let newTotals = Object.fromEntries(playerIds.map((id) => [id, 0]));
-        patchedRounds.forEach((rnd) => { newTotals = gameModule.applyRound(newTotals, rnd, game); });
+        let newTotals = {};
+        for (let i = 0; i < playerIds.length; i++) {
+          newTotals[playerIds[i]] = 0;
+        }
+        for (let i = 0; i < rounds.length; i++) {
+          let rnd = rounds[i];
+          if (i === editingRoundIndex) {
+            rnd = { ...rnd, entries: { ...(rnd.entries || {}), ..._editAdjustments } };
+          }
+          newTotals = gameModule.applyRound(newTotals, rnd, game);
+        }
         const saveBtn = content.querySelector('#btn-edit-save');
         saveBtn.disabled = true;
         saveBtn.innerHTML = '<div class="spinner mx-auto"></div>';
