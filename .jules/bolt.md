@@ -23,3 +23,7 @@
 ## 2024-05-25 - Prefetch vs Preload for background assets
 **Learning:** Adding a `<link rel="preload">` for a heavy image asset that is NOT immediately visible on the initial screen (e.g., a sprite sheet for an overlay on a later page) is a performance anti-pattern. It forces the browser to prioritize that download, competing with critical CSS/JS and delaying the Largest Contentful Paint (LCP) of the initial screen.
 **Action:** Always use `<link rel="prefetch">` for assets that are required for subsequent interactions or screens, allowing the browser to download them in the background during idle time without blocking the critical render path.
+
+## 2024-05-27 - [Redundant Mappings in UI Render Path]
+**Learning:** Found an area in `dashboard.js` where multiple separate maps over the same array are used to calculate preview totals during edit mode. By unifying these into a single loop, we can reduce redundant object creation and array traversals for better performance during UI rendering.
+**Action:** Combine redundant mappings (e.g. `rounds.map` to patch, then `forEach` to apply totals) into unified operations when dealing with live derived state calculations.
