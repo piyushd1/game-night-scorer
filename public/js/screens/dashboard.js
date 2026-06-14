@@ -799,12 +799,12 @@ function _computeJuaPool(game) {
 
 function _computeFlip7Score(draft) {
   if (!draft) return { basePoints: 0, flip7: false };
-  const numbers = [...draft.numbers];
-  const actions = [...draft.actions];
-  const numberSum = numbers.reduce((s, n) => s + n, 0);
-  const actionSum = actions.reduce((s, n) => s + n, 0);
+  let numberSum = 0;
+  for (const n of draft.numbers) numberSum += n;
+  let actionSum = 0;
+  for (const n of draft.actions) actionSum += n;
   const subtotal = numberSum * (draft.x2 ? 2 : 1) + actionSum;
-  return { basePoints: subtotal, flip7: numbers.length === 7 };
+  return { basePoints: subtotal, flip7: draft.numbers.size === 7 };
 }
 
 // ── Synced live round → drawer scratch ──
