@@ -60,9 +60,9 @@ export function mount(container, params = {}) {
             autocomplete="off"
             autocorrect="off"
             autocapitalize="characters"
-            class="flex-1 bg-surface-container-lowest border border-outline font-headline font-bold text-base uppercase py-3 px-4 placeholder:text-outline placeholder:normal-case placeholder:font-normal focus:outline-none focus:border-primary transition-colors"
+            class="flex-1 bg-surface-container-lowest border border-outline font-headline font-bold text-base uppercase py-3 px-4 placeholder:text-outline placeholder:normal-case placeholder:font-normal focus:outline-none focus:border-secondary transition-colors"
           >
-          <button id="btn-confirm-add" aria-label="Add Player" title="Add Player" class="bg-primary text-on-primary px-4 font-headline font-bold text-sm uppercase tracking-widest flex items-center gap-1 hover:opacity-90 transition-opacity shrink-0">
+          <button id="btn-confirm-add" aria-label="Add Player" title="Add Player" class="bg-primary text-on-primary px-4 font-headline font-bold text-sm uppercase tracking-widest flex items-center gap-1 hover:opacity-90 transition-opacity shrink-0 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary">
             <span class="material-symbols-outlined text-lg" aria-hidden="true">add</span>
           </button>
         </div>
@@ -99,8 +99,9 @@ export function mount(container, params = {}) {
       <!-- Start Game (host only) -->
       <div id="start-section" style="display:none">
         <p id="start-hint" class="font-body text-sm text-on-surface-variant text-center mb-2" style="display:none">Add at least 3 players to start a game.</p>
-        <button id="btn-start-game" class="btn-primary flex items-center justify-center" disabled>
-          Start a new game
+        <button id="btn-start-game" class="btn-primary w-full flex items-center justify-center gap-2" disabled>
+          START A NEW GAME
+          <span aria-hidden="true" class="material-symbols-outlined text-lg">arrow_forward</span>
         </button>
       </div>
 
@@ -540,7 +541,7 @@ function _renderPlayers(container, players, isHost, roomCode, gameInProgress = f
             <p class="font-headline font-extrabold text-lg uppercase truncate">${escapeHTML(p.name)}</p>
           </div>
           ${canRemove ? `
-            <button class="player-remove absolute top-1/2 -translate-y-1/2 right-1.5 p-1 hover:bg-surface-container-high transition-colors" data-id="${escapeHTML(p.id)}" title="Remove" aria-label="Remove ${escapeHTML(p.name)}">
+            <button class="player-remove absolute top-1/2 -translate-y-1/2 right-1.5 p-1 hover:bg-surface-container-high transition-colors rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary" data-id="${escapeHTML(p.id)}" title="Remove" aria-label="Remove ${escapeHTML(p.name)}">
               <span aria-hidden="true" class="material-symbols-outlined text-[1.25rem] text-error">close</span>
             </button>
           ` : ''}
