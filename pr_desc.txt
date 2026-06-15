@@ -1,0 +1,6 @@
+🎨 Palette: [Add accessible loading states]
+
+**What:** Added visually hidden `<span class="sr-only">` tags to loading states on actionable buttons.
+**Why:** When replacing button contents with a spinner via `innerHTML`, the button lost its accessible name and screen readers announced it as an empty button while it was in a loading state.
+**Before/After:** The visual layout is unchanged. For screen readers, they will now correctly announce "Loading...", "Saving...", or "Submitting...".
+**Accessibility:** Ensures that the semantic meaning and context of the buttons are maintained for users relying on assistive technologies during async operations.
