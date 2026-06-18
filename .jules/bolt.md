@@ -23,3 +23,6 @@
 ## 2024-05-25 - Prefetch vs Preload for background assets
 **Learning:** Adding a `<link rel="preload">` for a heavy image asset that is NOT immediately visible on the initial screen (e.g., a sprite sheet for an overlay on a later page) is a performance anti-pattern. It forces the browser to prioritize that download, competing with critical CSS/JS and delaying the Largest Contentful Paint (LCP) of the initial screen.
 **Action:** Always use `<link rel="prefetch">` for assets that are required for subsequent interactions or screens, allowing the browser to download them in the background during idle time without blocking the critical render path.
+## 2024-06-11 - [O(P*R) bottleneck in dashboard round metadata]
+**Learning:** Found that `roundJuaMeta` in `public/js/screens/dashboard.js` was iterating over all players and mapping over all rounds on every render. Even though a `_roundPointsCache` WeakMap existed for caching `roundPoints` and `roundFlip7Meta` calculations which iterate over the same `rounds` and `players`, `roundJuaMeta` was mistakenly calculated *outside* of this cache.
+**Action:** Always combine and merge multiple O(P*R) derived calculations that depend on the same dataset (like `rounds` and `players`) into a single, unified cache memoization block to avoid redundant independent iterations.
