@@ -23,3 +23,6 @@
 ## 2024-05-25 - Prefetch vs Preload for background assets
 **Learning:** Adding a `<link rel="preload">` for a heavy image asset that is NOT immediately visible on the initial screen (e.g., a sprite sheet for an overlay on a later page) is a performance anti-pattern. It forces the browser to prioritize that download, competing with critical CSS/JS and delaying the Largest Contentful Paint (LCP) of the initial screen.
 **Action:** Always use `<link rel="prefetch">` for assets that are required for subsequent interactions or screens, allowing the browser to download them in the background during idle time without blocking the critical render path.
+## 2024-05-27 - [Replacing Array Reduce with Sets Iteration in Hot Paths]
+**Learning:** Found that `public/js/screens/dashboard.js` and `public/js/games/flip7.js` were computing round scores (which happens frequently during UI rendering and card toggling) by first converting Sets to arrays (`[...draft.numbers]`) and then using `.reduce()`. This creates unnecessary intermediate allocations and function overhead in a critical hot path.
+**Action:** In hot UI rendering paths, avoid intermediate array allocations and declarative array methods like `.reduce()` when iterating over Sets. Instead, prefer direct `for...of` loops, and use `.size` instead of `.length` on Sets, to reduce garbage collection overhead.
