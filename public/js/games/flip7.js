@@ -35,10 +35,19 @@ export default {
   // Returns { basePoints, flip7 } compatible with applyRound / getRoundPoints.
   computeScoreFromCards({ numbers = [], actions = [], x2 = false, bust = false } = {}) {
     if (bust) return { basePoints: 0, flip7: false };
-    const numberSum = numbers.reduce((s, n) => s + n, 0);
-    const actionSum = actions.reduce((s, n) => s + n, 0);
+
+    // Bolt Optimization: Replace .reduce() with for...of loops.
+    // This avoids array method overhead in this hot rendering path.
+    let numberSum = 0;
+    for (const n of numbers) numberSum += n;
+
+    let actionSum = 0;
+    for (const n of actions) actionSum += n;
+
     const subtotal = numberSum * (x2 ? 2 : 1) + actionSum;
-    return { basePoints: subtotal, flip7: numbers.length === 7 };
+    // Check if numbers is an Array (length) or Set (size)
+    const isFlip7 = numbers.length !== undefined ? numbers.length === 7 : numbers.size === 7;
+    return { basePoints: subtotal, flip7: isFlip7 };
   },
 
   validateRound(draft, gameState) {
