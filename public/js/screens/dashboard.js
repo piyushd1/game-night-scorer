@@ -1654,11 +1654,11 @@ function _openJuaFineCounter(pid, game, roomCode) {
         </div>
       </div>
       <div class="p-6 flex items-center justify-center gap-8 pb-4">
-        <button id="jua-fine-sub" type="button"
+        <button id="jua-fine-sub" type="button" aria-label="Decrease fine"
           class="w-16 h-16 border-2 border-outline font-mono text-3xl flex items-center justify-center hover:bg-surface-container-high transition-colors disabled:opacity-30"
           ${fineCount === 0 ? 'disabled' : ''}>−</button>
-        <span id="jua-fine-count" class="font-mono text-6xl font-bold w-16 text-center">${fineCount}</span>
-        <button id="jua-fine-add" type="button"
+        <span id="jua-fine-count" aria-live="polite" class="font-mono text-6xl font-bold w-16 text-center">${fineCount}</span>
+        <button id="jua-fine-add" type="button" aria-label="Increase fine"
           class="w-16 h-16 border-2 border-outline font-mono text-3xl flex items-center justify-center hover:bg-surface-container-high transition-colors">+</button>
       </div>
       <div class="px-4 pb-8">
