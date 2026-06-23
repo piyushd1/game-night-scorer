@@ -143,7 +143,7 @@ export default {
       </div>
 
       <!-- Running Total -->
-      <div class="mt-4 bg-surface-container-high border border-outline p-4 flex justify-between items-center">
+      <div class="mt-4 bg-surface-container-high border border-outline p-4 flex justify-between items-center" aria-live="polite">
         <span class="font-mono text-[0.625rem] uppercase tracking-widest">PENALTY SUM</span>
         <div class="flex items-center gap-2">
           <span id="penalty-sum" class="font-mono text-xl font-bold">0</span>
