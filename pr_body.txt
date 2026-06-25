@@ -1,0 +1,7 @@
+💡 **What**: Replaced intermediate array allocations (using spread operator and `reduce`) in the hot loop `_computeFlip7Score` (and `computeScoreFromCards`) with a direct `for...of` loop over `Set` and `Array` iterables.
+
+🎯 **Why**: Using `[...iterable].reduce()` inside hot UI rendering paths (like score recalculation loops when rendering the Flip7 scoreboard) forces the JavaScript engine to allocate and garbage collect intermediate arrays unnecessarily. This micro-stutter adds up during frequent Firebase state syncs.
+
+📊 **Impact**: Reduces garbage collection pressure and CPU overhead by eliminating O(N) array allocations inside an O(R*P) rendering loop, resulting in a slightly smoother UI interaction and faster recalculations during live gameplay.
+
+🔬 **Measurement**: Verify via profiling or manual interaction that tapping cards in the Flip 7 score drawer calculates totals smoothly without dropped frames. The visual state of the drawer calculation remains identical.

@@ -33,10 +33,16 @@ export default {
 
   // Compute score from a card selection object (used by dashboard inline scoring).
   // Returns { basePoints, flip7 } compatible with applyRound / getRoundPoints.
+  // Bolt Optimization: Direct loop avoids intermediate array allocations in hot loops.
   computeScoreFromCards({ numbers = [], actions = [], x2 = false, bust = false } = {}) {
     if (bust) return { basePoints: 0, flip7: false };
-    const numberSum = numbers.reduce((s, n) => s + n, 0);
-    const actionSum = actions.reduce((s, n) => s + n, 0);
+
+    let numberSum = 0;
+    for (const n of numbers) numberSum += n;
+
+    let actionSum = 0;
+    for (const a of actions) actionSum += a;
+
     const subtotal = numberSum * (x2 ? 2 : 1) + actionSum;
     return { basePoints: subtotal, flip7: numbers.length === 7 };
   },
