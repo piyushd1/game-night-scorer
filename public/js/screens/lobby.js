@@ -540,7 +540,7 @@ function _renderPlayers(container, players, isHost, roomCode, gameInProgress = f
             <p class="font-headline font-extrabold text-lg uppercase truncate">${escapeHTML(p.name)}</p>
           </div>
           ${canRemove ? `
-            <button class="player-remove absolute top-1/2 -translate-y-1/2 right-1.5 p-1 hover:bg-surface-container-high transition-colors" data-id="${escapeHTML(p.id)}" title="Remove" aria-label="Remove ${escapeHTML(p.name)}">
+            <button class="player-remove absolute top-1/2 -translate-y-1/2 right-1.5 p-1 hover:bg-surface-container-high transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 rounded-sm" data-id="${escapeHTML(p.id)}" title="Remove" aria-label="Remove ${escapeHTML(p.name)}">
               <span aria-hidden="true" class="material-symbols-outlined text-[1.25rem] text-error">close</span>
             </button>
           ` : ''}
