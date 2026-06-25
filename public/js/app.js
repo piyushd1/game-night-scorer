@@ -141,4 +141,3 @@ style.textContent = `
 document.head.appendChild(style);
 
 init();
-// Trigger CI
