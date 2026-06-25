@@ -8,3 +8,4 @@ self.addEventListener('activate', (event) => {
       .then(() => self.registration.unregister())
   );
 });
+// __VERSION__
