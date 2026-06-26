@@ -7,6 +7,8 @@ on:
     branches:
       - main
   workflow_dispatch:
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
@@ -21,7 +23,7 @@ jobs:
           SHORT_SHA="${GITHUB_SHA:0:7}"
           sed -i "s/__VERSION__/${SHORT_SHA}/" public/sw.js
           echo "Stamped sw.js with VERSION=${SHORT_SHA}"
-      - uses: FirebaseExtended/action-hosting-deploy@v0
+      - uses: FirebaseExtended/action-hosting-deploy@v0.11.0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_GAME_NIGHT_SCORER }}
