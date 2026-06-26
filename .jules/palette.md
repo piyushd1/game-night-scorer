@@ -9,3 +9,7 @@
 ## 2026-05-23 - Accessible Loading States
 **Learning:** When replacing button text with a loading spinner (e.g. `<div class="spinner"></div>`), the button loses its accessible name. This causes screen readers to announce an empty button.
 **Action:** Always include a visually hidden span with descriptive text (e.g., `<span class="sr-only">Loading...</span>`) alongside the spinner when injecting it into an interactive element's `innerHTML`.
+
+## 2024-05-27 - Contextual loading spinners on multiple screens
+**Learning:** Loading spinners (using `<div class="spinner"></div>`) were added directly to `innerHTML` across multiple files without an accessible `sr-only` fallback span, causing screen readers to miss loading feedback.
+**Action:** When dynamically appending a loading spinner via `innerHTML`, always append `<span class="sr-only">Loading...</span>` directly after the spinner. Ensure this pattern is applied universally across the app.
