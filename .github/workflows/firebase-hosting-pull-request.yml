@@ -3,6 +3,8 @@
 
 name: Deploy to Firebase Hosting on PR
 on: pull_request
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 permissions:
   checks: write
   contents: read
@@ -22,7 +24,7 @@ jobs:
           SHORT_SHA="${SHORT_SHA:0:7}"
           sed -i "s/__VERSION__/${SHORT_SHA}/" public/sw.js
           echo "Stamped sw.js with VERSION=${SHORT_SHA}"
-      - uses: FirebaseExtended/action-hosting-deploy@v0
+      - uses: FirebaseExtended/action-hosting-deploy@v0.9.0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_GAME_NIGHT_SCORER }}
