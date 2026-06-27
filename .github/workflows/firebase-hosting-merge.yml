@@ -10,6 +10,8 @@ on:
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@v4
       - name: Stamp service worker version with short SHA
@@ -19,7 +21,9 @@ jobs:
         # See docs/CACHING.md for the full strategy.
         run: |
           SHORT_SHA="${GITHUB_SHA:0:7}"
-          sed -i "s/__VERSION__/${SHORT_SHA}/" public/sw.js
+          TIMESTAMP=$(date +%s)
+          sed -i "s/__VERSION__/${SHORT_SHA}-${TIMESTAMP}/" public/sw.js
+          sed -i "s/__VERSION__/${SHORT_SHA}-${TIMESTAMP}/" public/index.html
           echo "Stamped sw.js with VERSION=${SHORT_SHA}"
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
