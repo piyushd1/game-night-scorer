@@ -12,7 +12,7 @@ jobs:
     if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     env:
-      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@v4
       - name: Stamp service worker version with short SHA
@@ -24,6 +24,7 @@ jobs:
           SHORT_SHA="${SHORT_SHA:0:7}"
           TIMESTAMP=$(date +%s)
           sed -i "s/__VERSION__/${SHORT_SHA}-${TIMESTAMP}/" public/sw.js
+          sed -i "s/__VERSION__/${SHORT_SHA}-${TIMESTAMP}/" public/index.html
           echo "Stamped sw.js with VERSION=${SHORT_SHA}"
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
