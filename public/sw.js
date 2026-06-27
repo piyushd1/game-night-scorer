@@ -1,5 +1,6 @@
 // Service worker — cleans up legacy caches and unregisters itself.
 // Caching is handled entirely by HTTP Cache-Control headers.
+// VERSION: __VERSION__
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => {
   event.waitUntil(

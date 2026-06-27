@@ -19,8 +19,8 @@ jobs:
         # literal '__VERSION__' cache key.
         run: |
           SHORT_SHA="${{ github.event.pull_request.head.sha }}"
-          SHORT_SHA="${SHORT_SHA:0:7}"
-          sed -i "s/__VERSION__/${SHORT_SHA}/" public/sw.js
+          SHORT_SHA="${SHORT_SHA:0:7}-${{ github.run_id }}-${{ github.run_attempt }}"
+          echo "// DEPLOY_ID: ${SHORT_SHA}" >> public/sw.js
           echo "Stamped sw.js with VERSION=${SHORT_SHA}"
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:

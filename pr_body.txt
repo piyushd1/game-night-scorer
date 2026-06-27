@@ -1,0 +1,7 @@
+💡 **What:** Added `ones`, `twos`, and `threes` counter properties to the `stats.overall` player objects within the memoized `computeNightStats` function in `stats.js`. Replaced the on-the-fly `.filter(r => r === X).length` calculations inside `.map()` rendering loops in `recap.js` with direct O(1) property accesses.
+
+🎯 **Why:** The recap screen computes 'Tonight's Winners' and the 'All-Games Table' by calculating 1st, 2nd, and 3rd place finishes dynamically during every render. Doing this via nested array filtering meant the render path was doing O(N) operations (where N is the number of finishes) for every single player, every time state synced from Firebase.
+
+📊 **Impact:** Reduces rendering computation complexity from O(P*N) to O(P) where P is players and N is finishes. Render loops now do zero array traversals for derived counts.
+
+🔬 **Measurement:** Verify the recap screen displays correctly with no visual changes. Locally verified via Python Playwright with mock game state.
