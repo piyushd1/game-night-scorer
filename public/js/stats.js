@@ -64,6 +64,9 @@ export function computeNightStats(games, players) {
       gamesWon: 0,
       bestFinish: Infinity,
       finishes: [],
+      ones: 0,
+      twos: 0,
+      threes: 0,
     };
   });
 
@@ -91,6 +94,9 @@ export function computeNightStats(games, players) {
         if (standing.rank < overall[pid].bestFinish) {
           overall[pid].bestFinish = standing.rank;
         }
+        if (standing.rank === 1) overall[pid].ones++;
+        if (standing.rank === 2) overall[pid].twos++;
+        if (standing.rank === 3) overall[pid].threes++;
       }
       if (game.winner === pid) {
         overall[pid].gamesWon++;
