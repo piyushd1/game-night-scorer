@@ -18,8 +18,10 @@ jobs:
         # cache version per push — otherwise every preview would share the
         # literal '__VERSION__' cache key.
         run: |
-          echo "// DEPLOY_ID: ${{ github.run_id }}-${{ github.run_attempt }}" >> public/sw.js
-          echo "Stamped sw.js with DEPLOY_ID=${{ github.run_id }}-${{ github.run_attempt }}"
+          SHORT_SHA="${{ github.event.pull_request.head.sha }}"
+          SHORT_SHA="${SHORT_SHA:0:7}"
+          sed -i "s/__VERSION__/${SHORT_SHA}/" public/sw.js
+          echo "Stamped sw.js with VERSION=${SHORT_SHA}"
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
