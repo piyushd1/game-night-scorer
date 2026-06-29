@@ -17,11 +17,13 @@ jobs:
         # Same treatment as the merge workflow so PR previews get a unique
         # cache version per push — otherwise every preview would share the
         # literal '__VERSION__' cache key.
+        # Also appends a unique ID to guarantee a unique hash for Firebase Hosting CI.
         run: |
           SHORT_SHA="${{ github.event.pull_request.head.sha }}"
           SHORT_SHA="${SHORT_SHA:0:7}"
           sed -i "s/__VERSION__/${SHORT_SHA}/" public/sw.js
-          echo "Stamped sw.js with VERSION=${SHORT_SHA}"
+          echo "// DEPLOY_ID: ${{ github.run_id }}-${{ github.run_attempt }}" >> public/sw.js
+          echo "Stamped sw.js with VERSION=${SHORT_SHA} and DEPLOY_ID"
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}

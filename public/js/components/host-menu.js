@@ -200,9 +200,9 @@ export function renderTopBarActions(roomCode) {
   }
 
   actionsEl.innerHTML = `
-    <button id="btn-qr-share" aria-label="Show QR code" title="Share room QR" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1" style="font-size:1.375rem">qr_code_2</button>
+    <button id="btn-qr-share" aria-label="Show QR code" title="Share room QR" class="material-symbols-outlined hover:bg-surface-container-high focus-visible:outline focus-visible:outline-primary focus-visible:outline-offset-2 transition-colors p-1" style="font-size:1.375rem">qr_code_2</button>
     ${showMenu
-      ? `<button id="btn-host-menu-trigger" aria-label="Open menu" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 ml-1" style="font-size:1.375rem">more_vert</button>`
+      ? `<button id="btn-host-menu-trigger" aria-label="Open menu" class="material-symbols-outlined hover:bg-surface-container-high focus-visible:outline focus-visible:outline-primary focus-visible:outline-offset-2 transition-colors p-1 ml-1" style="font-size:1.375rem">more_vert</button>`
       : ''
     }
   `;
