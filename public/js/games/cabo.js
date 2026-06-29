@@ -220,7 +220,7 @@ export default {
                   data-player="${escapeHTML(pid)}"
                   aria-label="Clear ${escapeHTML(p.name || pid)}'s entry"
                   title="Clear entry"
-                  class="clear-row-btn p-1 text-outline hover:text-on-surface transition-colors"
+                  class="clear-row-btn p-1 text-outline hover:text-on-surface focus-visible:outline focus-visible:outline-primary focus-visible:outline-offset-2 transition-colors"
                 ><span class="material-symbols-outlined text-base" aria-hidden="true">backspace</span></button>
               </div>
             </div>
