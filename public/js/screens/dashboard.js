@@ -242,6 +242,7 @@ function _render(container, roomCode) {
   // Round points per player — use game module's getRoundPoints for accuracy
   let roundPoints = {};
   let roundFlip7Meta = {};
+  let roundJuaMeta = {};
   let cacheHit = false;
 
   if (game.rounds && typeof game.rounds === 'object') {
@@ -250,30 +251,38 @@ function _render(container, roomCode) {
     if (cached && cached.playerIds === playerIds) {
       roundPoints = cached.result;
       roundFlip7Meta = cached.flip7Meta || {};
+      roundJuaMeta = cached.juaMeta || {};
       cacheHit = true;
     }
   }
 
   if (!cacheHit) {
-    playerIds.forEach((pid) => { roundPoints[pid] = []; roundFlip7Meta[pid] = []; });
+    // Bolt Optimization: Unified O(N) array calculations
+    // Combined multiple O(N) array iterations over rounds into a single O(P*R) pass
+    // that calculates all derived round metadata (points, flip7, jua saves) simultaneously,
+    // avoiding redundant iterations inside map() during the synchronous render cycle.
+    playerIds.forEach((pid) => {
+      roundPoints[pid] = [];
+      roundFlip7Meta[pid] = [];
+      roundJuaMeta[pid] = [];
+    });
+
     rounds.forEach((rnd) => {
       playerIds.forEach((pid) => {
         roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
         roundFlip7Meta[pid].push(rnd.entries?.[pid]?.flip7 || false);
+        roundJuaMeta[pid].push(game.config?.jua ? rnd.jua?.firstSavePid === pid : false);
       });
     });
 
     if (game.rounds && typeof game.rounds === 'object') {
-      _roundPointsCache.set(game.rounds, { result: roundPoints, flip7Meta: roundFlip7Meta, playerIds });
+      _roundPointsCache.set(game.rounds, {
+        result: roundPoints,
+        flip7Meta: roundFlip7Meta,
+        juaMeta: roundJuaMeta,
+        playerIds
+      });
     }
-  }
-
-  // Per-player jua first-save metadata (one boolean per committed round)
-  const roundJuaMeta = {};
-  if (game.config?.jua) {
-    playerIds.forEach((pid) => {
-      roundJuaMeta[pid] = rounds.map((rnd) => rnd.jua?.firstSavePid === pid);
-    });
   }
 
   // In edit mode, overlay buffered adjustments onto the display round points so
