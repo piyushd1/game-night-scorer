@@ -240,8 +240,11 @@ function _render(container, roomCode) {
   }
 
   // Round points per player — use game module's getRoundPoints for accuracy
+  // Bolt Optimization: We also calculate and cache roundJuaMeta (Per-player jua first-save metadata)
+  // in this block to avoid redundant O(P*R) iterations on every synchronous render cycle.
   let roundPoints = {};
   let roundFlip7Meta = {};
+  let roundJuaMeta = {};
   let cacheHit = false;
 
   if (game.rounds && typeof game.rounds === 'object') {
@@ -250,30 +253,26 @@ function _render(container, roomCode) {
     if (cached && cached.playerIds === playerIds) {
       roundPoints = cached.result;
       roundFlip7Meta = cached.flip7Meta || {};
+      roundJuaMeta = cached.juaMeta || {};
       cacheHit = true;
     }
   }
 
   if (!cacheHit) {
-    playerIds.forEach((pid) => { roundPoints[pid] = []; roundFlip7Meta[pid] = []; });
+    playerIds.forEach((pid) => { roundPoints[pid] = []; roundFlip7Meta[pid] = []; roundJuaMeta[pid] = []; });
     rounds.forEach((rnd) => {
       playerIds.forEach((pid) => {
         roundPoints[pid].push(gameModule.getRoundPoints(rnd, pid));
         roundFlip7Meta[pid].push(rnd.entries?.[pid]?.flip7 || false);
+        if (game.config?.jua) {
+          roundJuaMeta[pid].push(rnd.jua?.firstSavePid === pid);
+        }
       });
     });
 
     if (game.rounds && typeof game.rounds === 'object') {
-      _roundPointsCache.set(game.rounds, { result: roundPoints, flip7Meta: roundFlip7Meta, playerIds });
+      _roundPointsCache.set(game.rounds, { result: roundPoints, flip7Meta: roundFlip7Meta, juaMeta: roundJuaMeta, playerIds });
     }
-  }
-
-  // Per-player jua first-save metadata (one boolean per committed round)
-  const roundJuaMeta = {};
-  if (game.config?.jua) {
-    playerIds.forEach((pid) => {
-      roundJuaMeta[pid] = rounds.map((rnd) => rnd.jua?.firstSavePid === pid);
-    });
   }
 
   // In edit mode, overlay buffered adjustments onto the display round points so
