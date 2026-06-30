@@ -160,6 +160,9 @@ export function show() {
     _renderMenuItems();
     overlay.style.display = 'block';
 
+    const trigger = document.getElementById('btn-host-menu-trigger');
+    if (trigger) trigger.setAttribute('aria-expanded', 'true');
+
     // Manage focus: focus first interactive element
     requestAnimationFrame(() => {
       const firstAction = overlay.querySelector('.host-menu-action');
@@ -175,7 +178,10 @@ export function hide() {
 
     // Manage focus: return to trigger element
     const trigger = document.getElementById('btn-host-menu-trigger');
-    if (trigger) trigger.focus();
+    if (trigger) {
+      trigger.setAttribute('aria-expanded', 'false');
+      trigger.focus();
+    }
   }
 }
 
@@ -202,7 +208,7 @@ export function renderTopBarActions(roomCode) {
   actionsEl.innerHTML = `
     <button id="btn-qr-share" aria-label="Show QR code" title="Share room QR" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1" style="font-size:1.375rem">qr_code_2</button>
     ${showMenu
-      ? `<button id="btn-host-menu-trigger" aria-label="Open menu" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 ml-1" style="font-size:1.375rem">more_vert</button>`
+      ? `<button id="btn-host-menu-trigger" aria-haspopup="menu" aria-expanded="false" aria-label="Open menu" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 ml-1" style="font-size:1.375rem">more_vert</button>`
       : ''
     }
   `;
