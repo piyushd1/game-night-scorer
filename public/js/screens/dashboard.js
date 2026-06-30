@@ -240,6 +240,8 @@ function _render(container, roomCode) {
   }
 
   // Round points per player — use game module's getRoundPoints for accuracy
+  // Bolt Optimization: We also calculate and cache roundJuaMeta (Per-player jua first-save metadata)
+  // in this block to avoid redundant O(P*R) iterations on every synchronous render cycle.
   let roundPoints = {};
   let roundFlip7Meta = {};
   let roundJuaMeta = {};
