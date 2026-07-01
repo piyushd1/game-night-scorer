@@ -9,3 +9,6 @@
 ## 2026-05-23 - Accessible Loading States
 **Learning:** When replacing button text with a loading spinner (e.g. `<div class="spinner"></div>`), the button loses its accessible name. This causes screen readers to announce an empty button.
 **Action:** Always include a visually hidden span with descriptive text (e.g., `<span class="sr-only">Loading...</span>`) alongside the spinner when injecting it into an interactive element's `innerHTML`.
+## 2024-05-24 - Missing focus ring on Tailwind material-symbol icon buttons
+**Learning:** Icon-only buttons relying solely on the `.material-symbols-outlined` font class (without custom CSS buttons like `.btn-primary` or explicit `.focus-visible:` utility classes) completely lack a keyboard focus ring due to Tailwind's global preflight styles resetting default browser focus outlines.
+**Action:** When creating or modifying interactive elements with Tailwind, especially those lacking custom CSS class coverage, always explicitly define `focus-visible:` pseudo-classes (e.g. `focus-visible:outline focus-visible:outline-primary focus-visible:outline-offset-2`) to ensure keyboard accessibility. Ensure anti-patterns like `focus:outline-none` are removed.

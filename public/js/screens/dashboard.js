@@ -956,7 +956,7 @@ function _openFlip7Drawer(container, roomCode, playerId, snapshot, game) {
 
   // Build all 20 grid cells using the spritesheet
   const cardBtns = _F7_CARD_DATA.map((c) => {
-    if (c.empty) return `<div class="flex items-center justify-center" style="aspect-ratio:130/204"><button type="button" id="flip7-done-btn" aria-label="Done" class="flex items-center justify-center border-2 border-primary text-primary hover:bg-primary hover:text-on-primary transition-colors" style="width:75%;aspect-ratio:130/204;box-shadow:0 3px 5px -1px rgba(0,0,0,0.18)"><span aria-hidden="true" class="material-symbols-outlined" style="font-size:1.75rem;font-variation-settings:'wght' 700">check</span></button></div>`;
+    if (c.empty) return `<div class="flex items-center justify-center" style="aspect-ratio:130/204"><button type="button" id="flip7-done-btn" aria-label="Done" class="flex items-center justify-center border-2 border-primary text-primary hover:bg-primary hover:text-on-primary focus-visible:outline focus-visible:outline-primary focus-visible:outline-offset-2 transition-colors" style="width:75%;aspect-ratio:130/204;box-shadow:0 3px 5px -1px rgba(0,0,0,0.18)"><span aria-hidden="true" class="material-symbols-outlined" style="font-size:1.75rem;font-variation-settings:'wght' 700">check</span></button></div>`;
     const bg = _cardSpriteBg(c.col, c.row);
     const cardStyle = `aspect-ratio:130/204;border-radius:6px;box-shadow:0 3px 5px -1px rgba(0,0,0,0.18);${bg}`;
     if (c.id) {
