@@ -23,3 +23,6 @@
 ## 2024-05-25 - Prefetch vs Preload for background assets
 **Learning:** Adding a `<link rel="preload">` for a heavy image asset that is NOT immediately visible on the initial screen (e.g., a sprite sheet for an overlay on a later page) is a performance anti-pattern. It forces the browser to prioritize that download, competing with critical CSS/JS and delaying the Largest Contentful Paint (LCP) of the initial screen.
 **Action:** Always use `<link rel="prefetch">` for assets that are required for subsequent interactions or screens, allowing the browser to download them in the background during idle time without blocking the critical render path.
+## 2024-05-27 - [Memoizing multiple O(N) properties in single render loop]
+**Learning:** Found that multiple derived properties calculated synchronously during rendering (e.g. `roundJuaMeta` in `public/js/screens/dashboard.js`) iterated over the same `rounds` and `players` arrays individually, causing independent O(P*R) calculations despite an existing memoized cache block that was already looping over exactly those dimensions.
+**Action:** Always combine and merge multiple related O(N) or O(P*R) derived calculations into a single unified iteration block when applying memoization caches (e.g. `WeakMap`), to avoid redundant separate iterations over the same data collections during a render cycle.
