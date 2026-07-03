@@ -9,3 +9,6 @@
 ## 2026-05-23 - Accessible Loading States
 **Learning:** When replacing button text with a loading spinner (e.g. `<div class="spinner"></div>`), the button loses its accessible name. This causes screen readers to announce an empty button.
 **Action:** Always include a visually hidden span with descriptive text (e.g., `<span class="sr-only">Loading...</span>`) alongside the spinner when injecting it into an interactive element's `innerHTML`.
+## 2024-07-03 - Interactive elements need explicit :focus-visible
+**Learning:** Interactive elements using Tailwind in this app shouldn't use `focus:outline-none`, and they need explicit `:focus-visible` utilities since Tailwind's preflight removes default outlines.
+**Action:** Remove `focus:outline-none` and always add explicit Tailwind `:focus-visible` utilities (e.g., `focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary`) to guarantee keyboard accessibility for interactive elements.
