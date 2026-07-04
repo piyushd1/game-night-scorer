@@ -23,3 +23,6 @@
 ## 2024-05-25 - Prefetch vs Preload for background assets
 **Learning:** Adding a `<link rel="preload">` for a heavy image asset that is NOT immediately visible on the initial screen (e.g., a sprite sheet for an overlay on a later page) is a performance anti-pattern. It forces the browser to prioritize that download, competing with critical CSS/JS and delaying the Largest Contentful Paint (LCP) of the initial screen.
 **Action:** Always use `<link rel="prefetch">` for assets that are required for subsequent interactions or screens, allowing the browser to download them in the background during idle time without blocking the critical render path.
+## 2024-05-30 - [Precomputing O(N) Array Methods in UI Render Cycles]
+**Learning:** Found multiple instances of O(N) array calculations (like `p.finishes.filter((r) => r === 1).length`) running on every player in `public/js/screens/recap.js` during render phases. Recalculating derived arrays repeatedly inside components causes CPU bottlenecks.
+**Action:** Move derived stats counting into the single upstream state aggregation phase (`computeNightStats` in `public/js/stats.js`), exposing O(1) properties (`p.ones`, `p.twos`) instead of forcing the UI layer to run O(N) filters on render.
