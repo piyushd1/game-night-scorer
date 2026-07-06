@@ -23,3 +23,6 @@
 ## 2024-05-25 - Prefetch vs Preload for background assets
 **Learning:** Adding a `<link rel="preload">` for a heavy image asset that is NOT immediately visible on the initial screen (e.g., a sprite sheet for an overlay on a later page) is a performance anti-pattern. It forces the browser to prioritize that download, competing with critical CSS/JS and delaying the Largest Contentful Paint (LCP) of the initial screen.
 **Action:** Always use `<link rel="prefetch">` for assets that are required for subsequent interactions or screens, allowing the browser to download them in the background during idle time without blocking the critical render path.
+## 2024-05-30 - [Combine O(P*R) calculations in synchronous render loops]
+**Learning:** Found that multiple independent O(P*R) calculation loops (like `roundJuaMeta` and `roundPoints`) were running sequentially during the dashboard render cycle, creating redundant iterations over the same arrays.
+**Action:** When calculating derived metadata from game rounds inside rendering loops, merge all O(P*R) calculations into a single, unified cache memoization block. This avoids repeated iterations and reduces redundant work.
