@@ -9,3 +9,6 @@
 ## 2026-05-23 - Accessible Loading States
 **Learning:** When replacing button text with a loading spinner (e.g. `<div class="spinner"></div>`), the button loses its accessible name. This causes screen readers to announce an empty button.
 **Action:** Always include a visually hidden span with descriptive text (e.g., `<span class="sr-only">Loading...</span>`) alongside the spinner when injecting it into an interactive element's `innerHTML`.
+## 2024-07-06 - Accessible dropdown menu triggers
+**Learning:** Dropdown menus and overlays triggered by icon buttons lack proper accessibility context for screen readers without explicit ARIA attributes connecting the trigger to the menu state.
+**Action:** When implementing interactive trigger elements that reveal or hide dropdown menus or overlays, ensure screen reader accessibility by adding the `aria-haspopup="menu"` attribute and dynamically toggling `aria-expanded` between `'true'` and `'false'`.
