@@ -102,7 +102,7 @@ function _renderMenuItems() {
     // Most items are destructive (error variant); a few are positive (default).
     const color = it.variant === 'default' ? 'text-on-surface' : 'text-error';
     return `
-    <button class="${base} ${color}${i < items.length - 1 ? ' border-b border-outline-variant' : ''}" data-action="${it.action}">
+    <button role="menuitem" class="${base} ${color}${i < items.length - 1 ? ' border-b border-outline-variant' : ''}" data-action="${it.action}">
       <span aria-hidden="true" class="material-symbols-outlined text-sm">${it.icon}</span>
       ${it.label.toUpperCase()}
     </button>
@@ -160,6 +160,10 @@ export function show() {
     _renderMenuItems();
     overlay.style.display = 'block';
 
+    // Update trigger aria-expanded
+    const trigger = document.getElementById('btn-host-menu-trigger');
+    if (trigger) trigger.setAttribute('aria-expanded', 'true');
+
     // Manage focus: focus first interactive element
     requestAnimationFrame(() => {
       const firstAction = overlay.querySelector('.host-menu-action');
@@ -173,9 +177,13 @@ export function hide() {
   if (overlay) {
     overlay.style.display = 'none';
 
-    // Manage focus: return to trigger element
+    // Update trigger aria-expanded
     const trigger = document.getElementById('btn-host-menu-trigger');
-    if (trigger) trigger.focus();
+    if (trigger) {
+      trigger.setAttribute('aria-expanded', 'false');
+      // Manage focus: return to trigger element
+      trigger.focus();
+    }
   }
 }
 
@@ -202,7 +210,7 @@ export function renderTopBarActions(roomCode) {
   actionsEl.innerHTML = `
     <button id="btn-qr-share" aria-label="Show QR code" title="Share room QR" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1" style="font-size:1.375rem">qr_code_2</button>
     ${showMenu
-      ? `<button id="btn-host-menu-trigger" aria-label="Open menu" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 ml-1" style="font-size:1.375rem">more_vert</button>`
+      ? `<button id="btn-host-menu-trigger" aria-haspopup="menu" aria-expanded="false" aria-label="Open menu" class="material-symbols-outlined hover:bg-surface-container-high transition-colors p-1 ml-1" style="font-size:1.375rem">more_vert</button>`
       : ''
     }
   `;
