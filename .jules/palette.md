@@ -9,3 +9,7 @@
 ## 2026-05-23 - Accessible Loading States
 **Learning:** When replacing button text with a loading spinner (e.g. `<div class="spinner"></div>`), the button loses its accessible name. This causes screen readers to announce an empty button.
 **Action:** Always include a visually hidden span with descriptive text (e.g., `<span class="sr-only">Loading...</span>`) alongside the spinner when injecting it into an interactive element's `innerHTML`.
+
+## 2024-07-08 - Accessible Dynamic Menus
+**Learning:** For dynamic detached menus (like `#host-menu-overlay`), trigger buttons (like `#btn-host-menu-trigger`) must use `aria-haspopup="menu"` and dynamically toggle `aria-expanded` between `'true'` and `'false'` to inform screen readers of their state. The menu container itself should also have `role="menu"` and items `role="menuitem"`.
+**Action:** Always add these accessibility attributes when implementing or modifying interactive trigger elements that reveal dropdown menus or overlays.
