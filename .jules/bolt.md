@@ -23,3 +23,6 @@
 ## 2024-05-25 - Prefetch vs Preload for background assets
 **Learning:** Adding a `<link rel="preload">` for a heavy image asset that is NOT immediately visible on the initial screen (e.g., a sprite sheet for an overlay on a later page) is a performance anti-pattern. It forces the browser to prioritize that download, competing with critical CSS/JS and delaying the Largest Contentful Paint (LCP) of the initial screen.
 **Action:** Always use `<link rel="prefetch">` for assets that are required for subsequent interactions or screens, allowing the browser to download them in the background during idle time without blocking the critical render path.
+## 2024-07-10 - [O(P*R) Redundant Jua Meta Calculation on Render]
+**Learning:** Found that calculating O(P*R) derived values (like `roundJuaMeta` in Flip 7) outside of the main memoized `_roundPointsCache` block caused redundant array allocations and iterations on every render cycle of the dashboard, even when `roundPoints` was cached successfully.
+**Action:** Always combine and merge multiple separate O(N) or O(P*R) derived calculations (like round scores and metadata) into a single, unified cache memoization block to avoid redundant independent iterations.
