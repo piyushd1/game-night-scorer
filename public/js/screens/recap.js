@@ -344,9 +344,10 @@ function _tonightWinners(stats) {
   }
   const rows = stats.overall.map((p) => ({
     name: p.name,
-    ones: p.finishes.filter((r) => r === 1).length,
-    twos: p.finishes.filter((r) => r === 2).length,
-    threes: p.finishes.filter((r) => r === 3).length,
+    // Bolt Optimization: Use precomputed finish counts to avoid O(N) array .filter() methods in render loop
+    ones: p.ones,
+    twos: p.twos,
+    threes: p.threes,
   })).sort((a, b) => (b.ones - a.ones) || (b.twos - a.twos) || (b.threes - a.threes));
   const top = rows[0];
   return rows
@@ -391,9 +392,10 @@ const _MEDAL_CHIP = 'inline-block bg-surface-container-low px-1.5 py-0.5 text-[1
 // sorted lexicographically by (1sts, 2nds, 3rds) descending.
 function _allScoresTable(stats) {
   const rows = stats.overall.map((p) => {
-    const ones = p.finishes.filter((r) => r === 1).length;
-    const twos = p.finishes.filter((r) => r === 2).length;
-    const threes = p.finishes.filter((r) => r === 3).length;
+    // Bolt Optimization: Use precomputed finish counts to avoid O(N) array .filter() methods in render loop
+    const ones = p.ones;
+    const twos = p.twos;
+    const threes = p.threes;
     return { name: p.name, ones, twos, threes };
   }).sort((a, b) => (b.ones - a.ones) || (b.twos - a.twos) || (b.threes - a.threes));
 
