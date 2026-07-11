@@ -23,3 +23,6 @@
 ## 2024-05-25 - Prefetch vs Preload for background assets
 **Learning:** Adding a `<link rel="preload">` for a heavy image asset that is NOT immediately visible on the initial screen (e.g., a sprite sheet for an overlay on a later page) is a performance anti-pattern. It forces the browser to prioritize that download, competing with critical CSS/JS and delaying the Largest Contentful Paint (LCP) of the initial screen.
 **Action:** Always use `<link rel="prefetch">` for assets that are required for subsequent interactions or screens, allowing the browser to download them in the background during idle time without blocking the critical render path.
+## 2024-06-03 - [Precomputing derived count metrics to avoid O(N) allocations in render loops]
+**Learning:** Found that `recap.js` was using `.filter().length` array methods inside rendering loops for `_tonightWinners` and `_allScoresTable` to compute the number of 1st, 2nd, and 3rd place finishes, causing redundant O(N) calculations and array allocations on every render.
+**Action:** Always precompute derived count metrics (like `ones`, `twos`, `threes`) during the O(G*P) state aggregation phase (`computeNightStats`) so that UI render loops can access them via O(1) property lookups.

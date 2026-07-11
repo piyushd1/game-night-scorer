@@ -64,6 +64,10 @@ export function computeNightStats(games, players) {
       gamesWon: 0,
       bestFinish: Infinity,
       finishes: [],
+      // Bolt Optimization: Precompute finish counts to avoid O(N) .filter() array methods during render loops.
+      ones: 0,
+      twos: 0,
+      threes: 0,
     };
   });
 
@@ -88,6 +92,10 @@ export function computeNightStats(games, players) {
       const standing = standingsMap.get(pid);
       if (standing) {
         overall[pid].finishes.push(standing.rank);
+        if (standing.rank === 1) overall[pid].ones++;
+        else if (standing.rank === 2) overall[pid].twos++;
+        else if (standing.rank === 3) overall[pid].threes++;
+
         if (standing.rank < overall[pid].bestFinish) {
           overall[pid].bestFinish = standing.rank;
         }
