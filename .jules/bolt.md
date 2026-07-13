@@ -23,3 +23,6 @@
 ## 2024-05-25 - Prefetch vs Preload for background assets
 **Learning:** Adding a `<link rel="preload">` for a heavy image asset that is NOT immediately visible on the initial screen (e.g., a sprite sheet for an overlay on a later page) is a performance anti-pattern. It forces the browser to prioritize that download, competing with critical CSS/JS and delaying the Largest Contentful Paint (LCP) of the initial screen.
 **Action:** Always use `<link rel="prefetch">` for assets that are required for subsequent interactions or screens, allowing the browser to download them in the background during idle time without blocking the critical render path.
+## 2024-05-30 - [Redundant array allocation in mapped loop in Recap stats]
+**Learning:** Found multiple chained `.filter(r => r === X).length` operations nested inside an O(N) array `.map()` when counting finishes for players on the recap screen. Because the application rerenders hot paths, allocating three intermediate arrays and iterating the list three times per player creates redundant garbage collection overhead.
+**Action:** Replace multiple chained declarative array iterations (like `.filter()`) inside hot rendering loops with a single O(N) `for...of` loop over the array to compute all necessary counters simultaneously.

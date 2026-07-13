@@ -342,12 +342,16 @@ function _tonightWinners(stats) {
       .filter((p) => parseFloat(p.net.toFixed(1)) === top)
       .map((p) => ({ name: p.name }));
   }
-  const rows = stats.overall.map((p) => ({
-    name: p.name,
-    ones: p.finishes.filter((r) => r === 1).length,
-    twos: p.finishes.filter((r) => r === 2).length,
-    threes: p.finishes.filter((r) => r === 3).length,
-  })).sort((a, b) => (b.ones - a.ones) || (b.twos - a.twos) || (b.threes - a.threes));
+  const rows = stats.overall.map((p) => {
+    // Bolt Optimization: Replace multiple O(N) array filter/length allocations with a single O(N) loop
+    let ones = 0, twos = 0, threes = 0;
+    for (const r of p.finishes) {
+      if (r === 1) ones++;
+      else if (r === 2) twos++;
+      else if (r === 3) threes++;
+    }
+    return { name: p.name, ones, twos, threes };
+  }).sort((a, b) => (b.ones - a.ones) || (b.twos - a.twos) || (b.threes - a.threes));
   const top = rows[0];
   return rows
     .filter((r) => r.ones === top.ones && r.twos === top.twos && r.threes === top.threes)
@@ -391,9 +395,13 @@ const _MEDAL_CHIP = 'inline-block bg-surface-container-low px-1.5 py-0.5 text-[1
 // sorted lexicographically by (1sts, 2nds, 3rds) descending.
 function _allScoresTable(stats) {
   const rows = stats.overall.map((p) => {
-    const ones = p.finishes.filter((r) => r === 1).length;
-    const twos = p.finishes.filter((r) => r === 2).length;
-    const threes = p.finishes.filter((r) => r === 3).length;
+    // Bolt Optimization: Replace multiple O(N) array filter/length allocations with a single O(N) loop
+    let ones = 0, twos = 0, threes = 0;
+    for (const r of p.finishes) {
+      if (r === 1) ones++;
+      else if (r === 2) twos++;
+      else if (r === 3) threes++;
+    }
     return { name: p.name, ones, twos, threes };
   }).sort((a, b) => (b.ones - a.ones) || (b.twos - a.twos) || (b.threes - a.threes));
 
