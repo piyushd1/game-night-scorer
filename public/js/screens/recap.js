@@ -342,11 +342,12 @@ function _tonightWinners(stats) {
       .filter((p) => parseFloat(p.net.toFixed(1)) === top)
       .map((p) => ({ name: p.name }));
   }
+  // Bolt Optimization: Use precomputed ones/twos/threes O(1) properties to avoid O(N) filtering during render
   const rows = stats.overall.map((p) => ({
     name: p.name,
-    ones: p.finishes.filter((r) => r === 1).length,
-    twos: p.finishes.filter((r) => r === 2).length,
-    threes: p.finishes.filter((r) => r === 3).length,
+    ones: p.ones,
+    twos: p.twos,
+    threes: p.threes,
   })).sort((a, b) => (b.ones - a.ones) || (b.twos - a.twos) || (b.threes - a.threes));
   const top = rows[0];
   return rows
@@ -391,10 +392,8 @@ const _MEDAL_CHIP = 'inline-block bg-surface-container-low px-1.5 py-0.5 text-[1
 // sorted lexicographically by (1sts, 2nds, 3rds) descending.
 function _allScoresTable(stats) {
   const rows = stats.overall.map((p) => {
-    const ones = p.finishes.filter((r) => r === 1).length;
-    const twos = p.finishes.filter((r) => r === 2).length;
-    const threes = p.finishes.filter((r) => r === 3).length;
-    return { name: p.name, ones, twos, threes };
+    // Bolt Optimization: Use precomputed ones/twos/threes O(1) properties to avoid O(N) filtering during render
+    return { name: p.name, ones: p.ones, twos: p.twos, threes: p.threes };
   }).sort((a, b) => (b.ones - a.ones) || (b.twos - a.twos) || (b.threes - a.threes));
 
   const medals = (emoji, n) => Array.from({ length: n }, () => `<span class="${_MEDAL_CHIP}">${emoji}</span>`).join('');
