@@ -56,6 +56,7 @@ export function computeNightStats(games, players) {
 
   const overall = {};
   playerIds.forEach((pid) => {
+    // Bolt Optimization: Precompute medal counts (ones/twos/threes) to avoid O(N) array filtering during UI renders
     overall[pid] = {
       playerId: pid,
       name: playerNames.has(pid) ? playerNames.get(pid) : pid,
@@ -64,6 +65,9 @@ export function computeNightStats(games, players) {
       gamesWon: 0,
       bestFinish: Infinity,
       finishes: [],
+      ones: 0,
+      twos: 0,
+      threes: 0,
     };
   });
 
@@ -91,6 +95,10 @@ export function computeNightStats(games, players) {
         if (standing.rank < overall[pid].bestFinish) {
           overall[pid].bestFinish = standing.rank;
         }
+        // Bolt Optimization: Precompute medal counts (ones/twos/threes) directly from standings
+        if (standing.rank === 1) overall[pid].ones++;
+        else if (standing.rank === 2) overall[pid].twos++;
+        else if (standing.rank === 3) overall[pid].threes++;
       }
       if (game.winner === pid) {
         overall[pid].gamesWon++;
@@ -159,8 +167,16 @@ function _computeGameSpecificStats(game, gameModule, rounds, playerIds, snapshot
   if (game.type === 'cabo') {
     rounds.forEach((rnd) => {
       if (!rnd.kamikaze) {
-        const allTotals = Object.entries(rnd.entries || {}).map(([id, e]) => e.cardTotal || 0);
-        caboMinCards.set(rnd, allTotals.length ? Math.min(...allTotals) : 0);
+        // Bolt Optimization: Replace Object.entries().map() + Math.min(...allTotals)
+        // with direct O(N) iteration to avoid intermediate array allocations
+        let minCard = Infinity;
+        let found = false;
+        for (const entry of Object.values(rnd.entries || {})) {
+          const val = entry.cardTotal || 0;
+          if (val < minCard) minCard = val;
+          found = true;
+        }
+        caboMinCards.set(rnd, found ? minCard : 0);
       }
     });
   }
