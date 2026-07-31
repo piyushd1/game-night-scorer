@@ -9,3 +9,7 @@
 ## 2026-05-23 - Accessible Loading States
 **Learning:** When replacing button text with a loading spinner (e.g. `<div class="spinner"></div>`), the button loses its accessible name. This causes screen readers to announce an empty button.
 **Action:** Always include a visually hidden span with descriptive text (e.g., `<span class="sr-only">Loading...</span>`) alongside the spinner when injecting it into an interactive element's `innerHTML`.
+
+## 2026-05-29 - Accessible Loading Spinners on interactive elements
+**Learning:** When using `innerHTML` to replace button content with a loading spinner component (`<div class="spinner"></div>`), screen readers will announce an empty or unlabelled element, which degrades accessibility for interactive controls.
+**Action:** Always verify that an injected `<div class="spinner"></div>` includes an adjacent screen-reader only text node, such as `<span class="sr-only">Loading...</span>`, to maintain semantic clarity.
