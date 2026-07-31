@@ -23,3 +23,6 @@
 ## 2024-05-25 - Prefetch vs Preload for background assets
 **Learning:** Adding a `<link rel="preload">` for a heavy image asset that is NOT immediately visible on the initial screen (e.g., a sprite sheet for an overlay on a later page) is a performance anti-pattern. It forces the browser to prioritize that download, competing with critical CSS/JS and delaying the Largest Contentful Paint (LCP) of the initial screen.
 **Action:** Always use `<link rel="prefetch">` for assets that are required for subsequent interactions or screens, allowing the browser to download them in the background during idle time without blocking the critical render path.
+## 2024-05-30 - [Unified Memoization of Derived Array Computations]
+**Learning:** Found that `roundJuaMeta` calculation in `dashboard.js` performed separate O(P*R) nested map/forEach iterations on every Firebase re-render, despite the component already having a `WeakMap` cache `_roundPointsCache` set up over the identical iteration path.
+**Action:** When a rendering cycle iterates over a large object or array (like `rounds`) to derive multiple distinct pieces of state (`roundPoints`, `flip7Meta`, `juaMeta`), merge them into a single, unified loop cached within a single `WeakMap` block to prevent redundant O(N) array traversals on every render update.
