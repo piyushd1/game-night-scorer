@@ -23,3 +23,6 @@
 ## 2024-05-25 - Prefetch vs Preload for background assets
 **Learning:** Adding a `<link rel="preload">` for a heavy image asset that is NOT immediately visible on the initial screen (e.g., a sprite sheet for an overlay on a later page) is a performance anti-pattern. It forces the browser to prioritize that download, competing with critical CSS/JS and delaying the Largest Contentful Paint (LCP) of the initial screen.
 **Action:** Always use `<link rel="prefetch">` for assets that are required for subsequent interactions or screens, allowing the browser to download them in the background during idle time without blocking the critical render path.
+## 2024-05-30 - [O(P*R) Redundant Array Iteration]
+**Learning:** Found that calculating derived round metadata like `roundJuaMeta` iteratively using `.map` within the `_render` function of `dashboard.js` leads to redundant O(P*R) calculations during every synchronous render cycle, especially when similar calculations for `roundPoints` and `roundFlip7Meta` are already memoized in a `WeakMap`.
+**Action:** When a UI component requires multiple passes of derived data mapped from the same primary object (like rounds), combine and merge these calculations into a single, unified loop block that can be memoized in its entirety.
